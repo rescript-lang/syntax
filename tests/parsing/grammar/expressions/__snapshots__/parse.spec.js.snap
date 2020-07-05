@@ -486,6 +486,90 @@ exports[`for.js 1`] = `
 ;;for p = 0 to x + 1 do () done"
 `;
 
+exports[`guard.js 1`] = `
+"let safeDivideZero num denom = ((if denom != 0 then num / denom else 0)
+  [@ns.braces ][@ns.guard ])
+let safeDivideNone num denom =
+  ((if denom != 0 then Some (num / denom) else None)
+  [@ns.braces ][@ns.guard ])
+let safeDivideExn num denom =
+  ((if denom != 0 then num / denom else raise DivisionByZero)
+  [@ns.braces ][@ns.guard ])
+let nested x y z =
+  ((if x
+    then
+      (((if y
+         then (((if z then Js.log \\"Hello\\" else raise BadZ))[@ns.guard ])
+         else raise BadY))
+      [@ns.guard ])
+    else raise BadX)
+  [@ns.braces ][@ns.guard ])
+let returningUnit shouldLog = ((if shouldLog then Js.log \\"Hello\\")
+  [@ns.braces ][@ns.guard ])
+let nested x y z =
+  ((if x
+    then Js.log \\"Hello\\"
+    else
+      ((if y
+        then raise BadX
+        else ((if z then raise BadY else raise BadZ)[@ns.guard ]))
+      [@ns.guard ]))
+  [@ns.braces ][@ns.guard ])
+let isValid width height color status =
+  ((if ((let size = width * height in size < 100)[@ns.braces ])
+    then (((if color != Red then true else false))[@ns.guard ])
+    else false)
+  [@ns.braces ][@ns.guard ])
+let guardlet () =
+  ((match foo () with
+    | Some x ->
+        (doSomethingWithX x;
+         (((match foo () with
+            | Some x ->
+                (((match foo () with
+                   | Some x -> doSomethingWithX x
+                   | _ -> raise FailedToUnwrap))
+                [@ns.guard ])
+            | _ -> raise FailedToUnwrap))
+         [@ns.guard ]))
+    | _ -> \\"return\\")
+  [@ns.braces ][@ns.guard ])
+;;((if
+      ((let one = (x > 10) && (n > 2) in let two = \\"test\\" in (one + 2) + two)
+      [@ns.braces ])
+    then
+      (\\"hello\\";
+       ((if x > 10
+         then
+           (\\"hello\\";
+            (let foo x = ((if x > 10 then Js.log x else \\"\\")
+               [@ns.braces ][@ns.guard ]) in
+             ((if x > 10
+               then
+                 (Js.log x;
+                  (let bar a b c =
+                     ((if a > 10
+                       then (((if c > 2 then \\"hello\\"))[@ns.guard ])
+                       else
+                         (\\"test\\"; ((if b > 20 then \\"ok\\" else c)[@ns.guard ])))
+                     [@ns.braces ][@ns.guard ]) in
+                   let bar ((a)[@b ]) b c =
+                     ((if ((a)[@d ]) > 10
+                       then (((if c > 2 then ((\\"ok\\")[@g \\"hello\\"])))
+                         [@f ][@ns.guard ])
+                       else
+                         (((\\"test\\")
+                          [@e ]);
+                          ((if b > 20 then \\"ok\\" else c)
+                          [@ns.guard ])))
+                     [@ns.braces ][@ac ][@ns.guard ]) in
+                   ((if test then \\"hello\\" else ())[@ns.guard ]))))
+               [@ns.guard ])))
+         else \\"fail\\")
+       [@ns.guard ]))
+    else \\"fail\\")[@ns.guard ])"
+`;
+
 exports[`ident.js 1`] = `
 "let x = foo
 let y = Foo.Bar.x

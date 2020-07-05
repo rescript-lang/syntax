@@ -153,7 +153,7 @@ let processBracesAttr expr =
 let filterParsingAttrs attrs =
   List.filter (fun attr ->
     match attr with
-    | ({Location.txt = ("ns.ternary" | "ns.braces" | "bs" | "ns.iflet" | "ns.namedArgLoc")}, _) -> false
+    | ({Location.txt = ("ns.ternary" | "ns.braces" | "bs" | "ns.iflet" | "ns.guard" | "ns.namedArgLoc")}, _) -> false
     | _ -> true
   ) attrs
 
@@ -268,9 +268,22 @@ let isIfLetExpr expr = match expr with
     } when hasIfLetAttribute attrs -> true
   | _ -> false
 
+let rec hasGuardAttribute attrs =
+  match attrs with
+  | [] -> false
+  | ({Location.txt="ns.guard"},_)::_ -> true
+  | _::attrs -> hasGuardAttribute attrs
+
+let isGuardExpr expr = match expr with
+  | {
+      pexp_attributes = attrs;
+      pexp_desc = Pexp_match _ | Pexp_ifthenelse _
+    } when hasGuardAttribute attrs -> true
+  | _ -> false
+
 let hasAttributes attrs =
   List.exists (fun attr -> match attr with
-    | ({Location.txt = "bs" | "ns.ternary" | "ns.braces" | "ns.iflet"}, _) -> false
+    | ({Location.txt = "bs" | "ns.ternary" | "ns.braces" | "ns.iflet" | "ns.guard"}, _) -> false
     (* Remove the fragile pattern warning for iflet expressions *)
     | ({Location.txt="warning"}, PStr [{
       pstr_desc = Pstr_eval ({
@@ -426,13 +439,13 @@ let shouldInlineRhsBinaryExpr rhs = match rhs.pexp_desc with
 
 let filterPrinteableAttributes attrs =
   List.filter (fun attr -> match attr with
-    | ({Location.txt="bs" | "ns.ternary" | "ns.iflet"}, _) -> false
+    | ({Location.txt="bs" | "ns.ternary" | "ns.iflet" | "ns.guard"}, _) -> false
     | _ -> true
   ) attrs
 
 let partitionPrinteableAttributes attrs =
   List.partition (fun attr -> match attr with
-    | ({Location.txt="bs" | "ns.ternary" | "ns.iflet"}, _) -> false
+    | ({Location.txt="bs" | "ns.ternary" | "ns.iflet" | "ns.guard"}, _) -> false
     | _ -> true
   ) attrs
 

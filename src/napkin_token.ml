@@ -46,7 +46,7 @@ type t =
   | Lazy
   | Tilde
   | Question
-  | If | Else | For | In | To | Downto | While | Switch
+  | If | Else | For | In | To | Downto | While | Switch | Guard
   | When
   | EqualGreater | MinusGreater
   | External
@@ -130,6 +130,7 @@ let toString = function
   | Tilde -> "tilde"
   | Question -> "?"
   | If -> "if"
+  | Guard -> "guard"
   | Else -> "else"
   | For -> "for"
   | In -> "in"
@@ -177,6 +178,7 @@ let keywordTable = function
 | "assert" -> Assert
 | "lazy" -> Lazy
 | "if" -> If
+| "guard" -> Guard
 | "else" -> Else
 | "for" -> For
 | "in" -> In
@@ -204,7 +206,7 @@ let keywordTable = function
 
 let isKeyword = function
   | True | False | Open | Let | Rec | And | As
-  | Exception | Assert | Lazy | If | Else | For | In | To
+  | Exception | Assert | Lazy | If | Guard | Else | For | In | To
   | Downto | While | Switch | When | External | Typ | Private
   | Mutable | Constraint | Include | Module | Of
   | Land | Lor | List | With

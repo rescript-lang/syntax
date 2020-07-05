@@ -2759,6 +2759,32 @@ and printExpression (e : Parsetree.expression) cmtTbl =
     ]
   | Pexp_setfield (expr1, longidentLoc, expr2) ->
     printSetFieldExpr e.pexp_attributes expr1 longidentLoc expr2 e.pexp_loc cmtTbl
+  | Pexp_ifthenelse (ifExpr, thenExpr, elseExpr) when ParsetreeViewer.isGuardExpr e ->
+    let condition = if ParsetreeViewer.isBlockExpr ifExpr then
+      printExpressionBlock ~braces:true ifExpr cmtTbl
+    else
+      let doc = printExpressionWithComments ifExpr cmtTbl in
+      match Parens.expr ifExpr with
+      | Parens.Parenthesized -> addParens doc
+      | Braced braces  -> printBraces doc ifExpr braces
+      | Nothing -> doc
+    in
+    let elseDoc = match elseExpr with
+      | None -> Doc.nil
+      | Some expr -> Doc.concat [
+        Doc.text "else ";
+        printExpressionBlock ~braces:true expr cmtTbl;
+      ]
+    in
+    Doc.concat [
+      printAttributes e.pexp_attributes cmtTbl;
+      Doc.text "guard ";
+      condition;
+      Doc.space;
+      elseDoc;
+      Doc.line;
+      printExpressionBlock ~braces:false thenExpr cmtTbl;
+    ]
   | Pexp_ifthenelse (_ifExpr, _thenExpr, _elseExpr) when ParsetreeViewer.isTernaryExpr e ->
     let (parts, alternate) = ParsetreeViewer.collectTernaryParts e in
     let ternaryDoc = match parts with
@@ -3029,6 +3055,32 @@ and printExpression (e : Parsetree.expression) cmtTbl =
       exprDoc;
       Doc.text " catch ";
       printCases cases cmtTbl;
+    ]
+  | Pexp_match (conditionExpr, [{
+      pc_lhs = pattern;
+      pc_guard = None;
+      pc_rhs = thenExpr;
+    }; {
+      pc_rhs = elseExpr
+    }]) when ParsetreeViewer.isGuardExpr e ->
+    let patternDoc = printPattern pattern cmtTbl in
+    let conditionDoc = printExpressionWithComments conditionExpr cmtTbl in
+    let elseDocs = match elseExpr with
+      | {pexp_desc = Pexp_construct ({txt = Longident.Lident "()"}, _)} -> Doc.nil
+      | _ -> Doc.concat [
+        Doc.text " else ";
+        printExpressionBlock ~braces:true elseExpr cmtTbl
+      ]
+    in
+    Doc.concat [
+      printAttributes e.pexp_attributes cmtTbl;
+      Doc.text "guard let ";
+      patternDoc;
+      Doc.text " = ";
+      conditionDoc;
+      elseDocs;
+      Doc.line;
+      printExpressionBlock ~braces:false thenExpr cmtTbl;
     ]
   | Pexp_match (_, [_;_]) when ParsetreeViewer.isIfLetExpr e ->
     let (ifs, elseExpr) = ParsetreeViewer.collectIfExpressions e in

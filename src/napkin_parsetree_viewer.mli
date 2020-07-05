@@ -67,6 +67,7 @@ val hasAttributes: Parsetree.attributes -> bool
 val isArrayAccess: Parsetree.expression -> bool
 val isTernaryExpr: Parsetree.expression -> bool
 val isIfLetExpr: Parsetree.expression -> bool
+val isGuardExpr: Parsetree.expression -> bool
 
 val collectTernaryParts: Parsetree.expression -> ((Parsetree.expression * Parsetree.expression) list * Parsetree.expression)
 

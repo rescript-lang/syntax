@@ -913,6 +913,25 @@ comment
 "
 `;
 
+exports[`guard.res 1`] = `
+"let safeDivideZero = (num, denom) => {
+  guard /* i1 */ denom /* i2 */ !== /* i3 */ 0 /* i4 */ else {
+    0
+  }
+  // t5
+
+  guard let Some(
+    x,
+  ) = /* i6 */ /* i7 */ /* i8 */ /* i9 */ /* i10 */ foo() /* i12 */ else {
+    \\"return\\"
+  }
+  // t13
+
+  num /* i14 */ / /* i15 */ denom // t16
+}
+"
+`;
+
 exports[`ifLet.res 1`] = `
 "if let /* c0 */ /* c1 */ Some(
   /* c2 */ x /* c3 */,

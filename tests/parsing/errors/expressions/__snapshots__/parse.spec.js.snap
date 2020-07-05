@@ -261,6 +261,41 @@ Missing expression
 ========================================================"
 `;
 
+exports[`guard.js 1`] = `
+"=====Parsetree==========================================
+;;((if a
+    then (((if c then [%napkinscript.exprhole ] else ()))[@ns.guard ])
+    else ((if b then [%napkinscript.exprhole ] else ())[@ns.guard ]))
+  [@ns.guard ])
+=====Errors=============================================
+
+File \\"/syntax/tests/parsing/errors/expressions/guard.js\\", line 4, characters 5-32:
+
+
+2 │      guard b else {
+3 │          ()
+[31m4[0m │      }
+5 │      // }, missing a body
+6 │  }
+
+It seems that this expression block is empty
+
+
+File \\"/syntax/tests/parsing/errors/expressions/guard.js\\", line 10, characters 1-25:
+
+
+8 │  guard c else {
+9 │      ()
+[31m10[0m │  }
+11 │  // eof, missing a body
+
+It seems that this expression block is incomplete
+
+
+
+========================================================"
+`;
+
 exports[`if.js 1`] = `
 "=====Parsetree==========================================
 ;;if match then let a = 1 in a + 1

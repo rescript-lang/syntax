@@ -17,6 +17,7 @@ type t =
   | ExprArrayAccess
   | ExprArrayMutation
   | ExprIf
+  | ExprGuard
   | IfCondition | IfBranch | ElseBranch
   | TypeExpression
   | External
@@ -69,6 +70,7 @@ let toString = function
   | ExprUnary -> "a unary expression"
   | ExprBinaryAfterOp op -> "an expression after the operator \"" ^ Token.toString op  ^ "\""
   | ExprIf -> "an if expression"
+  | ExprGuard -> "a guard expression"
   | IfCondition -> "the condition of an if expression"
   | IfBranch -> "the true-branch of an if expression"
   | ElseBranch -> "the else-branch of an if expression"
@@ -169,7 +171,7 @@ let isExprStart = function
   | LessThan
   | Minus | MinusDot | Plus | PlusDot | Bang
   | Percent | At
-  | If | Switch | While | For | Assert | Lazy | Try -> true
+  | If | Guard | Switch | While | For | Assert | Lazy | Try -> true
   | _ -> false
 
 let isJsxAttributeStart = function
@@ -300,7 +302,7 @@ let isBlockExprStart = function
   | Token.At | Hash | Percent | Minus | MinusDot | Plus | PlusDot | Bang
   | True | False | Float _ | Int _ | String _ | Character _ | Lident _ | Uident _
   | Lparen | List | Lbracket | Lbrace | Forwardslash | Assert
-  | Lazy | If | For | While | Switch | Open | Module | Exception | Let
+  | Lazy | If | Guard | For | While | Switch | Open | Module | Exception | Let
   | LessThan | Backtick | Try | Underscore -> true
   | _ -> false
 

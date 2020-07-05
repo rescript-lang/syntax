@@ -95,6 +95,8 @@ let explain t =
         begin match breadcrumbs, t with
         | (ExprBlock, _) :: _, Rbrace ->
           "It seems that this expression block is empty"
+        | (ExprBlock, _) :: _, Eof ->
+          "It seems that this expression block is incomplete"
         | (ExprBlock, _) :: _, Bar -> (* Pattern matching *)
           "Looks like there might be an expression missing here"
         | (ExprSetField, _) :: _, _ ->
