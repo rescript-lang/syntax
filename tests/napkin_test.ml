@@ -162,6 +162,11 @@ module OutcomePrinterTests = struct
       prerr_string "Unknown error while trying to print outcome tree";
       exit 1
 
+  (* `tests/oprint/oprint.res` will be read into memory and typechecked.
+   * The inferred signature (i.e. the type of the module `oprint.res`) will
+   * then be converted to the outcome tree.
+   * The outcome tree is printed to a string
+   * and stored in a snapshot `tests/oprint/oprint.res.snapshot` *)
   let run () =
     let testFileName = "tests/oprint/oprint.res" in
     let printedOutcomeTree =
