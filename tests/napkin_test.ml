@@ -1,3 +1,18 @@
+module IO = Napkin_io
+
+module Snapshot = struct
+  let take ~filename ~contents =
+    let snapFilename = filename ^ ".snapshot" in
+    if Sys.file_exists snapFilename then
+      ()
+    else
+      IO.writeFile ~filename:snapFilename ~contents
+    ;
+    print_endline (
+      "✅ " ^ filename
+    )
+end
+
 (* test printing of .res file*)
 let () =
   let filename = "./tests/api/resSyntax.res" in
@@ -81,5 +96,49 @@ let y: float
 |}
   )
 
+let () = print_endline "✅ multi printer api tests"
 
-let () = print_endline "Tests passed!"
+module OutcomePrinterTests = struct
+  let parseFile filename =
+    let result = Napkin_driver.parsingEngine.parseImplementation ~forPrinter:false ~filename in
+
+    if result.Napkin_driver.invalid then (
+      prerr_string (
+        Napkin_driver.parsingEngine.stringOfDiagnostics
+          ~source:(result.source) ~filename:result.filename result.diagnostics
+      );
+      exit 1
+    ) else
+     result.Napkin_driver.parsetree
+
+
+  let outcomeOfStructure structure =
+    Lazy.force Napkin_outcome_printer.setup;
+
+    Compmisc.init_path false;
+    let env = Compmisc.initial_env () in
+    try (
+      let (_typedStructure, signature, _newenv) =
+        Typemod.type_toplevel_phrase env structure in
+      signature
+      |> Printtyp.tree_of_signature
+      |> (!Oprint.out_signature) Format.str_formatter;
+      Format.flush_str_formatter()
+    ) with
+    | Typetexp.Error (_, _, err) ->
+      Typetexp.report_error env Format.str_formatter err;
+      prerr_string (Format.flush_str_formatter ());
+      exit 1;
+    | _ ->
+      prerr_string "Unknown error while trying to print outcome tree";
+      exit 1
+
+  let run () =
+    let testFileName = "tests/oprint/oprint.res" in
+    let printedOutcomeTree =
+      parseFile testFileName |> outcomeOfStructure
+    in
+    Snapshot.take ~filename:testFileName ~contents:printedOutcomeTree
+end
+
+let () = OutcomePrinterTests.run()
