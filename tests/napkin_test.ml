@@ -23,6 +23,7 @@ module Snapshot = struct
     match diff with
     | Some contents ->
       prerr_string ("❌ snapshot " ^ filename);
+      prerr_newline();
       prerr_string contents;
       exit 1
     | None ->
