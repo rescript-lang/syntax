@@ -1,17 +1,46 @@
 module IO = Napkin_io
 
 module Snapshot = struct
+  (* If set to true, will always create a new snapshot file.
+   * Previous snapshots will be overwritten *)
+  let forceUpdate = ref false
+
   let take ~filename ~contents =
+    (* snapshot filename, just append .snapshot *)
     let snapFilename = filename ^ ".snapshot" in
-    if Sys.file_exists snapFilename then
-      ()
-    else
-      IO.writeFile ~filename:snapFilename ~contents
-    ;
-    print_endline (
-      "✅ " ^ filename
-    )
+    let diff =
+      (* create the file when snapshot doesn't exist or we're force updating *)
+      if !forceUpdate || not (Sys.file_exists snapFilename) then (
+        IO.writeFile ~filename:snapFilename ~contents;
+        None
+      ) else (
+        (* snapshot file exists *)
+        let snapContents = IO.readFile ~filename:snapFilename in
+        (* poor man's diff algorithm *)
+        if contents = snapContents then None else Some snapContents
+      )
+    in
+    match diff with
+    | Some contents ->
+      prerr_string ("❌ snapshot " ^ filename);
+      prerr_string contents;
+      exit 1
+    | None ->
+      print_endline (
+        if !forceUpdate then
+          "✍️  updated snapshot " ^ filename
+        else
+          "✅ snapshot " ^ filename
+      )
 end
+
+let usage = "Usage: test.exe <options>\nOptions are:"
+
+let spec = [
+  ("-update-snapshot", Arg.Unit (fun () -> Snapshot.forceUpdate.contents <- true), "Update snapshots")
+]
+
+let () = Arg.parse spec (fun _ -> ()) usage
 
 (* test printing of .res file*)
 let () =
