@@ -66,9 +66,12 @@ let printMl ~isInterface ~filename =
 let printReason ~refmtPath ~isInterface ~filename =
   (* open a tempfile *)
   let (tempFilename, chan) =
+    (* refmt is just a prefix, `open_temp_file` takes care of providing a random name
+     * It tries 1000 times in the case of a name conflict.
+     * In practise this means that we shouldn't worry too much about filesystem races *)
     Filename.open_temp_file "refmt" (if isInterface then ".rei" else ".re") in
   close_out chan;
-  (* write the source code found in "filename" into the tempfile *)
+  (* Write the source code found in "filename" into the tempfile *)
   IO.writeFile ~filename:tempFilename ~content:(IO.readFile ~filename);
   let cmd = Printf.sprintf "%s --print=binary --in-place --interface=%b %s" refmtPath isInterface tempFilename in
   (* run refmt in-place in binary mode on the tempfile *)
