@@ -4,6 +4,7 @@ let numbersArray: array<int>
 let numbersTuple: (int, int, int, int, int)
 let numbersList: list<int>
 let add: (int, int) => int
+type s = string
 type user = {name: string, age: int}
 type user2 = {
   naaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaame: string,
@@ -15,6 +16,7 @@ module Diff = {
 }
 module Diff2 = Diff
 type rec tree<'value> =  Nil | Node(tree<'value>, 'value, tree<'value>)
+type intTree = tree<int>
 type rec tree2<'value> =
   | Niiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiil2
   | Noooooooooooooooooooooooooooooooooooode2(
@@ -32,3 +34,19 @@ type rec tree4<'value> =
       vaaaaaaaaaaaaaaaaaaaaalue: 'value,
       riiiiiiiiiiiiiiiiiiiiiiight: tree3<'value>,
     })
+type color = ..
+type color +=  Blue
+type color +=  Red | Green
+type color +=
+  | Blaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaack
+  | Oraaaaaaaaaaaaaaaaaaaaaaaaaaaaaaange
+  | Reeeeeeeeeeeeeeeeeeeed
+module Expr = {
+  type attr = ..
+  type attr += private  Str(string)
+  type attr +=  Int(int) | Float(float)
+}
+module User = {
+  type t = {name: string, age: int}
+}
+type userT = User.t = {name: string, age: int}
