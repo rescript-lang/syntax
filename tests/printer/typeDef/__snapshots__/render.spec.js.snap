@@ -275,6 +275,7 @@ type node<_, 'value> =
       mutable value: 'value,
       mutable updatedTime: float,
     }): node<root, 'value>
+
   | Derived({
       mutable cachedValue: 'value,
       parent: node<_, 'value>,

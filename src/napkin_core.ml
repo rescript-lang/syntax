@@ -4201,12 +4201,11 @@ and parseConstrDeclArgs p =
  and parseTypeConstructorDeclarationWithBar p =
   match p.Parser.token with
   | Bar ->
-    let startPos = p.Parser.startPos in
     Parser.next p;
-    Some (parseTypeConstructorDeclaration ~startPos p)
+    Some (parseTypeConstructorDeclaration p)
   | _ -> None
 
- and parseTypeConstructorDeclaration ~startPos p =
+ and parseTypeConstructorDeclaration p =
    Parser.leaveBreadcrumb p Grammar.ConstructorDeclaration;
    let attrs = parseAttributes p in
    match p.Parser.token with
@@ -4215,8 +4214,7 @@ and parseConstrDeclArgs p =
      Parser.next p;
      let (args, res) = parseConstrDeclArgs p in
      Parser.eatBreadcrumb p;
-     let loc = mkLoc startPos p.prevEndPos in
-     Ast_helper.Type.constructor ~loc ~attrs ?res ~args (Location.mkloc uident uidentLoc)
+     Ast_helper.Type.constructor ~loc:uidentLoc ~attrs ?res ~args (Location.mkloc uident uidentLoc)
    | t ->
     Parser.err p (Diagnostics.uident t);
     Ast_helper.Type.constructor (Location.mknoloc "_")
@@ -4225,9 +4223,8 @@ and parseConstrDeclArgs p =
  and parseTypeConstructorDeclarations ?first p =
   let firstConstrDecl = match first with
   | None ->
-    let startPos = p.Parser.startPos in
     ignore (Parser.optional p Token.Bar);
-    parseTypeConstructorDeclaration ~startPos p
+    parseTypeConstructorDeclaration p
   | Some firstConstrDecl ->
     firstConstrDecl
   in

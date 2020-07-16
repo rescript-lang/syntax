@@ -1627,24 +1627,24 @@ exports[`typeDefinition.js 1`] = `
 > = /* before manifest */ string /* after */
 
 /* before */ type /* before name */ t /* after name */ =
-  // above Red
-  | Red // trailing Red
-  // above Blue
-  | Blue // trailing Blue
-  // above Green
-  | Green // trailing Green
+  | // above Red
+  Red // trailing Red
+  | // above Blue
+  Blue // trailing Blue
+  | // above Green
+  Green // trailing Green
 
 /* before */ type /* before name */ t /* after name */ = /* before manifest */ Colour.t /* after manifest */ =
-  // above Red
-  | /* before Red */ Red // trailing Red
-  // above Blue
-  | /* before Blue */ Blue // trailing Blue
-  // above Green
-  | /* before Green */ Green /* trailing Green */ // test
+  | // above Red
+  /* before Red */ Red // trailing Red
+  | // above Blue
+  /* before Blue */ Blue // trailing Blue
+  | // above Green
+  /* before Green */ Green /* trailing Green */ // test
 
 type color =
-  | /* before Red */ Red /* after Red */: /* before gadt */ color /* after gadt */
-  | /* before Blue */ Blue /* after Blue */: /* before gadt */ color /* after gadt */
+  | /* before Red */ Red /* after Red */ /* before gadt */ /* after gadt */: color
+  | /* before Blue */ Blue /* after Blue */: color /* after gadt */
 
 type color =
   /* before constr */ | Rgb(
@@ -1655,17 +1655,23 @@ type color =
 
 type color =
   | /* before constr */ Rgb /* after constructor */(
-      /* before red */ red /* after red */,
-      /* before green */ green /* after green */,
-      /* before blue */ blue /* after blue */,
-    )
+      red,
+      green,
+      blue,
+    ) /* after red */ /* after green */ /* after blue */
+/* before red */
+/* before green */
+/* before blue */
 
 type color =
   | /* before constr */ Rgb /* after constructor */({
-      /* before red */ red /* after red */: /* before typ */ someNumber /* after typ */,
-      /* before green */ green /* after green */: /* before typ */ someNumber /* after typ */,
-      /* before blue */ blue /* after blue */: /* before typ */ someNumber /* after typ */,
-    })
+      red: someNumber,
+      green: someNumber,
+      blue: someNumber,
+    }) /* after red */ /* before typ */ /* after typ */ /* after green */ /* before typ */ /* after typ */ /* after blue */ /* before typ */ /* after typ */
+/* before red */
+/* before green */
+/* before blue */
 
 type color = {
   /* before red */ red /* after red */: /* before typ */ someNumber /* after typ */,

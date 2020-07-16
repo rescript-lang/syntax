@@ -10,19 +10,19 @@ type elem<'t> =
   | Empty: elem<empty>
   | Element(renderable<('s, 'a) => 'sub>): elem<('s, 'a) => 'sub>
   | TwoElements(elem<'t1>, elem<'t2>): elem<('t1, 't2)>
-  /*
+  | /*
    * Not an ordered map yet, but should be.
    */
-  | ElementMap(list<elem<'t>>): elem<list<'t>>
+  ElementMap(list<elem<'t>>): elem<list<'t>>
 /**
  * Instance subtree. Mirrors the shape of JSX, instead of just being a List.
  */
 and subtree<'t> =
   | EmptyInstance: subtree<empty>
   | Instance(inst<('s, 'a) => 'sub>): subtree<('s, 'a) => 'sub>
-  /* Having TwoInstances mirror the fact that TwoElements requires sub
+  | /* Having TwoInstances mirror the fact that TwoElements requires sub
    * elements, was probably overkill. */
-  | TwoInstances(subtree<'t1>, subtree<'t2>): subtree<('t1, 't2)>
+  TwoInstances(subtree<'t1>, subtree<'t2>): subtree<('t1, 't2)>
   | InstanceMap(list<subtree<'t>>): subtree<list<'t>>
 and reducer<'t> = (inst<'t>, 'a) => 's constraint 't = ('s, 'a) => 'sub
 /*
@@ -31,8 +31,8 @@ and reducer<'t> = (inst<'t>, 'a) => 's constraint 't = ('s, 'a) => 'sub
  * static-by-default trees, you don't need to define a record beforehand.
  */
 and componentSpec<'t> =
-  /* Add more forms here for convenience */
-  | Reducer('s, elem<'sub>, reducer<'t>) constraint 't = ('s, 'a) => 'sub
+  | /* Add more forms here for convenience */
+  Reducer('s, elem<'sub>, reducer<'t>) constraint 't = ('s, 'a) => 'sub
 and self<'t> = {
   reduceEvent: 'e. ('e => 'a, 'e) => unit,
   /**
