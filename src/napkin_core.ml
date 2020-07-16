@@ -4886,8 +4886,7 @@ and parsePrimitives p =
   | primitives -> primitives
 
 (* external value-name : typexp = external-declaration *)
-and parseExternalDef ~attrs p =
-  let startPos = p.Parser.startPos in
+and parseExternalDef ~attrs ~startPos p =
   Parser.leaveBreadcrumb p Grammar.External;
   Parser.expect Token.External p;
   let (name, loc) = parseLident p in
@@ -4994,7 +4993,7 @@ and parseStructureItemRegion p =
       Some (Ast_helper.Str.type_extension ~loc ext)
     end
   | External ->
-    let externalDef = parseExternalDef ~attrs p in
+    let externalDef = parseExternalDef ~attrs ~startPos p in
     parseNewlineOrSemicolonStructure p;
     let loc = mkLoc startPos p.prevEndPos in
     Some (Ast_helper.Str.primitive ~loc externalDef)
@@ -5702,7 +5701,7 @@ and parseSignatureItemRegion p =
       Some (Ast_helper.Sig.type_extension ~loc ext)
     end
   | External ->
-    let externalDef = parseExternalDef ~attrs p in
+    let externalDef = parseExternalDef ~attrs ~startPos p in
     parseNewlineOrSemicolonSignature p;
     let loc = mkLoc startPos p.prevEndPos in
     Some (Ast_helper.Sig.value ~loc externalDef)
