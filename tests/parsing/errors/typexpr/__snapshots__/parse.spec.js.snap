@@ -227,6 +227,25 @@ Did you forget a \`:\` here? It signals the start of a type
 ========================================================"
 `;
 
+exports[`garbage.res 1`] = `
+"=====Parsetree==========================================
+external printName : name:unit -> unit = \\"printName\\"[@@bs.module
+                                                      \\"moduleName\\"]
+=====Errors=============================================
+
+File \\"/syntax/tests/parsing/errors/typexpr/garbage.res\\", line 2, characters 27-28:
+
+
+1 │  @bs.module(\\"moduleName\\")
+[31m2[0m │  external printName: (~name:[31m?[0m, unit) => unit = \\"printName\\"
+
+I'm not sure what to parse here when looking at \\"?\\".
+
+
+
+========================================================"
+`;
+
 exports[`typeConstructorArgs.js 1`] = `
 "=====Parsetree==========================================
 type nonrec 'a node = {
