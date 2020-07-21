@@ -1420,13 +1420,27 @@ and printLabelDeclaration (ld : Parsetree.label_declaration) cmtTbl =
     let doc = printIdentLike ld.pld_name.txt in
     printComments doc cmtTbl ld.pld_name.loc
   in
+  let typeDoc = match (ld.pld_name, ld.pld_type) with
+  | (
+      {txt = key},
+      {
+        ptyp_desc = Ptyp_constr (({txt = Lident constr}), []);
+        ptyp_attributes = [];
+      }
+    ) when key = constr ->
+    Doc.nil
+  | _ ->
+    Doc.concat [
+      Doc.text ": ";
+      printTypExpr ld.pld_type cmtTbl;
+    ]
+  in
   Doc.group (
     Doc.concat [
       attrs;
       mutableFlag;
       name;
-      Doc.text ": ";
-      printTypExpr ld.pld_type cmtTbl;
+      typeDoc;
     ]
   )
 

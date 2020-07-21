@@ -1173,6 +1173,11 @@ let () = switch [Color.red, Color.blue, Color.green] {
 "
 `;
 
+exports[`record.re 1`] = `
+"type r = {a, b}
+"
+`;
+
 exports[`recursiveType.ml 1`] = `
 "type rec tree = {\\"label\\": string, \\"left\\": option<tree>, \\"right\\": option<tree>}
 "
