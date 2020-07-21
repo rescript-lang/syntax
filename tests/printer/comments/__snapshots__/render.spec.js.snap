@@ -1710,7 +1710,7 @@ type t = {
 }
 
 type rec t = {
-  facing,
+  facing: facing,
   // frames
 }
 "

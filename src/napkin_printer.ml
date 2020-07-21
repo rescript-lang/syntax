@@ -1422,12 +1422,17 @@ and printLabelDeclaration (ld : Parsetree.label_declaration) cmtTbl =
   in
   let typeDoc = match (ld.pld_name, ld.pld_type) with
   | (
-      {txt = key},
+      {txt = key; loc = keyLoc},
       {
         ptyp_desc = Ptyp_constr (({txt = Lident constr}), []);
         ptyp_attributes = [];
+        ptyp_loc = typLoc
       }
-    ) when key = constr ->
+    ) when key = constr && keyLoc.loc_start.pos_cnum == typLoc.loc_start.pos_cnum ->
+    (* we detect punning by checking:
+     *  - is the key and the name of the constructor the same
+     *  - is the start of the location of the key and the constructor the same
+     * By doing this we make a difference between {a, b}  and {a: a, b: b} *)
     Doc.nil
   | _ ->
     Doc.concat [
