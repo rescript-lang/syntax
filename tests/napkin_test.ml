@@ -177,7 +177,17 @@ module OutcomePrinterTests = struct
 end
 
 module ParserApiTest = struct
-  let run () =
+  let makeDefault () =
+    let src = "   let x = 1\nlet y = 2\nlet z = 3" in
+    let parser = Napkin_parser.make  src "test.res" in
+    assert (parser.scanner.lnum == 1);
+    assert (parser.scanner.lineOffset == 0);
+    assert (parser.scanner.offset == 6);
+    assert (parser.scanner.rdOffset == 7);
+    assert (parser.token = Napkin_token.Let);
+    print_endline "✅ Parser make: initializes parser defaulting to line 1 "
+
+  let seedLineNumber () =
     let src = "let x = 1\nlet y = 2\nlet z = 3" in
     let parser = Napkin_parser.make ~line:2 src "test.res" in
     assert (parser.scanner.lnum == 2);
@@ -185,7 +195,11 @@ module ParserApiTest = struct
     assert (parser.scanner.offset == 3);
     assert (parser.scanner.rdOffset == 4);
     assert (parser.token = Napkin_token.Let);
-    print_endline "✅ Parser make: initializes scanner with line set to 2"
+    print_endline "✅ Parser make: initializes parser with line set to 2"
+
+  let run () =
+    makeDefault();
+    seedLineNumber()
 
 end
 
