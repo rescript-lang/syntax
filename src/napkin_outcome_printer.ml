@@ -95,7 +95,41 @@
 
    let rec printOutTypeDoc (outType: Outcometree.out_type) =
      match outType with
-     | Otyp_abstract | Otyp_variant _ (* don't support poly-variants atm *) | Otyp_open -> Doc.nil
+     | Otyp_abstract | Otyp_open -> Doc.nil
+     | Otyp_variant (nonGen, outVariant, closed, labels) ->
+       (* bool * out_variant * bool * (string list) option *)
+      let opening = match (closed, labels) with
+      | (true, None) (* [#A | #B] *) -> Doc.nil
+      | (false, None) (* [> #A | #B] *) -> Doc.greaterThan
+      | (true, Some []) (* [< #A | #B] *) -> Doc.lessThan
+      | (true, Some _) (* [< #A | #B > #X #Y ] *) -> Doc.lessThan
+      | (false, Some _) -> Doc.text "?" (* impossible!? ocaml seems to print ?, see oprint.ml in 4.06 *)
+      in
+      Doc.group (
+         Doc.concat [
+           if nonGen then Doc.text "_" else Doc.nil;
+           Doc.lbracket;
+           opening;
+           Doc.indent (
+             Doc.concat [
+               Doc.line;
+               printOutVariant outVariant
+             ]
+           );
+           begin match labels with
+           | None | Some [] -> Doc.nil
+           | Some tags ->
+             Doc.group (
+               Doc.concat [
+                 Doc.space;
+                 Doc.join ~sep:Doc.space (List.map Doc.text tags)
+               ]
+             )
+           end;
+           Doc.line;
+           Doc.rbracket;
+         ]
+       )
      | Otyp_alias (typ, aliasTxt) ->
        Doc.concat [
          printOutTypeDoc typ;
@@ -235,6 +269,51 @@
        ]
      | Otyp_module (_modName, _stringList, _outTypes) ->
          Doc.nil
+
+   and printOutVariant variant = match variant with
+     | Ovar_fields fields -> (* (string * bool * out_type list) list *)
+       Doc.join ~sep:Doc.line (
+        (*
+         * [< | #T([< u2]) & ([< u2]) & ([< u1])]  --> no ampersand
+         * [< | #S & ([< u2]) & ([< u2]) & ([< u1])] --> ampersand
+         *)
+         List.mapi (fun i (name, ampersand, types) ->
+           let needsParens = match types with
+           | [(Outcometree.Otyp_tuple _)] -> false
+           | _ -> true
+           in
+           Doc.concat [
+             if i > 0 then
+               Doc.text "| "
+             else
+               Doc.ifBreaks (Doc.text "| ") Doc.nil;
+             Doc.group (
+               Doc.concat [
+                 Doc.text ("#" ^ name);
+                 match types with
+                 | [] -> Doc.nil
+                 | types ->
+                   Doc.concat [
+                     if ampersand then Doc.text " & " else Doc.nil;
+                     Doc.indent (
+                       Doc.concat [
+                         Doc.join ~sep:(Doc.concat [Doc.text " &"; Doc.line])
+                          (List.map (fun typ ->
+                            let outTypeDoc = printOutTypeDoc typ in
+                            if needsParens then
+                              Doc.concat [Doc.lparen; outTypeDoc; Doc.rparen]
+                            else
+                              outTypeDoc
+                          ) types)
+                       ];
+                     );
+                   ]
+               ]
+             )
+           ]
+         ) fields
+       )
+     | Ovar_typ typ -> printOutTypeDoc typ
 
    and printObjectFields fields rest =
      let dots = match rest with
