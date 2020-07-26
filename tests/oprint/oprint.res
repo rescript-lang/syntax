@@ -176,3 +176,15 @@ module type Conjunctive = {
   let f: [< | #T([< u2]) & ([< u2]) & ([< u1])] => unit
   let g: [< | #S&([< u2]) & ([< u2]) & ([< u1])] => unit
 };
+
+// exotic idents in poly-vars
+type t20 = [#\"type"]
+type t21 = [#\"va r ia nt"]
+type t22 = [#\"Variant ⛰"]
+type \"let" = int
+type \"type" = [ #\"Point🗿"(\"let", float) ]
+
+type exoticUser = {
+  \"let": string,
+  \"type": float
+}

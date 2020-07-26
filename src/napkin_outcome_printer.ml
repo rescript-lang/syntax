@@ -1,4 +1,45 @@
-  module Doc = Napkin_doc
+module Doc = Napkin_doc
+module Token = Napkin_token
+
+type identifierStyle =
+  | ExoticIdent
+  | NormalIdent
+
+let classifyIdentContent ~allowUident txt =
+  let len = String.length txt in
+  let rec go i =
+    if i == len then NormalIdent
+    else
+      let c = String.unsafe_get txt i in
+      if i == 0 && not (
+        (allowUident && (c >= 'A' && c <= 'Z')) ||
+        (c >= 'a' && c <= 'z') || c = '_' || (c >= '0' && c <= '9')) then
+        ExoticIdent
+      else if not (
+           (c >= 'a' && c <= 'z')
+        || (c >= 'A' && c <= 'Z')
+        || c = '\''
+        || c = '_'
+        || (c >= '0' && c <= '9'))
+      then
+        ExoticIdent
+      else
+        go (i + 1)
+  in
+  if Token.isKeywordTxt txt then
+    ExoticIdent
+  else
+    go 0
+
+let printIdentLike ~allowUident txt =
+  match classifyIdentContent ~allowUident txt with
+  | ExoticIdent -> Doc.concat [
+      Doc.text "\\\"";
+      Doc.text txt;
+      Doc.text"\""
+    ]
+  | NormalIdent -> Doc.text txt
+
   (* Napkin doesn't have parenthesized identifiers.
    * We don't support custom operators. *)
    let parenthesized_ident _name = true
@@ -45,9 +86,9 @@
        print_ident fmt id2;
        Format.pp_print_char fmt ')' *)
 
-     let rec printOutIdentDoc (ident : Outcometree.out_ident) =
+     let rec printOutIdentDoc ?(allowUident=true) (ident : Outcometree.out_ident) =
        match ident with
-       | Oide_ident s -> Doc.text s
+       | Oide_ident s -> printIdentLike ~allowUident s
        | Oide_dot (ident, s) -> Doc.concat [
            printOutIdentDoc ident;
            Doc.dot;
@@ -129,7 +170,9 @@
              Doc.group (
                Doc.concat [
                  Doc.space;
-                 Doc.join ~sep:Doc.space (List.map Doc.text tags)
+                 Doc.join ~sep:Doc.space (
+                   List.map (fun lbl -> printIdentLike ~allowUident:true lbl) tags
+                 )
                ]
              )
            end;
@@ -144,7 +187,7 @@
          Doc.text aliasTxt
        ]
      | Otyp_constr (outIdent, []) ->
-       printOutIdentDoc outIdent
+       printOutIdentDoc ~allowUident:false outIdent
      | Otyp_manifest (typ1, typ2) ->
          Doc.concat [
            printOutTypeDoc typ1;
@@ -296,7 +339,8 @@
                Doc.ifBreaks (Doc.text "| ") Doc.nil;
              Doc.group (
                Doc.concat [
-                 Doc.text ("#" ^ name);
+                 Doc.text "#";
+                 printIdentLike ~allowUident:true name;
                  match types with
                  | [] -> Doc.nil
                  | types ->
@@ -423,7 +467,7 @@
      Doc.group (
        Doc.concat [
          if mut then Doc.text "mutable " else Doc.nil;
-         Doc.text name;
+         printIdentLike ~allowUident:false name;
          Doc.text ": ";
          printOutTypeDoc arg;
        ]
@@ -618,7 +662,7 @@
            Doc.concat [
              attrs;
              kw;
-             Doc.text outTypeDecl.otype_name;
+             printIdentLike ~allowUident:false outTypeDecl.otype_name;
              typeParams;
              kind
            ]
@@ -752,7 +796,7 @@
      Doc.group (
        Doc.concat [
          Doc.text "type ";
-         Doc.text outExt.oext_type_name;
+         printIdentLike ~allowUident:false outExt.oext_type_name;
          typeParams;
          Doc.text " += ";
          Doc.line;
@@ -791,7 +835,7 @@
      Doc.group (
        Doc.concat [
          Doc.text "type ";
-         Doc.text typeExtension.otyext_name;
+         printIdentLike ~allowUident:false typeExtension.otyext_name;
          typeParams;
          Doc.text " += ";
          if typeExtension.otyext_private = Asttypes.Private then
