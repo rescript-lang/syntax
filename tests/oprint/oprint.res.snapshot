@@ -52,7 +52,7 @@ module User = {
 }
 type userT = User.t = {name: string, age: int}
 type veeeeeeeeeeeeeeeeeeeeeeeeryLongTypeAlias = string
-type rgb = [ #Blue | #Green | #Red ]
+type rgb = [#Blue | #Green | #Red]
 type longRgb = [
   | #Blueeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
   | #Greeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeen
@@ -64,35 +64,35 @@ type longRgb = [
       veeeeeeeeeeeeeeeeeeeeeeeeryLongTypeAlias,
     )
 ]
-let red: [> #Red ]
+let red: [> #Red]
 let red2: rgb
-let int: [> #Int(int) ]
-let int2: [> #Int(string, bool) ]
-let int3: [> #Int(float, float, float) ]
-type customRgb = [ #Rbg(float, float, float) ]
-let color: [> #Rbg(float, float, float) ]
-let tupleAsSingleArg: [> #tuple(float, float) ]
-let oneArg: [> #One(string) ]
-type redColor = [ #Red ]
-type greenColor = [ #Green ]
-type blueColor = [ #Blue ]
-type rgbColor = [ #Blue | #Green | #Red ]
+let int: [> #Int(int)]
+let int2: [> #Int(string, bool)]
+let int3: [> #Int(float, float, float)]
+type customRgb = [#Rbg(float, float, float)]
+let color: [> #Rbg(float, float, float)]
+let tupleAsSingleArg: [> #tuple(float, float)]
+let oneArg: [> #One(string)]
+type redColor = [#Red]
+type greenColor = [#Green]
+type blueColor = [#Blue]
+type rgbColor = [#Blue | #Green | #Red]
 module M = {
-  type data = [ #IntData(int) | #StrData(string) ]
+  type data = [#IntData(int) | #StrData(string)]
   let stringOfData: data => string
 }
 let y: string
-type rgbw = [ #Blue | #Green | #Red | #White ]
-let id: [> #Blue | #Green | #Red ] as 'a => 'a
-let id: [> rgb ] as 'a => 'a
-type point = [ #Point(float, float) ]
-type shape = [ #Circle(point, float) | #Rectangle(point, point) ]
+type rgbw = [#Blue | #Green | #Red | #White]
+let id: [> #Blue | #Green | #Red] as 'a => 'a
+let id: [> rgb] as 'a => 'a
+type point = [#Point(float, float)]
+type shape = [#Circle(point, float) | #Rectangle(point, point)]
 let pi: float
 let computeArea: shape => float
 let shoelaceFormula: (
-  [< #Point(float, float) ],
-  [< #Point(float, float) ],
-  [< #Point(float, float) ],
+  [< #Point(float, float)],
+  [< #Point(float, float)],
+  [< #Point(float, float)],
 ) => float
 type shapePlus = [
   | #Circle(point, float)
@@ -100,15 +100,15 @@ type shapePlus = [
   | #Triangle(point, point, point)
 ]
 let computeAreaPlus: shapePlus => float
-let top: [> #Point(float, float) ]
-let left: [> #Point(float, float) ]
-let right: [> #Point(float, float) ]
-let circ: [> #Circle([> #Point(float, float) ], float) ]
+let top: [> #Point(float, float)]
+let left: [> #Point(float, float)]
+let right: [> #Point(float, float)]
+let circ: [> #Circle([> #Point(float, float)], float)]
 let tri: [>
   | #Triangle(
-      [> #Point(float, float) ],
-      [> #Point(float, float) ],
-      [> #Point(float, float) ],
+      [> #Point(float, float)],
+      [> #Point(float, float)],
+      [> #Point(float, float)],
     )
 ]
 let x: float
@@ -125,15 +125,15 @@ let basic_color_to_int: [<
 ] => int
 let color_to_int: [<
   | #Basic(
-      [< #Black | #Blue | #Cyan | #Green | #Magenta | #Red | #White | #Yellow ],
-      [< #Bold | #Regular ],
+      [< #Black | #Blue | #Cyan | #Green | #Magenta | #Red | #White | #Yellow],
+      [< #Bold | #Regular],
     )
   | #Gray(int)
   | #RGB(int, int, int)
 ] => int
 module type Conjunctive = {
-  type u1 = [ #A | #B ]
-  type u2 = [ #A | #B | #C ]
-  let f: [< #T([< u2 ]) & ([< u2 ]) & ([< u1 ]) ] => unit
-  let g: [< #S & ([< u2 ]) & ([< u2 ]) & ([< u1 ]) ] => unit
+  type u1 = [#A | #B]
+  type u2 = [#A | #B | #C]
+  let f: [< #T([< u2]) & ([< u2]) & ([< u1])] => unit
+  let g: [< #S & ([< u2]) & ([< u2]) & ([< u1])] => unit
 }

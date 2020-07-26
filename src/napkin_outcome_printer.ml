@@ -99,20 +99,27 @@
      | Otyp_variant (nonGen, outVariant, closed, labels) ->
        (* bool * out_variant * bool * (string list) option *)
       let opening = match (closed, labels) with
-      | (true, None) (* [#A | #B] *) -> Doc.nil
-      | (false, None) (* [> #A | #B] *) -> Doc.greaterThan
-      | (true, Some []) (* [< #A | #B] *) -> Doc.lessThan
-      | (true, Some _) (* [< #A | #B > #X #Y ] *) -> Doc.lessThan
-      | (false, Some _) -> Doc.text "?" (* impossible!? ocaml seems to print ?, see oprint.ml in 4.06 *)
+      | (true, None) -> (* [#A | #B] *) Doc.softLine
+      | (false, None) ->
+        (* [> #A | #B] *)
+        Doc.concat [Doc.greaterThan; Doc.line]
+      | (true, Some []) ->
+        (* [< #A | #B] *)
+        Doc.concat [Doc.lessThan; Doc.line]
+      | (true, Some _) ->
+        (* [< #A | #B > #X #Y ] *)
+        Doc.concat [Doc.lessThan; Doc.line]
+      | (false, Some _) ->
+       (* impossible!? ocaml seems to print ?, see oprint.ml in 4.06 *)
+        Doc.concat [Doc.text "?"; Doc.line]
       in
       Doc.group (
          Doc.concat [
            if nonGen then Doc.text "_" else Doc.nil;
            Doc.lbracket;
-           opening;
            Doc.indent (
              Doc.concat [
-               Doc.line;
+               opening;
                printOutVariant outVariant
              ]
            );
@@ -126,7 +133,7 @@
                ]
              )
            end;
-           Doc.line;
+           Doc.softLine;
            Doc.rbracket;
          ]
        )
