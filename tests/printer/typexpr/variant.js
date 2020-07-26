@@ -61,3 +61,9 @@ module type Conjunctive = {
   let f: [< | #T([< u2]) & ([< u2]) & ([< u1])] => unit
   let g: [< | #S&([< u2]) & ([< u2]) & ([< u1])] => unit;
 }
+
+type x = [
+  #Fooooooooooooooooooooooooooooooooooooooo
+  | #Baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaar
+  | #Baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaz
+]
