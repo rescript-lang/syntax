@@ -1,8 +1,13 @@
 module Token = Napkin_token
 module Grammar = Napkin_grammar
-
-type t
 type category
+type t = {
+  filename: string;
+  startPos: Lexing.position;
+  endPos: Lexing.position;
+  category: category;
+}
+
 type report
 
 type reportStyle = Pretty | Plain

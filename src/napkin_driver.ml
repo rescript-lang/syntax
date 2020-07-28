@@ -93,11 +93,16 @@ let parse_implementation sourcefile =
     parsingEngine.parseImplementation ~forPrinter:false ~filename:sourcefile
   in
   let () = if parseResult.invalid then
+    let loc = 
+      match parseResult.diagnostics with 
+      | (x : Napkin_diagnostics.t) :: _ -> 
+        Location.{loc_start = x.startPos; loc_end = x.endPos; loc_ghost = false}
+      | _ -> Location.none in 
     let msg =
       let style = Napkin_diagnostics.parseReportStyle "" in
       Napkin_diagnostics.stringOfReport ~style parseResult.diagnostics parseResult.source
     in
-    raise (Location.Error (Location.error msg))
+    Location.raise_errorf ~loc "%s" msg
   in
   parseResult.parsetree
   [@@raises Location.Error]
@@ -106,11 +111,17 @@ let parse_interface sourcefile =
   Location.input_name := sourcefile;
   let parseResult = parsingEngine.parseInterface ~forPrinter:false ~filename:sourcefile in
   let () = if parseResult.invalid then
+      let loc = 
+        match parseResult.diagnostics with 
+        | (x : Napkin_diagnostics.t) :: _ -> 
+          Location.{loc_start = x.startPos; loc_end = x.endPos; loc_ghost = false}
+        | _ -> Location.none in 
+
     let msg =
       let style = Napkin_diagnostics.parseReportStyle "" in
       Napkin_diagnostics.stringOfReport ~style parseResult.diagnostics parseResult.source
     in
-    raise (Location.Error (Location.error msg))
+    Location.raise_errorf ~loc "%s" msg
   in
   parseResult.parsetree
   [@@raises Location.Error]
