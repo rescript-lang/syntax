@@ -24,6 +24,8 @@
   color (grey). So we emulate the right coloring logic by copy pasting how BS'
   OCaml does it.
 *)
+let a = 1 + 1.
+
 module Color = struct
   (* use ANSI color codes, see https://en.wikipedia.org/wiki/ANSI_escape_code *)
   type color =
