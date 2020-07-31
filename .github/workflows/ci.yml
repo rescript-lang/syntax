@@ -11,30 +11,32 @@ jobs:
     runs-on: macos-latest
 
     steps:
-    - uses: actions/checkout@v2
+      - uses: actions/checkout@v2
 
-    - name: Cache OCaml's opam
-      uses: actions/cache@v2.1.0
-      with:
-        path: ~/.opam
-        key: macos-latest-ocaml-4.06.1
+      - name: Cache OCaml's opam
+        uses: actions/cache@v2.1.0
+        id: cache-opam
+        with:
+          path: ~/.opam
+          key: macos-latest-ocaml-4.06.1
 
-    - name: Cache npm
-      uses: actions/cache@v2.1.0
-      with:
-        path: ~/.npm
-        key: macos-latest-node-14.4.0-${{hashFiles('package-lock.json')}}
+      - name: Cache npm
+        uses: actions/cache@v2.1.0
+        with:
+          path: ~/.npm
+          key: macos-latest-node-14.4.0-${{hashFiles('package-lock.json')}}
 
-    - name: Use OCaml
-      uses: avsm/setup-ocaml@v1
-      with:
-        ocaml-version: 4.06.1
+      - name: Use OCaml
+        if: steps.cache-opam.outputs.cache-hit != 'true'
+        uses: avsm/setup-ocaml@v1
+        with:
+          ocaml-version: 4.06.1
 
-    - name: Use Node.js
-      uses: actions/setup-node@v1
-      with:
-        node-version: 14.4.0
+      - name: Use Node.js
+        uses: actions/setup-node@v1
+        with:
+          node-version: 14.4.0
 
-    - run: npm install
+      - run: npm install
 
-    - run: eval $(opam env) && make test
+      - run: eval $(opam env) && make test
