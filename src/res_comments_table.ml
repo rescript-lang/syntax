@@ -5,15 +5,19 @@ type t = {
   leading: (Location.t, Comment.t list) Hashtbl.t;
   inside: (Location.t, Comment.t list) Hashtbl.t;
   trailing: (Location.t, Comment.t list) Hashtbl.t;
+  comments: Comment.t array;
+  mutable currentCommentIndex: int;
 }
 
-let make () = {
+let make ~comments () = {
   leading = Hashtbl.create 100;
   inside = Hashtbl.create 100;
   trailing = Hashtbl.create 100;
+  comments = Array.of_list comments;
+  currentCommentIndex = 0;
 }
 
-let empty = make ()
+let empty = make ~comments:[] ()
 
 let log t =
   let open Location in

@@ -4998,7 +4998,7 @@ and printExtensionConstructor (constr : Parsetree.extension_constructor) cmtTbl 
   ]
 
 let printImplementation ~width (s: Parsetree.structure) ~comments =
-  let cmtTbl = CommentTable.make () in
+  let cmtTbl = CommentTable.make ~comments () in
   CommentTable.walkStructure s cmtTbl comments;
   (* CommentTable.log cmtTbl; *)
   let doc = printStructure s cmtTbl in
@@ -5006,6 +5006,6 @@ let printImplementation ~width (s: Parsetree.structure) ~comments =
   Doc.toString ~width doc ^ "\n"
 
 let printInterface ~width (s: Parsetree.signature) ~comments =
-  let cmtTbl = CommentTable.make () in
+  let cmtTbl = CommentTable.make ~comments () in
   CommentTable.walkSignature s cmtTbl comments;
   Doc.toString ~width (printSignature s cmtTbl) ^ "\n"

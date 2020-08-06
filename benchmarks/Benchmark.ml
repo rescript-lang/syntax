@@ -263,8 +263,8 @@ end = struct
       let ast = ResParser.parseImplementation p in
       (fun _ ->
         let _ = Sys.opaque_identity (
-          let cmtTbl = CommentTable.make () in
           let comments = List.rev p.Parser.comments in
+          let cmtTbl = CommentTable.make ~comments:comments () in
           let () = CommentTable.walkStructure ast cmtTbl comments in
           Doc.toString ~width:80 (Printer.printStructure ast cmtTbl)
         ) in ()
