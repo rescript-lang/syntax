@@ -5,6 +5,43 @@ module Token = Res_token
 module Parens = Res_parens
 module ParsetreeViewer = Res_parsetree_viewer
 
+let comesBefore (loc1 : Location.t) (loc2 : Location.t) =
+  (* assuming no overlap *)
+  let open Location in
+  loc1.loc_end.pos_lnum < loc2.loc_start.pos_lnum ||
+  (loc1.loc_end.pos_lnum == loc2.loc_start.pos_lnum &&
+   loc1.loc_end.pos_cnum <= loc2.loc_start.pos_cnum)
+
+let getCommentRangeBefore ~before:start (cmtTbl : CommentTable.t) =
+  let len = Array.length cmtTbl.comments in
+  let startIndex = cmtTbl.currentCommentIndex in
+  let rec loop count =
+    if len = 0 then 0
+    else if startIndex + count == len then count
+    else
+      let comment = Array.unsafe_get cmtTbl.comments (startIndex + count) in
+      if comesBefore (Comment.loc comment) start then
+        loop (count + 1)
+      else
+        count
+  in
+  loop 0
+
+let getAdjacentCommentRangeAfter ~after:loc (cmtTbl : CommentTable.t) =
+  let len = Array.length cmtTbl.comments in
+  let startIndex = cmtTbl.currentCommentIndex in
+  let rec loop count prevLoc =
+    if len == 0 then 0
+    else if startIndex + count == len then count
+    else
+      let comment = Array.unsafe_get cmtTbl.comments (startIndex + count) in
+      if (Comment.prevTokEndPos comment).pos_cnum == prevLoc.Location.loc_end.pos_cnum then
+        loop (count + 1) (Comment.loc comment)
+      else
+        count
+  in
+  loop 0 loc
+
 let addParens doc =
   Doc.group (
     Doc.concat [
@@ -182,6 +219,59 @@ let printCommentsInside cmtTbl loc =
       loop [] comments
     )
 
+let printLeadingCommentsFast tbl (loc : Location.t) =
+  match getCommentRangeBefore ~before:loc tbl with
+  | 0 -> Doc.nil
+  | 1 ->
+    (* fast path, in general there's only one comment on each node *)
+    let comment = Array.unsafe_get tbl.comments tbl.currentCommentIndex in
+    tbl.currentCommentIndex <- tbl.currentCommentIndex + 1;
+    let diff = loc.loc_start.pos_lnum - (Comment.loc comment).loc_end.pos_lnum in
+    let separator =
+      if Comment.isSingleLineComment comment then
+        if diff > 1 then Doc.hardLine else Doc.nil
+      else if diff == 0 then
+       Doc.space
+      else if diff > 1 then Doc.concat [Doc.hardLine; Doc.hardLine]
+      else
+       Doc.hardLine
+    in
+    Doc.concat [
+      printLeadingComment comment;
+      separator;
+    ]
+  | count ->
+    let currentIndex = tbl.currentCommentIndex in
+    let docs = ref [] in
+    let lastIndex = currentIndex + count - 1 in
+    for i = currentIndex to lastIndex do
+      let comment = Array.unsafe_get tbl.comments i in
+      if i < lastIndex then (
+        let nextComment = Some (Array.unsafe_get tbl.comments (i + 1)) in
+        docs.contents <- (printLeadingComment ?nextComment comment)::docs.contents
+      ) else (
+        let cmtDoc =
+          let diff = loc.loc_start.pos_lnum - (Comment.loc comment).loc_end.pos_lnum in
+          let separator =
+            if Comment.isSingleLineComment comment then
+              if diff > 1 then Doc.hardLine else Doc.nil
+            else if diff == 0 then
+             Doc.space
+            else if diff > 1 then Doc.concat [Doc.hardLine; Doc.hardLine]
+            else
+             Doc.hardLine
+          in
+          Doc.concat [
+            printLeadingComment comment;
+            separator;
+          ]
+        in
+        docs.contents <- cmtDoc::docs.contents
+      )
+    done;
+    tbl.currentCommentIndex <- tbl.currentCommentIndex + count;
+    Doc.concat (List.rev docs.contents)
+
 let printLeadingComments node tbl loc =
   let rec loop acc comments =
     match comments with
@@ -243,9 +333,38 @@ let printTrailingComments node tbl loc =
       cmtsDoc;
     ]
 
+let printTrailingCommentsFast tbl loc =
+  match getAdjacentCommentRangeAfter ~after:loc tbl with
+  | 0 -> Doc.nil
+  | 1 ->
+    (* fast path, in general there's only one comment on each node *)
+    let comment = Array.unsafe_get tbl.comments tbl.currentCommentIndex in
+    tbl.currentCommentIndex <- tbl.currentCommentIndex + 1;
+    printTrailingComment loc comment
+  | count ->
+    let currentIndex = tbl.currentCommentIndex in
+    let lastIndex = currentIndex + count - 1 in
+    let docs = ref [] in
+    for i = currentIndex to lastIndex do
+      let comment = Array.unsafe_get tbl.comments i in
+      let cmtDoc = printTrailingComment loc comment in
+      docs.contents <- cmtDoc::docs.contents
+    done;
+    tbl.currentCommentIndex <- tbl.currentCommentIndex + count;
+    Doc.concat (List.rev docs.contents)
+
 let printComments doc (tbl: CommentTable.t) loc =
   let docWithLeadingComments = printLeadingComments doc tbl.leading loc in
   printTrailingComments docWithLeadingComments tbl.trailing loc
+
+let printCommentsFast doc tbl loc =
+  let leadingComments = printLeadingCommentsFast tbl loc in
+  let trailingComments =  printTrailingCommentsFast tbl loc in
+  Doc.concat [
+    leadingComments;
+    doc;
+    trailingComments;
+  ]
 
 let printList ~getLoc ~nodes ~print ?(forceBreak=false) t =
   let rec loop (prevLoc: Location.t) acc nodes =
@@ -369,14 +488,24 @@ let printLident l = match l with
     ]
   | _ -> Doc.text("printLident: Longident.Lapply is not supported")
 
-let printLongidentLocation l cmtTbl =
-  let doc = printLongident l.Location.txt in
-  printComments doc cmtTbl l.loc
+let printLongidentLocation (l: Longident.t Asttypes.loc) cmtTbl =
+  let leadingComments = printLeadingCommentsFast cmtTbl l.loc in
+  let trailingComments = printTrailingCommentsFast cmtTbl l.loc in
+  Doc.concat [
+    leadingComments;
+    printLongident l.txt;
+    trailingComments;
+  ]
 
 (* Module.SubModule.x *)
 let printLidentPath path cmtTbl =
-  let doc = printLident path.Location.txt in
-  printComments doc cmtTbl path.loc
+  let leadingComments = printLeadingCommentsFast cmtTbl path.Asttypes.loc in
+  let trailingComments = printTrailingCommentsFast cmtTbl path.loc in
+  Doc.concat [
+    leadingComments;
+    printLident path.txt;
+    trailingComments;
+  ]
 
 (* Module.SubModule.x or Module.SubModule.X *)
 let printIdentPath path cmtTbl =
@@ -1447,6 +1576,7 @@ and printLabelDeclaration (ld : Parsetree.label_declaration) cmtTbl =
   )
 
 and printTypExpr (typExpr : Parsetree.core_type) cmtTbl =
+  let leadingComments = printLeadingCommentsFast cmtTbl typExpr.ptyp_loc in
   let renderedType = match typExpr.ptyp_desc with
   | Ptyp_any -> Doc.text "_"
   | Ptyp_var var -> Doc.concat [
@@ -1699,7 +1829,12 @@ and printTypExpr (typExpr : Parsetree.core_type) cmtTbl =
   | _ -> renderedType
   end
   in
-  printComments doc cmtTbl typExpr.ptyp_loc
+  let trailingComments = printTrailingCommentsFast cmtTbl typExpr.ptyp_loc in
+  Doc.concat [
+    leadingComments;
+    doc;
+    trailingComments;
+  ]
 
 and printBsObjectSugar ~inline fields openFlag cmtTbl =
   let doc = match fields with
@@ -2027,6 +2162,7 @@ and printExtension ~atModuleLvl (stringLoc, payload) cmtTbl =
   )
 
 and printPattern (p : Parsetree.pattern) cmtTbl =
+  let leadingComments = printLeadingCommentsFast cmtTbl p.ppat_loc in
   let patternWithoutAttributes = match p.ppat_desc with
   | Ppat_any -> Doc.text "_"
   | Ppat_var var -> printIdentLike var.txt
@@ -2039,8 +2175,7 @@ and printPattern (p : Parsetree.pattern) cmtTbl =
           Doc.concat([
             Doc.softLine;
             Doc.join ~sep:(Doc.concat [Doc.text ","; Doc.line])
-              (List.map (fun pat ->
-                printPattern pat cmtTbl) patterns)
+              (List.map (fun pat -> printPattern pat cmtTbl) patterns)
           ])
         );
         Doc.trailingComma;
@@ -2093,8 +2228,7 @@ and printPattern (p : Parsetree.pattern) cmtTbl =
     let children = Doc.concat([
       if shouldHug then Doc.nil else Doc.softLine;
       Doc.join ~sep:(Doc.concat [Doc.text ","; Doc.line])
-        (List.map (fun pat ->
-          printPattern pat cmtTbl) patterns);
+        (List.map (fun pat -> printPattern pat cmtTbl) patterns);
       begin match tail.Parsetree.ppat_desc with
       | Ppat_construct({txt = Longident.Lident "[]"}, _) -> Doc.nil
       | _ ->
@@ -2190,7 +2324,7 @@ and printPattern (p : Parsetree.pattern) cmtTbl =
         printCommentsInside cmtTbl loc;
         Doc.rparen;
       ]
-    (* Some((1, 2) *)
+    (* Some((1, 2)) *)
     | Some({ppat_desc = Ppat_tuple [{ppat_desc = Ppat_tuple _} as arg]}) ->
       Doc.concat [
         Doc.lparen;
@@ -2320,22 +2454,25 @@ and printPattern (p : Parsetree.pattern) cmtTbl =
 
    (* Note: module(P : S) is represented as *)
    (* Ppat_constraint(Ppat_unpack, Ptyp_package) *)
-  | Ppat_constraint ({ppat_desc = Ppat_unpack stringLoc}, {ptyp_desc = Ptyp_package packageType; ptyp_loc}) ->
+  | Ppat_constraint ({ppat_desc = Ppat_unpack stringLoc}, {ptyp_desc = Ptyp_package packageType; }) ->
+      let unpackLeadingComments = printLeadingCommentsFast cmtTbl stringLoc.loc in
+      let unpackTrailingComments = printTrailingCommentsFast cmtTbl stringLoc.loc in
       Doc.concat [
         Doc.text "module(";
-        printComments (Doc.text stringLoc.txt) cmtTbl stringLoc.loc;
+        unpackLeadingComments;
+        Doc.text stringLoc.txt;
+        unpackTrailingComments;
         Doc.text ": ";
-        printComments
-          (printPackageType ~printModuleKeywordAndParens:false packageType cmtTbl)
-          cmtTbl
-          ptyp_loc;
+        printPackageType ~printModuleKeywordAndParens:false packageType cmtTbl;
         Doc.rparen;
       ]
   | Ppat_constraint (pattern, typ) ->
+    let patternDoc = printPattern pattern cmtTbl in
+    let typDoc = printTypExpr typ cmtTbl in
     Doc.concat [
-      printPattern pattern cmtTbl;
+      patternDoc;
       Doc.text ": ";
-      printTypExpr typ cmtTbl;
+      typDoc;
     ]
 
    (* Note: module(P : S) is represented as *)
@@ -2343,7 +2480,9 @@ and printPattern (p : Parsetree.pattern) cmtTbl =
   | Ppat_unpack stringLoc ->
     Doc.concat [
       Doc.text "module(";
-      printComments (Doc.text stringLoc.txt) cmtTbl stringLoc.loc;
+      printLeadingCommentsFast cmtTbl stringLoc.loc;
+      Doc.text stringLoc.txt;
+      printTrailingCommentsFast cmtTbl stringLoc.loc;
       Doc.rparen;
     ]
   | Ppat_interval (a, b) ->
@@ -2364,7 +2503,12 @@ and printPattern (p : Parsetree.pattern) cmtTbl =
       ]
     )
   in
-  printComments doc cmtTbl p.ppat_loc
+  let trailingComments = printTrailingCommentsFast cmtTbl p.ppat_loc in
+  Doc.concat [
+    leadingComments;
+    doc;
+    trailingComments;
+  ]
 
 and printPatternRecordRow row cmtTbl =
   match row with
@@ -2389,7 +2533,7 @@ and printPatternRecordRow row cmtTbl =
         )
       ])
     ) in
-    printComments doc cmtTbl locForComments
+    printCommentsFast doc cmtTbl locForComments
 
 and printExpressionWithComments expr cmtTbl =
   let doc = printExpression expr cmtTbl in
