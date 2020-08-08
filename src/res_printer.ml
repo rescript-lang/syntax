@@ -366,6 +366,107 @@ let printCommentsFast doc tbl loc =
     trailingComments;
   ]
 
+let printListFast ~getLoc ~nodes ~print ?(forceBreak=false) tbl =
+  let rec loop (prevLoc: Location.t) acc nodes =
+    match nodes with
+    | [] -> (prevLoc, Doc.concat (List.rev acc))
+    | node::nodes ->
+      let nodeLoc = getLoc node in
+      (* 1| let a = ()
+       * 2|            --> check if we have a gap here
+       * 3| // comment
+       * 4| let b = ()
+       *)
+       let gapDoc =
+         let startPosCurrentNode =
+           (* What is the start of `let b = ()` in the example above?
+            * -> if there is a comment, line 3 with `// comment`
+            * -> if there aren't comments, line 4 `let b = ()` *)
+           match getCommentRangeBefore ~before:nodeLoc tbl with
+           | 0 -> nodeLoc.loc_start
+           | _ ->
+            let firstComment = Array.unsafe_get tbl.comments tbl.currentCommentIndex in
+            (Comment.loc firstComment).loc_start
+          in
+          (* Are thre one or more newlines between the current and previous node? *)
+          if startPosCurrentNode.pos_lnum - prevLoc.loc_end.pos_lnum > 1 then
+            Doc.hardLine
+          else
+            Doc.nil
+        in
+        let leadingComments = printLeadingCommentsFast tbl nodeLoc in
+        let nodeDoc = print node tbl in
+        let trailingComments = printLeadingCommentsFast tbl nodeLoc in
+        loop
+          nodeLoc
+          (trailingComments::nodeDoc::leadingComments::gapDoc::Doc.hardLine::acc)
+          nodes
+  in
+  match nodes with
+  | [] -> Doc.nil
+  | node::nodes ->
+    let nodeLoc = getLoc node in
+    let leadingComments = printLeadingCommentsFast tbl nodeLoc in
+    let nodeDoc = print node tbl in
+    let trailingComments = printLeadingCommentsFast tbl nodeLoc in
+    let (lastLoc, docs) = loop nodeLoc [trailingComments; nodeDoc; leadingComments] nodes in
+    let forceBreak =
+      forceBreak ||
+      nodeLoc.loc_start.pos_lnum != lastLoc.loc_end.pos_lnum
+    in
+    Doc.breakableGroup ~forceBreak docs
+
+let printListiFast ~getLoc ~nodes ~print ?(forceBreak=false) tbl =
+  let rec loop i (prevLoc: Location.t) acc nodes =
+    match nodes with
+    | [] -> (prevLoc, Doc.concat (List.rev acc))
+    | node::nodes ->
+      let nodeLoc = getLoc node in
+      (* 1| let a = ()
+       * 2|            --> check if we have a gap here
+       * 3| // comment
+       * 4| let b = ()
+       *)
+       let gapDoc =
+         let startPosCurrentNode =
+           (* What is the start of `let b = ()` in the example above?
+            * -> if there is a comment, line 3 with `// comment`
+            * -> if there aren't comments, line 4 `let b = ()` *)
+           match getCommentRangeBefore ~before:nodeLoc tbl with
+           | 0 -> nodeLoc.loc_start
+           | _ ->
+            let firstComment = Array.unsafe_get tbl.comments tbl.currentCommentIndex in
+            (Comment.loc firstComment).loc_start
+          in
+          (* Are thre one or more newlines between the current and previous node? *)
+          if startPosCurrentNode.pos_lnum - prevLoc.loc_end.pos_lnum > 1 then
+            Doc.hardLine
+          else
+            Doc.nil
+        in
+        let leadingComments = printLeadingCommentsFast tbl nodeLoc in
+        let nodeDoc = print node tbl i in
+        let trailingComments = printLeadingCommentsFast tbl nodeLoc in
+        loop
+          (i + 1)
+          nodeLoc
+          (trailingComments::nodeDoc::leadingComments::gapDoc::Doc.hardLine::acc)
+          nodes
+  in
+  match nodes with
+  | [] -> Doc.nil
+  | node::nodes ->
+    let nodeLoc = getLoc node in
+    let leadingComments = printLeadingCommentsFast tbl nodeLoc in
+    let nodeDoc = print node tbl 0 in
+    let trailingComments = printLeadingCommentsFast tbl nodeLoc in
+    let (lastLoc, docs) = loop 1 nodeLoc [trailingComments; nodeDoc; leadingComments] nodes in
+    let forceBreak =
+      forceBreak ||
+      nodeLoc.loc_start.pos_lnum != lastLoc.loc_end.pos_lnum
+    in
+    Doc.breakableGroup ~forceBreak docs
+
 let printList ~getLoc ~nodes ~print ?(forceBreak=false) t =
   let rec loop (prevLoc: Location.t) acc nodes =
     match nodes with
@@ -536,7 +637,7 @@ let rec printStructure (s : Parsetree.structure) t =
   match s with
   | [] -> printCommentsInside t Location.none
   | structure ->
-    printList
+    printListFast
       ~getLoc:(fun s -> s.Parsetree.pstr_loc)
       ~nodes:structure
       ~print:printStructureItem
@@ -1119,7 +1220,7 @@ and printJsFfiImportDeclaration (includeDeclaration: Parsetree.include_declarati
   )
 
 and printValueBindings ~recFlag (vbs: Parsetree.value_binding list) cmtTbl =
-  printListi
+  printListiFast
     ~getLoc:(fun vb -> vb.Parsetree.pvb_loc)
     ~nodes:vbs
     ~print:(printValueBinding ~recFlag)
