@@ -1385,8 +1385,14 @@ and printTypeDeclaration ~name ~equalSign ~recFlag i (td: Parsetree.type_declara
 
 and printTypeDeclaration2 ~recFlag (td: Parsetree.type_declaration) cmtTbl i =
   let name =
-    let doc = printIdentLike td.Parsetree.ptype_name.txt in
-    printComments doc cmtTbl td.ptype_name.loc
+    let leadingComments = printLeadingCommentsFast cmtTbl td.ptype_name.loc in
+    let doc = printIdentLike td.ptype_name.txt in
+    let trailingComments = printTrailingCommentsFast cmtTbl td.ptype_name.loc in
+    Doc.concat [
+      leadingComments;
+      doc;
+      trailingComments;
+    ]
   in
   let equalSign = "=" in
   let (hasGenType, attrs) = ParsetreeViewer.splitGenTypeAttr td.ptype_attributes in
@@ -1499,10 +1505,7 @@ and printTypeParams typeParams cmtTbl =
           Doc.concat [
             Doc.softLine;
             Doc.join ~sep:(Doc.concat [Doc.comma; Doc.line]) (
-              List.map (fun typeParam ->
-                let doc = printTypeParam typeParam cmtTbl in
-                printComments doc cmtTbl (fst typeParam).Parsetree.ptyp_loc
-              ) typeParams
+              List.map (fun typeParam -> printTypeParam typeParam cmtTbl) typeParams
             )
           ]
         );
@@ -1519,9 +1522,14 @@ and printTypeParam (param : (Parsetree.core_type * Asttypes.variance)) cmtTbl =
   | Contravariant -> Doc.text "-"
   | Invariant -> Doc.nil
   in
+  let leadingComments = printLeadingCommentsFast cmtTbl typ.ptyp_loc in
+  let typExprDoc = printTypExpr typ cmtTbl in
+  let trailingComments = printTrailingCommentsFast cmtTbl typ.ptyp_loc in
   Doc.concat [
+    leadingComments;
     printedVariance;
-    printTypExpr typ cmtTbl
+    typExprDoc;
+    trailingComments;
   ]
 
 and printRecordDeclaration (lds: Parsetree.label_declaration list) cmtTbl =
@@ -1537,10 +1545,7 @@ and printRecordDeclaration (lds: Parsetree.label_declaration list) cmtTbl =
         Doc.concat [
           Doc.softLine;
           Doc.join ~sep:(Doc.concat [Doc.comma; Doc.line])
-            (List.map (fun ld ->
-              let doc = printLabelDeclaration ld cmtTbl in
-              printComments doc cmtTbl ld.Parsetree.pld_loc
-            ) lds)
+            (List.map (fun ld -> printLabelDeclaration ld cmtTbl) lds)
         ]
       );
       Doc.trailingComma;
@@ -1568,10 +1573,7 @@ and printConstructorDeclarations
     printListi
       ~getLoc:(fun cd -> cd.Parsetree.pcd_loc)
       ~nodes:cds
-      ~print:(fun cd cmtTbl i ->
-        let doc = printConstructorDeclaration2 i cd cmtTbl in
-        printComments doc cmtTbl cd.Parsetree.pcd_loc
-      )
+      ~print:(fun cd cmtTbl i -> printConstructorDeclaration i cd cmtTbl)
       ~forceBreak
       cmtTbl
   in
@@ -1585,14 +1587,19 @@ and printConstructorDeclarations
     )
   )
 
-and printConstructorDeclaration2 i (cd : Parsetree.constructor_declaration) cmtTbl =
+and printConstructorDeclaration i (cd : Parsetree.constructor_declaration) cmtTbl =
   let attrs = printAttributes cd.pcd_attributes cmtTbl in
   let bar = if i > 0 || cd.pcd_attributes <> [] then Doc.text "| "
-  else Doc.ifBreaks (Doc.text "| ") Doc.nil
+    else Doc.ifBreaks (Doc.text "| ") Doc.nil
   in
   let constrName =
-    let doc = Doc.text cd.pcd_name.txt in
-    printComments doc cmtTbl cd.pcd_name.loc
+    let leadingComments = printLeadingCommentsFast cmtTbl cd.pcd_name.loc in
+    let trailingComments = printTrailingCommentsFast cmtTbl cd.pcd_name.loc in
+    Doc.concat [
+      leadingComments;
+      Doc.text cd.pcd_name.txt;
+      trailingComments;
+    ]
   in
   let constrArgs = printConstructorArguments ~indent:true cd.pcd_args cmtTbl in
   let gadt = match cd.pcd_res with
@@ -1648,10 +1655,7 @@ and printConstructorArguments ~indent (cdArgs : Parsetree.constructor_arguments)
         Doc.concat [
           Doc.softLine;
           Doc.join ~sep:(Doc.concat [Doc.comma; Doc.line])
-            (List.map (fun ld ->
-              let doc = printLabelDeclaration ld cmtTbl in
-              printComments doc cmtTbl ld.Parsetree.pld_loc
-            ) lds)
+            (List.map (fun ld -> printLabelDeclaration ld cmtTbl) lds)
         ]
       );
       Doc.trailingComma;
@@ -1662,22 +1666,32 @@ and printConstructorArguments ~indent (cdArgs : Parsetree.constructor_arguments)
     if indent then Doc.indent args else args
 
 and printLabelDeclaration (ld : Parsetree.label_declaration) cmtTbl =
+  let leadingComments = printLeadingCommentsFast cmtTbl ld.pld_loc in
   let attrs = printAttributes ~loc:ld.pld_name.loc ld.pld_attributes cmtTbl in
   let mutableFlag = match ld.pld_mutable with
   | Mutable -> Doc.text "mutable "
   | Immutable -> Doc.nil
   in
   let name =
-    let doc = printIdentLike ld.pld_name.txt in
-    printComments doc cmtTbl ld.pld_name.loc
+    let leadingComments = printLeadingCommentsFast cmtTbl ld.pld_name.loc in
+    let trailingComments = printTrailingCommentsFast cmtTbl ld.pld_name.loc in
+    Doc.concat [
+      leadingComments;
+      printIdentLike ld.pld_name.txt;
+      trailingComments;
+    ]
   in
+  let typExprDoc = printTypExpr ld.pld_type cmtTbl in
+  let trailingComments = printTrailingCommentsFast cmtTbl ld.pld_loc in
   Doc.group (
     Doc.concat [
+      leadingComments;
       attrs;
       mutableFlag;
       name;
       Doc.text ": ";
-      printTypExpr ld.pld_type cmtTbl;
+      typExprDoc;
+      trailingComments;
     ]
   )
 
