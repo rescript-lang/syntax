@@ -1707,7 +1707,14 @@ and printTypExpr (typExpr : Parsetree.core_type) cmtTbl =
       else
         doc
     in
-    Doc.concat [typ; Doc.text " as "; Doc.concat [Doc.text "'"; printIdentLike alias]]
+    Doc.concat [
+      typ;
+      Doc.text " as ";
+      Doc.concat [
+        Doc.text "'";
+        printIdentLike alias
+      ]
+    ]
   | Ptyp_constr({txt = Longident.Ldot(Longident.Lident "Js", "t")}, [{ptyp_desc = Ptyp_object (_fields, _openFlag)} as typ]) ->
     let bsObject = printTypExpr typ cmtTbl in
     begin match typExpr.ptyp_attributes with
@@ -1751,9 +1758,7 @@ and printTypExpr (typExpr : Parsetree.core_type) cmtTbl =
           Doc.concat [
             Doc.softLine;
             Doc.join ~sep:(Doc.concat [Doc.comma; Doc.line]) (
-              List.map
-                (fun typexpr -> printTypExpr typexpr cmtTbl)
-                constrArgs
+              List.map (fun typexpr -> printTypExpr typexpr cmtTbl) constrArgs
             )
           ]
         );
@@ -1769,12 +1774,6 @@ and printTypExpr (typExpr : Parsetree.core_type) cmtTbl =
     | Ptyp_alias _ -> true
     | _ -> false
     in
-    let returnDoc =
-      let doc = printTypExpr returnType cmtTbl in
-      if returnTypeNeedsParens then
-        Doc.concat [Doc.lparen; doc; Doc.rparen]
-      else doc
-    in
     let (isUncurried, attrs) =
       ParsetreeViewer.processUncurriedAttribute attrsBefore
     in
@@ -1789,6 +1788,12 @@ and printTypExpr (typExpr : Parsetree.core_type) cmtTbl =
           match n.ptyp_desc with
           | Ptyp_arrow _ | Ptyp_tuple _ -> addParens doc
           | _ -> doc
+        in
+        let returnDoc =
+          let doc = printTypExpr returnType cmtTbl in
+          if returnTypeNeedsParens then
+            Doc.concat [Doc.lparen; doc; Doc.rparen]
+          else doc
         in
         Doc.group (
           Doc.concat [
@@ -1835,6 +1840,12 @@ and printTypExpr (typExpr : Parsetree.core_type) cmtTbl =
         Doc.softLine;
         Doc.text ")";
       ] in
+      let returnDoc =
+        let doc = printTypExpr returnType cmtTbl in
+        if returnTypeNeedsParens then
+          Doc.concat [Doc.lparen; doc; Doc.rparen]
+        else doc
+      in
       Doc.group (
         Doc.concat [
           renderedArgs;
@@ -1849,14 +1860,24 @@ and printTypExpr (typExpr : Parsetree.core_type) cmtTbl =
   | Ptyp_poly([], typ) ->
     printTypExpr typ cmtTbl
   | Ptyp_poly(stringLocs, typ) ->
+    let labelDoc = Doc.join ~sep:Doc.space (
+      List.map (fun {Location.txt; loc} ->
+        let leadingComments = printLeadingCommentsFast cmtTbl loc in
+        let trailingComments = printTrailingCommentsFast cmtTbl loc in
+        Doc.concat [
+          leadingComments;
+          Doc.text "'";
+          Doc.text txt;
+          trailingComments;
+        ]
+      ) stringLocs)
+    in
+    let typExprDoc = printTypExpr typ cmtTbl in
     Doc.concat [
-      Doc.join ~sep:Doc.space (List.map (fun {Location.txt; loc} ->
-        let doc = Doc.concat [Doc.text "'"; Doc.text txt] in
-        printComments doc cmtTbl loc
-        ) stringLocs);
+      labelDoc;
       Doc.dot;
       Doc.space;
-      printTypExpr typ cmtTbl
+      typExprDoc;
     ]
   | Ptyp_package packageType ->
     printPackageType ~printModuleKeywordAndParens:true packageType cmtTbl
@@ -1872,7 +1893,7 @@ and printTypExpr (typExpr : Parsetree.core_type) cmtTbl =
     | Rtag ({txt}, attrs, truth, types) ->
       let doType t = match t.Parsetree.ptyp_desc with
       | Ptyp_tuple _ -> printTypExpr t cmtTbl
-      | _ -> Doc.concat [ Doc.lparen; printTypExpr t cmtTbl; Doc.rparen ]
+      | _ -> Doc.concat [Doc.lparen; printTypExpr t cmtTbl; Doc.rparen ]
       in
       let printedTypes = List.map doType types in
       let cases = Doc.join ~sep:(Doc.concat [Doc.line; Doc.text "& "]) printedTypes in
@@ -1896,9 +1917,7 @@ and printTypExpr (typExpr : Parsetree.core_type) cmtTbl =
       else Doc.concat [Doc.lessThan; Doc.line] in
     let hasLabels = labelsOpt <> None && labelsOpt <> Some [] in
     let labels = match labelsOpt with
-    | None
-    | Some([]) ->
-      Doc.nil
+    | None | Some([]) -> Doc.nil
     | Some(labels) ->
       Doc.concat (List.map (fun label -> Doc.concat [Doc.line; Doc.text "#" ; printIdentLike ~allowUident:true label] ) labels)
     in
@@ -1924,7 +1943,7 @@ and printTypExpr (typExpr : Parsetree.core_type) cmtTbl =
   | Ptyp_constr({txt = Longident.Ldot(Longident.Lident "Js", "t")}, _) -> true
   | _ -> false
   in
-  let doc = begin match typExpr.ptyp_attributes with
+  let doc = match typExpr.ptyp_attributes with
   | _::_ as attrs when not shouldPrintItsOwnAttributes ->
     Doc.group (
       Doc.concat [
@@ -1933,7 +1952,6 @@ and printTypExpr (typExpr : Parsetree.core_type) cmtTbl =
       ]
     )
   | _ -> renderedType
-  end
   in
   let trailingComments = printTrailingCommentsFast cmtTbl typExpr.ptyp_loc in
   Doc.concat [
@@ -1986,25 +2004,27 @@ and printTupleType ~inline (types: Parsetree.core_type list) cmtTbl =
     Doc.trailingComma;
     Doc.softLine;
     Doc.rparen;
-  ])
-  in
+  ]) in
   if inline == false then Doc.group(tuple) else tuple
 
 and printObjectField (field : Parsetree.object_field) cmtTbl =
   match field with
   | Otag (labelLoc, attrs, typ) ->
     let lbl =
-      let doc = Doc.text ("\"" ^ labelLoc.txt ^ "\"") in
-      printComments doc cmtTbl labelLoc.loc
+      let leadingComments = printLeadingCommentsFast cmtTbl labelLoc.loc in
+      let trailingComments = printTrailingCommentsFast cmtTbl labelLoc.loc in
+      Doc.concat [
+        leadingComments;
+        Doc.text ("\"" ^ labelLoc.txt ^ "\"");
+        trailingComments;
+      ]
     in
-    let doc = Doc.concat [
+    Doc.concat [
       printAttributes ~loc:labelLoc.loc attrs cmtTbl;
       lbl;
       Doc.text ": ";
       printTypExpr typ cmtTbl;
-    ] in
-    let cmtLoc = {labelLoc.loc with loc_end = typ.ptyp_loc.loc_end} in
-    printComments doc cmtTbl cmtLoc
+    ]
   | _ -> Doc.nil
 
 (* es6 arrow type arg
@@ -2032,7 +2052,7 @@ and printTypeParameter (attrs, lbl, typ) cmtTbl =
   | Labelled _ -> Doc.nil
   | Optional _lbl -> Doc.text "=?"
   in
-  let doc = Doc.group (
+  Doc.group (
     Doc.concat [
       uncurried;
       attrs;
@@ -2040,8 +2060,7 @@ and printTypeParameter (attrs, lbl, typ) cmtTbl =
       printTypExpr typ cmtTbl;
       optionalIndicator;
     ]
-  ) in
-  printComments doc cmtTbl typ.ptyp_loc
+  )
 
 and printValueBinding ~recFlag vb cmtTbl i =
   let (hasGenType, attrs) = ParsetreeViewer.splitGenTypeAttr vb.pvb_attributes in
@@ -2212,10 +2231,13 @@ and printPackageType ~printModuleKeywordAndParens (packageType: Parsetree.packag
         printLongidentLocation longidentLoc cmtTbl;
       ]
     )
-  | (longidentLoc, packageConstraints) -> Doc.group(
+  | (longidentLoc, packageConstraints) ->
+    let longidentDoc = printLongidentLocation longidentLoc cmtTbl in
+    let packageConstraintsDoc = printPackageConstraints packageConstraints cmtTbl in
+    Doc.group(
       Doc.concat [
-        printLongidentLocation longidentLoc cmtTbl;
-        printPackageConstraints packageConstraints cmtTbl;
+        longidentDoc;
+        packageConstraintsDoc;
         Doc.softLine;
       ]
     )
@@ -2236,13 +2258,8 @@ and printPackageConstraints packageConstraints cmtTbl  =
       Doc.concat [
         Doc.line;
         Doc.join ~sep:Doc.line (
-          List.mapi (fun i pc ->
-            let (longident, typexpr) = pc in
-            let cmtLoc = {longident.Asttypes.loc with
-              loc_end = typexpr.Parsetree.ptyp_loc.loc_end
-            } in
-            let doc = printPackageConstraint i cmtTbl pc in
-            printComments doc cmtTbl cmtLoc
+          List.mapi (fun i packageConstraint ->
+            printPackageConstraint i cmtTbl packageConstraint
           ) packageConstraints
         )
       ]
@@ -2251,21 +2268,26 @@ and printPackageConstraints packageConstraints cmtTbl  =
 
 and printPackageConstraint i cmtTbl (longidentLoc, typ) =
   let prefix = if i == 0 then Doc.text "type " else Doc.text "and type " in
+  let longidentDoc = printLongidentLocation longidentLoc cmtTbl in
+  let typExprDoc = printTypExpr typ cmtTbl in
   Doc.concat [
     prefix;
-    printLongidentLocation longidentLoc cmtTbl;
+    longidentDoc;
     Doc.text " = ";
-    printTypExpr typ cmtTbl;
+    typExprDoc;
   ]
 
 and printExtension ~atModuleLvl (stringLoc, payload) cmtTbl =
   let extName =
-    let doc = Doc.concat [
+    let leadingComments = printLeadingCommentsFast cmtTbl stringLoc.loc in
+    let trailingComments = printTrailingCommentsFast cmtTbl stringLoc.loc in
+    Doc.concat [
+      leadingComments;
       Doc.text "%";
       if atModuleLvl then Doc.text "%" else Doc.nil;
       Doc.text stringLoc.Location.txt;
-    ] in
-    printComments doc cmtTbl stringLoc.Location.loc
+      trailingComments
+    ]
   in
   Doc.group (
     Doc.concat [
