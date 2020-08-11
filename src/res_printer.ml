@@ -357,14 +357,14 @@ let printComments doc (tbl: CommentTable.t) loc =
   let docWithLeadingComments = printLeadingComments doc tbl.leading loc in
   printTrailingComments docWithLeadingComments tbl.trailing loc
 
-let printCommentsFast doc tbl loc =
-  let leadingComments = printLeadingCommentsFast tbl loc in
-  let trailingComments =  printTrailingCommentsFast tbl loc in
-  Doc.concat [
-    leadingComments;
-    doc;
-    trailingComments;
-  ]
+(* let printCommentsFast doc tbl loc = *)
+  (* let leadingComments = printLeadingCommentsFast tbl loc in *)
+  (* let trailingComments =  printTrailingCommentsFast tbl loc in *)
+  (* Doc.concat [ *)
+    (* leadingComments; *)
+    (* doc; *)
+    (* trailingComments; *)
+  (* ] *)
 
 let printListFast ~getLoc ~nodes ~print ?(forceBreak=false) tbl =
   let rec loop (prevLoc: Location.t) acc nodes =
@@ -396,7 +396,7 @@ let printListFast ~getLoc ~nodes ~print ?(forceBreak=false) tbl =
         in
         let leadingComments = printLeadingCommentsFast tbl nodeLoc in
         let nodeDoc = print node tbl in
-        let trailingComments = printLeadingCommentsFast tbl nodeLoc in
+        let trailingComments = printTrailingCommentsFast tbl nodeLoc in
         loop
           nodeLoc
           (trailingComments::nodeDoc::leadingComments::gapDoc::Doc.hardLine::acc)
@@ -446,7 +446,7 @@ let printListiFast ~getLoc ~nodes ~print ?(forceBreak=false) tbl =
         in
         let leadingComments = printLeadingCommentsFast tbl nodeLoc in
         let nodeDoc = print node tbl i in
-        let trailingComments = printLeadingCommentsFast tbl nodeLoc in
+        let trailingComments = printTrailingCommentsFast tbl nodeLoc in
         loop
           (i + 1)
           nodeLoc
@@ -614,8 +614,13 @@ let printIdentPath path cmtTbl =
   printComments doc cmtTbl path.loc
 
 let printStringLoc sloc cmtTbl =
-  let doc = printIdentLike sloc.Location.txt in
-  printComments doc cmtTbl sloc.loc
+  let leadingComments = printLeadingCommentsFast cmtTbl sloc.Asttypes.loc in
+  let trailingComments = printTrailingCommentsFast cmtTbl sloc.loc in
+  Doc.concat [
+    leadingComments;
+    printIdentLike sloc.txt;
+    trailingComments;
+  ]
 
 let printConstant c = match c with
   | Parsetree.Pconst_integer (s, suffix) ->
@@ -2070,22 +2075,25 @@ and printValueBinding ~recFlag vb cmtTbl i =
     in
     begin match returnExpr.pexp_desc with
     | Pexp_constraint (expr, typ) ->
+      let printedPattern = printPattern pattern cmtTbl in
+      let printedType = printTypExpr typ cmtTbl in
+      let printedExpr = printExpressionWithComments expr cmtTbl in
       Doc.group (
         Doc.concat [
           attrs;
           header;
-          printPattern pattern cmtTbl;
+          printedPattern;
           Doc.text ":";
           Doc.indent (
             Doc.concat [
               Doc.line;
               abstractType;
               Doc.space;
-              printTypExpr typ cmtTbl;
+              printedType;
               Doc.text " =";
               Doc.concat [
                 Doc.line;
-                printExpressionWithComments expr cmtTbl;
+                printedExpr;
               ]
             ]
           )
@@ -2094,24 +2102,27 @@ and printValueBinding ~recFlag vb cmtTbl i =
     | _ ->
       (* Example:
        * let cancel_and_collect_callbacks:
-       *   'a 'u 'c. (list<packed_callbacks>, promise<'a, 'u, 'c>) => list<packed_callbacks> =         *  (type x, callbacks_accumulator, p: promise<_, _, c>)
+       *   'a 'u 'c. (list<packed_callbacks>, promise<'a, 'u, 'c>) => list<packed_callbacks> =          *  (type x, callbacks_accumulator, p: promise<_, _, c>)
        *)
+      let printedPattern = printPattern pattern cmtTbl in
+      let printedType = printTypExpr patTyp cmtTbl in
+      let printedExpr = printExpressionWithComments expr cmtTbl in
       Doc.group (
         Doc.concat [
           attrs;
           header;
-          printPattern pattern cmtTbl;
+          printedPattern;
           Doc.text ":";
           Doc.indent (
             Doc.concat [
               Doc.line;
               abstractType;
               Doc.space;
-              printTypExpr patTyp cmtTbl;
+              printedType;
               Doc.text " =";
               Doc.concat [
                 Doc.line;
-                printExpressionWithComments expr cmtTbl;
+                printedExpr;
               ]
             ]
           )
@@ -2120,6 +2131,7 @@ and printValueBinding ~recFlag vb cmtTbl i =
     end
   | _ ->
   let (optBraces, expr) = ParsetreeViewer.processBracesAttr vb.pvb_expr in
+  let printedPattern = printPattern vb.pvb_pat cmtTbl in
   let printedExpr =
     let doc = printExpressionWithComments vb.pvb_expr cmtTbl in
     match Parens.expr vb.pvb_expr with
@@ -2133,7 +2145,7 @@ and printValueBinding ~recFlag vb cmtTbl i =
         Doc.concat [
           attrs;
           header;
-          printPattern vb.pvb_pat cmtTbl;
+          printedPattern;
           Doc.text " =";
           Doc.space;
           printedExpr;
@@ -2143,7 +2155,7 @@ and printValueBinding ~recFlag vb cmtTbl i =
         Doc.concat [
           attrs;
           header;
-          printPattern vb.pvb_pat cmtTbl;
+          printedPattern;
           Doc.text " =";
           Doc.indent (
             Doc.concat [
@@ -2176,7 +2188,7 @@ and printValueBinding ~recFlag vb cmtTbl i =
       Doc.concat [
         attrs;
         header;
-        printPattern vb.pvb_pat cmtTbl;
+        printedPattern;
         Doc.text " =";
         if shouldIndent then
           Doc.indent (
@@ -2298,8 +2310,7 @@ and printPattern (p : Parsetree.pattern) cmtTbl =
           Doc.concat([
             Doc.softLine;
             Doc.join ~sep:(Doc.concat [Doc.text ","; Doc.line])
-              (List.map (fun pat ->
-                printPattern pat cmtTbl) patterns)
+              (List.map (fun pat -> printPattern pat cmtTbl) patterns)
           ])
         );
         Doc.trailingComma;
@@ -2471,25 +2482,25 @@ and printPattern (p : Parsetree.pattern) cmtTbl =
   | Ppat_type ident ->
     Doc.concat [Doc.text "#..."; printIdentPath ident cmtTbl]
   | Ppat_record(rows, openFlag) ->
-      Doc.group(
-        Doc.concat([
-          Doc.lbrace;
-          Doc.indent (
-            Doc.concat [
-              Doc.softLine;
-              Doc.join ~sep:(Doc.concat [Doc.text ","; Doc.line])
-                (List.map (fun row -> printPatternRecordRow row cmtTbl) rows);
-              begin match openFlag with
-              | Open -> Doc.concat [Doc.text ","; Doc.line; Doc.text "_"]
-              | Closed -> Doc.nil
-              end;
-            ]
-          );
-          Doc.ifBreaks (Doc.text ",") Doc.nil;
-          Doc.softLine;
-          Doc.rbrace;
-        ])
-      )
+    Doc.group(
+      Doc.concat([
+        Doc.lbrace;
+        Doc.indent (
+          Doc.concat [
+            Doc.softLine;
+            Doc.join ~sep:(Doc.concat [Doc.text ","; Doc.line])
+              (List.map (fun row -> printPatternRecordRow row cmtTbl) rows);
+            begin match openFlag with
+            | Open -> Doc.concat [Doc.text ","; Doc.line; Doc.text "_"]
+            | Closed -> Doc.nil
+            end;
+          ]
+        );
+        Doc.ifBreaks (Doc.text ",") Doc.nil;
+        Doc.softLine;
+        Doc.rbrace;
+      ])
+    )
 
   | Ppat_exception p ->
       let needsParens = match p.ppat_desc with
@@ -2579,11 +2590,13 @@ and printPattern (p : Parsetree.pattern) cmtTbl =
    (* Note: module(P : S) is represented as *)
    (* Ppat_constraint(Ppat_unpack, Ptyp_package) *)
   | Ppat_unpack stringLoc ->
+    let leadingComments = printLeadingCommentsFast cmtTbl stringLoc.loc in
+    let trailingComments = printTrailingCommentsFast cmtTbl stringLoc.loc in
     Doc.concat [
       Doc.text "module(";
-      printLeadingCommentsFast cmtTbl stringLoc.loc;
+      leadingComments;
       Doc.text stringLoc.txt;
-      printTrailingCommentsFast cmtTbl stringLoc.loc;
+      trailingComments;
       Doc.rparen;
     ]
   | Ppat_interval (a, b) ->
@@ -2615,30 +2628,33 @@ and printPatternRecordRow row cmtTbl =
   match row with
   (* punned {x}*)
   | ({Location.txt=Longident.Lident ident} as longident,
-     {Parsetree.ppat_desc=Ppat_var {txt;_}}) when ident = txt ->
+     {Parsetree.ppat_desc=Ppat_var {txt}}) when ident = txt ->
       printLidentPath longident cmtTbl
   | (longident, pattern) ->
-    let locForComments = {
-      longident.loc with
-      loc_end = pattern.Parsetree.ppat_loc.loc_end
-    } in
-    let doc = Doc.group (
+    let key = printLidentPath longident cmtTbl in
+    let value = printPattern pattern cmtTbl in
+    Doc.group (
       Doc.concat([
-        printLidentPath longident cmtTbl;
+        key;
         Doc.text ": ";
         Doc.indent(
           Doc.concat [
             Doc.softLine;
-            printPattern pattern cmtTbl;
+            value
           ]
         )
       ])
-    ) in
-    printCommentsFast doc cmtTbl locForComments
+    )
 
 and printExpressionWithComments expr cmtTbl =
+  let leadingComments = printLeadingCommentsFast cmtTbl expr.pexp_loc in
   let doc = printExpression expr cmtTbl in
-  printComments doc cmtTbl expr.Parsetree.pexp_loc
+  let trailingComments = printTrailingCommentsFast cmtTbl expr.pexp_loc in
+  Doc.concat [
+    leadingComments;
+    doc;
+    trailingComments;
+  ]
 
 and printIfChain pexp_attributes ifs elseExpr cmtTbl =
   let ifDocs = Doc.join ~sep:Doc.space (
@@ -5244,8 +5260,6 @@ and printExtensionConstructor (constr : Parsetree.extension_constructor) cmtTbl 
 
 let printImplementation ~width (s: Parsetree.structure) ~comments =
   let cmtTbl = CommentTable.make ~comments () in
-  CommentTable.walkStructure s cmtTbl comments;
-  (* CommentTable.log cmtTbl; *)
   let doc = printStructure s cmtTbl in
   (* Doc.debug doc; *)
   Doc.toString ~width doc ^ "\n"
