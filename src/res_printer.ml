@@ -467,65 +467,65 @@ let printListiFast ~getLoc ~nodes ~print ?(forceBreak=false) tbl =
     in
     Doc.breakableGroup ~forceBreak docs
 
-let printList ~getLoc ~nodes ~print ?(forceBreak=false) t =
-  let rec loop (prevLoc: Location.t) acc nodes =
-    match nodes with
-    | [] -> (prevLoc, Doc.concat (List.rev acc))
-    | node::nodes ->
-      let loc = getLoc node in
-      let startPos = match getFirstLeadingComment t loc with
-      | None -> loc.loc_start
-      | Some comment -> (Comment.loc comment).loc_start
-      in
-      let sep = if startPos.pos_lnum - prevLoc.loc_end.pos_lnum > 1 then
-        Doc.concat [Doc.hardLine; Doc.hardLine]
-      else
-        Doc.hardLine
-      in
-      let doc = printComments (print node t) t loc in
-      loop loc (doc::sep::acc) nodes
-  in
-  match nodes with
-  | [] -> Doc.nil
-  | node::nodes ->
-    let firstLoc = getLoc node in
-    let doc = printComments (print node t) t firstLoc in
-    let (lastLoc, docs) = loop firstLoc [doc] nodes in
-    let forceBreak =
-      forceBreak ||
-      firstLoc.loc_start.pos_lnum != lastLoc.loc_end.pos_lnum
-    in
-    Doc.breakableGroup ~forceBreak docs
+(* let printList ~getLoc ~nodes ~print ?(forceBreak=false) t = *)
+  (* let rec loop (prevLoc: Location.t) acc nodes = *)
+    (* match nodes with *)
+    (* | [] -> (prevLoc, Doc.concat (List.rev acc)) *)
+    (* | node::nodes -> *)
+      (* let loc = getLoc node in *)
+      (* let startPos = match getFirstLeadingComment t loc with *)
+      (* | None -> loc.loc_start *)
+      (* | Some comment -> (Comment.loc comment).loc_start *)
+      (* in *)
+      (* let sep = if startPos.pos_lnum - prevLoc.loc_end.pos_lnum > 1 then *)
+        (* Doc.concat [Doc.hardLine; Doc.hardLine] *)
+      (* else *)
+        (* Doc.hardLine *)
+      (* in *)
+      (* let doc = printComments (print node t) t loc in *)
+      (* loop loc (doc::sep::acc) nodes *)
+  (* in *)
+  (* match nodes with *)
+  (* | [] -> Doc.nil *)
+  (* | node::nodes -> *)
+    (* let firstLoc = getLoc node in *)
+    (* let doc = printComments (print node t) t firstLoc in *)
+    (* let (lastLoc, docs) = loop firstLoc [doc] nodes in *)
+    (* let forceBreak = *)
+      (* forceBreak || *)
+      (* firstLoc.loc_start.pos_lnum != lastLoc.loc_end.pos_lnum *)
+    (* in *)
+    (* Doc.breakableGroup ~forceBreak docs *)
 
-let printListi ~getLoc ~nodes ~print ?(forceBreak=false) t =
-  let rec loop i (prevLoc: Location.t) acc nodes =
-    match nodes with
-    | [] -> (prevLoc, Doc.concat (List.rev acc))
-    | node::nodes ->
-      let loc = getLoc node in
-      let startPos = match getFirstLeadingComment t loc with
-      | None -> loc.loc_start
-      | Some comment -> (Comment.loc comment).loc_start
-      in
-      let sep = if startPos.pos_lnum - prevLoc.loc_end.pos_lnum > 1 then
-        Doc.concat [Doc.hardLine; Doc.hardLine]
-      else
-        Doc.line
-      in
-      let doc = printComments (print node t i) t loc in
-      loop (i + 1) loc (doc::sep::acc) nodes
-  in
-  match nodes with
-  | [] -> Doc.nil
-  | node::nodes ->
-    let firstLoc = getLoc node in
-    let doc = printComments (print node t 0) t firstLoc in
-    let (lastLoc, docs) = loop 1 firstLoc [doc] nodes in
-    let forceBreak =
-      forceBreak ||
-      firstLoc.loc_start.pos_lnum != lastLoc.loc_end.pos_lnum
-    in
-    Doc.breakableGroup ~forceBreak docs
+(* let printListi ~getLoc ~nodes ~print ?(forceBreak=false) t = *)
+  (* let rec loop i (prevLoc: Location.t) acc nodes = *)
+    (* match nodes with *)
+    (* | [] -> (prevLoc, Doc.concat (List.rev acc)) *)
+    (* | node::nodes -> *)
+      (* let loc = getLoc node in *)
+      (* let startPos = match getFirstLeadingComment t loc with *)
+      (* | None -> loc.loc_start *)
+      (* | Some comment -> (Comment.loc comment).loc_start *)
+      (* in *)
+      (* let sep = if startPos.pos_lnum - prevLoc.loc_end.pos_lnum > 1 then *)
+        (* Doc.concat [Doc.hardLine; Doc.hardLine] *)
+      (* else *)
+        (* Doc.line *)
+      (* in *)
+      (* let doc = printComments (print node t i) t loc in *)
+      (* loop (i + 1) loc (doc::sep::acc) nodes *)
+  (* in *)
+  (* match nodes with *)
+  (* | [] -> Doc.nil *)
+  (* | node::nodes -> *)
+    (* let firstLoc = getLoc node in *)
+    (* let doc = printComments (print node t 0) t firstLoc in *)
+    (* let (lastLoc, docs) = loop 1 firstLoc [doc] nodes in *)
+    (* let forceBreak = *)
+      (* forceBreak || *)
+      (* firstLoc.loc_start.pos_lnum != lastLoc.loc_end.pos_lnum *)
+    (* in *)
+    (* Doc.breakableGroup ~forceBreak docs *)
 
 let rec printLongidentAux accu = function
 | Longident.Lident s -> (Doc.text s) :: accu
@@ -693,7 +693,7 @@ and printStructureItem (si: Parsetree.structure_item) cmtTbl =
   | Pstr_module moduleBinding ->
     printModuleBinding ~isRec:false moduleBinding cmtTbl 0
   | Pstr_recmodule moduleBindings ->
-    printListi
+    printListiFast
       ~getLoc:(fun mb -> mb.Parsetree.pmb_loc)
       ~nodes:moduleBindings
       ~print:(printModuleBinding ~isRec:true)
@@ -725,7 +725,7 @@ and printTypeExtension (te : Parsetree.type_extension) cmtTbl =
     | Public -> Doc.nil
     in
     let rows =
-      printListi
+      printListiFast
        ~getLoc:(fun n -> n.Parsetree.pext_loc)
        ~print:printExtensionConstructor
        ~nodes: ecs
@@ -738,9 +738,6 @@ and printTypeExtension (te : Parsetree.type_extension) cmtTbl =
           Doc.line;
           privateFlag;
           rows;
-          (* Doc.join ~sep:Doc.line ( *)
-            (* List.mapi printExtensionConstructor ecs *)
-          (* ) *)
         ]
       )
     )
@@ -757,6 +754,9 @@ and printTypeExtension (te : Parsetree.type_extension) cmtTbl =
   )
 
 and printModuleBinding ~isRec moduleBinding cmtTbl i =
+  let attrsDoc =
+    printAttributes ~loc:moduleBinding.pmb_name.loc moduleBinding.pmb_attributes cmtTbl
+  in
   let prefix = if i = 0 then
     Doc.concat [
       Doc.text "module ";
@@ -765,49 +765,60 @@ and printModuleBinding ~isRec moduleBinding cmtTbl i =
   else
     Doc.text "and "
   in
+  let modName =
+    let leadingComments = printLeadingCommentsFast cmtTbl moduleBinding.pmb_name.loc in
+    let trailingComments = printTrailingCommentsFast cmtTbl moduleBinding.pmb_name.loc in
+    Doc.concat [
+      leadingComments;
+      Doc.text moduleBinding.pmb_name.txt;
+      trailingComments;
+    ]
+  in
   let (modExprDoc, modConstraintDoc) =
     match moduleBinding.pmb_expr with
     | {pmod_desc = Pmod_constraint (modExpr, modType)} ->
-      (
-        printModExpr modExpr cmtTbl,
-        Doc.concat [
-          Doc.text ": ";
-          printModType modType cmtTbl
-        ]
+      let modExprDoc = printModExpr modExpr cmtTbl in
+      let modTypeDoc = Doc.concat [
+        Doc.text ": ";
+        printModType modType cmtTbl
+      ] in (
+        modExprDoc,
+        modTypeDoc
       )
     | modExpr ->
       (printModExpr modExpr cmtTbl, Doc.nil)
   in
-  let modName =
-    let doc = Doc.text moduleBinding.pmb_name.Location.txt in
-    printComments doc cmtTbl moduleBinding.pmb_name.loc
-  in
-  let doc = Doc.concat [
-    printAttributes
-      ~loc:moduleBinding.pmb_name.loc moduleBinding.pmb_attributes cmtTbl;
+  Doc.concat [
+    attrsDoc;
     prefix;
     modName;
     modConstraintDoc;
     Doc.text " = ";
     modExprDoc;
-  ] in
-  printComments doc cmtTbl moduleBinding.pmb_loc
+  ]
 
 and printModuleTypeDeclaration (modTypeDecl : Parsetree.module_type_declaration) cmtTbl =
   let modName =
-    let doc = Doc.text modTypeDecl.pmtd_name.txt in
-    printComments doc cmtTbl modTypeDecl.pmtd_name.loc
+    let leadingComments = printLeadingCommentsFast cmtTbl modTypeDecl.pmtd_name.loc in
+    let trailingComments = printLeadingCommentsFast cmtTbl modTypeDecl.pmtd_name.loc in
+    Doc.concat [
+      leadingComments;
+      Doc.text modTypeDecl.pmtd_name.txt;
+      trailingComments;
+    ]
+  in
+  let modTypeDoc = match modTypeDecl.pmtd_type with
+  | None -> Doc.nil
+  | Some modType -> Doc.concat [
+      Doc.text " = ";
+      printModType modType cmtTbl;
+    ]
   in
   Doc.concat [
     printAttributes modTypeDecl.pmtd_attributes cmtTbl;
     Doc.text "module type ";
     modName;
-    (match modTypeDecl.pmtd_type with
-    | None -> Doc.nil
-    | Some modType -> Doc.concat [
-        Doc.text " = ";
-        printModType modType cmtTbl;
-      ]);
+    modTypeDoc;
   ]
 
 and printModType modType cmtTbl =
@@ -1021,7 +1032,7 @@ and printSignature signature cmtTbl =
   match signature with
   | [] -> printCommentsInside cmtTbl Location.none
   | signature ->
-    printList
+    printListFast
       ~getLoc:(fun s -> s.Parsetree.psig_loc)
       ~nodes:signature
       ~print:printSignatureItem
@@ -1062,7 +1073,7 @@ and printSignatureItem (si : Parsetree.signature_item) cmtTbl =
   | Psig_class _ | Psig_class_type _ -> Doc.nil
 
 and printRecModuleDeclarations moduleDeclarations cmtTbl =
-    printListi
+    printListiFast
       ~getLoc:(fun n -> n.Parsetree.pmd_loc)
       ~nodes:moduleDeclarations
       ~print:printRecModuleDeclaration
@@ -1239,16 +1250,23 @@ and printValueDescription valueDescription cmtTbl =
   let attrs = printAttributes ~loc:valueDescription.pval_name.loc attrs cmtTbl in
   let header =
     if isExternal then "external " else (if hasGenType then "export " else "let ") in
+  let nameDoc =
+    let leadingComments = printLeadingCommentsFast cmtTbl valueDescription.pval_name.loc in
+    let trailingComments = printTrailingCommentsFast cmtTbl valueDescription.pval_name.loc in
+    Doc.concat [
+      leadingComments;
+      printIdentLike valueDescription.pval_name.txt;
+      trailingComments;
+    ]
+  in
+  let typExprDoc = printTypExpr valueDescription.pval_type cmtTbl in
   Doc.group (
     Doc.concat [
       attrs;
       Doc.text header;
-      printComments
-        (printIdentLike valueDescription.pval_name.txt)
-        cmtTbl
-        valueDescription.pval_name.loc;
+      nameDoc;
       Doc.text ": ";
-      printTypExpr valueDescription.pval_type cmtTbl;
+      typExprDoc;
       if isExternal then
         Doc.group (
           Doc.concat [
@@ -1273,7 +1291,7 @@ and printValueDescription valueDescription cmtTbl =
   )
 
 and printTypeDeclarations ~recFlag typeDeclarations cmtTbl =
-  printListi
+  printListiFast
     ~getLoc:(fun n -> n.Parsetree.ptype_loc)
     ~nodes:typeDeclarations
     ~print:(printTypeDeclaration2 ~recFlag)
@@ -1570,7 +1588,7 @@ and printConstructorDeclarations
   | Public -> Doc.nil
   in
   let rows =
-    printListi
+    printListiFast
       ~getLoc:(fun cd -> cd.Parsetree.pcd_loc)
       ~nodes:cds
       ~print:(fun cd cmtTbl i -> printConstructorDeclaration i cd cmtTbl)
@@ -4467,7 +4485,7 @@ and printCases (cases: Parsetree.case list) cmtTbl =
       Doc.lbrace;
         Doc.concat [
           Doc.line;
-          printList
+          printListFast
             ~getLoc:(fun n -> {n.Parsetree.pc_lhs.ppat_loc with
               loc_end =
                 match ParsetreeViewer.processBracesAttr n.Parsetree.pc_rhs with
@@ -4777,7 +4795,7 @@ and printExpressionBlock ~braces expr cmtTbl =
   in
   let rows = collectRows [] expr in
   let block =
-    printList
+    printListFast
       ~getLoc:fst
       ~nodes:rows
       ~print:(fun (_, doc) _ -> doc)
@@ -4988,7 +5006,8 @@ and printAttribute ((id, payload) : Parsetree.attribute) cmtTbl =
   )
 
 and printModExpr modExpr cmtTbl =
-  let doc = match modExpr.pmod_desc with
+  let leadingComments = printLeadingCommentsFast cmtTbl modExpr.pmod_loc in
+  let modExprDoc = match modExpr.pmod_desc with
   | Pmod_ident longidentLoc ->
     printLongidentLocation longidentLoc cmtTbl
   | Pmod_structure [] ->
@@ -5034,28 +5053,31 @@ and printModExpr modExpr cmtTbl =
     let (expr, moduleConstraint) = match expr.pexp_desc with
     | Pexp_constraint (
         expr,
-        {ptyp_desc = Ptyp_package packageType; ptyp_loc}
+        {ptyp_desc = Ptyp_package packageType}
     ) ->
       let packageDoc =
-        let doc = printPackageType ~printModuleKeywordAndParens:false packageType cmtTbl in
-        printComments doc cmtTbl ptyp_loc
+        printPackageType ~printModuleKeywordAndParens:false packageType cmtTbl
       in
-      let typeDoc = Doc.group (Doc.concat [
-        Doc.text ":";
-        Doc.indent (
-          Doc.concat [
-            Doc.line;
-            packageDoc
-          ]
-        )
-      ]) in
+      let typeDoc = Doc.group (
+        Doc.concat [
+          Doc.text ":";
+          Doc.indent (
+            Doc.concat [
+              Doc.line;
+              packageDoc
+            ]
+          )
+        ]
+      ) in
       (expr, typeDoc)
     | _ -> (expr, Doc.nil)
     in
-    let unpackDoc = Doc.group(Doc.concat [
-      printExpressionWithComments expr cmtTbl;
-      moduleConstraint;
-    ]) in
+    let unpackDoc = Doc.group(
+      Doc.concat [
+        printExpressionWithComments expr cmtTbl;
+        moduleConstraint;
+      ]
+    ) in
     Doc.group (
       Doc.concat [
         Doc.text "unpack(";
@@ -5085,9 +5107,10 @@ and printModExpr modExpr cmtTbl =
     | [{pmod_desc = Pmod_structure _}] -> true
     | _ -> false
     in
+    let callModExpr = printModExpr callExpr cmtTbl in
     Doc.group (
       Doc.concat [
-        printModExpr callExpr cmtTbl;
+        callModExpr;
         if isUnitSugar then
           printModApplyArg (List.hd args [@doesNotRaise]) cmtTbl
         else
@@ -5115,36 +5138,25 @@ and printModExpr modExpr cmtTbl =
       ]
     )
   | Pmod_constraint (modExpr, modType) ->
+    let modExprDoc = printModExpr modExpr cmtTbl in
+    let modTypeDoc = printModType modType cmtTbl in
     Doc.concat [
-      printModExpr modExpr cmtTbl;
+      modExprDoc;
       Doc.text ": ";
-      printModType modType cmtTbl;
+      modTypeDoc;
     ]
   | Pmod_functor _ ->
     printModFunctor modExpr cmtTbl
   in
-  printComments doc cmtTbl modExpr.pmod_loc
+  let trailingComments = printTrailingCommentsFast cmtTbl modExpr.pmod_loc in
+  Doc.concat [
+    leadingComments;
+    modExprDoc;
+    trailingComments;
+  ]
 
 and printModFunctor modExpr cmtTbl =
   let (parameters, returnModExpr) = ParsetreeViewer.modExprFunctor modExpr in
-  (* let shouldInline = match returnModExpr.pmod_desc with *)
-  (* | Pmod_structure _ | Pmod_ident _ -> true *)
-  (* | Pmod_constraint ({pmod_desc = Pmod_structure _}, _) -> true *)
-  (* | _ -> false *)
-  (* in *)
-  let (returnConstraint, returnModExpr) = match returnModExpr.pmod_desc with
-  | Pmod_constraint (modExpr, modType) ->
-    let constraintDoc =
-      let doc = printModType modType cmtTbl in
-      if Parens.modExprFunctorConstraint modType then addParens doc else doc
-    in
-    let modConstraint = Doc.concat [
-      Doc.text ": ";
-      constraintDoc;
-    ] in
-    (modConstraint, printModExpr modExpr cmtTbl)
-  | _ -> (Doc.nil, printModExpr returnModExpr cmtTbl)
-  in
   let parametersDoc = match parameters with
   | [(attrs, {txt = "*"}, None)] ->
       Doc.group (
@@ -5172,6 +5184,20 @@ and printModFunctor modExpr cmtTbl =
       ]
     )
   in
+  let (returnConstraint, returnModExpr) = match returnModExpr.pmod_desc with
+  | Pmod_constraint (modExpr, modType) ->
+    let constraintDoc =
+      let doc = printModType modType cmtTbl in
+      if Parens.modExprFunctorConstraint modType then addParens doc else doc
+    in
+    let modConstraint = Doc.concat [
+      Doc.text ": ";
+      constraintDoc;
+    ] in
+    let modExprDoc = printModExpr modExpr cmtTbl in
+    (modConstraint, modExprDoc)
+  | _ -> (Doc.nil, printModExpr returnModExpr cmtTbl)
+  in
   Doc.group (
     Doc.concat [
       parametersDoc;
@@ -5182,31 +5208,31 @@ and printModFunctor modExpr cmtTbl =
   )
 
 and printModFunctorParam (attrs, lbl, optModType) cmtTbl =
-  let cmtLoc = match optModType with
-  | None -> lbl.Asttypes.loc
-  | Some modType -> {lbl.loc with loc_end =
-      modType.Parsetree.pmty_loc.loc_end
-    }
-  in
+  let leadingComments = printLeadingCommentsFast cmtTbl lbl.Asttypes.loc in
   let attrs = printAttributes attrs cmtTbl in
   let lblDoc =
-    let doc = Doc.text lbl.txt in
-    printComments doc cmtTbl lbl.loc
-  in
-  let doc = Doc.group (
+    let leadingComments = printLeadingCommentsFast cmtTbl lbl.loc in
+    let trailingComments = printTrailingCommentsFast cmtTbl lbl.loc in
     Doc.concat [
+      leadingComments;
+      Doc.text lbl.txt;
+      trailingComments;
+    ]
+  in
+  Doc.group (
+    Doc.concat [
+      leadingComments;
       attrs;
       lblDoc;
       (match optModType with
-      | None -> Doc.nil
+      | None -> printTrailingCommentsFast cmtTbl lbl.loc
       | Some modType ->
         Doc.concat [
           Doc.text ": ";
           printModType modType cmtTbl
         ]);
     ]
-  ) in
-  printComments doc cmtTbl cmtLoc
+  )
 
 and printModApplyArg modExpr cmtTbl =
   match modExpr.pmod_desc with
@@ -5215,7 +5241,17 @@ and printModApplyArg modExpr cmtTbl =
 
 
 and printExceptionDef (constr : Parsetree.extension_constructor) cmtTbl =
-  let kind = match constr.pext_kind with
+  let attrsDoc = printAttributes constr.pext_attributes cmtTbl in
+  let nameDoc =
+    let leadingComments = printLeadingCommentsFast cmtTbl constr.pext_name.loc in
+    let trailingComments = printTrailingCommentsFast cmtTbl constr.pext_name.loc in
+    Doc.concat [
+      leadingComments;
+      Doc.text constr.pext_name.txt;
+      trailingComments;
+    ]
+  in
+  let kindDoc = match constr.pext_kind with
   | Pext_rebind longident -> Doc.indent (
       Doc.concat [
         Doc.text " =";
@@ -5225,6 +5261,7 @@ and printExceptionDef (constr : Parsetree.extension_constructor) cmtTbl =
    )
   | Pext_decl (Pcstr_tuple [], None) -> Doc.nil
   | Pext_decl (args, gadt) ->
+    let constrArgsDoc = printConstructorArguments ~indent:false args cmtTbl in
     let gadtDoc = match gadt with
     | Some typ -> Doc.concat [
         Doc.text ": ";
@@ -5233,30 +5270,32 @@ and printExceptionDef (constr : Parsetree.extension_constructor) cmtTbl =
     | None -> Doc.nil
     in
     Doc.concat [
-      printConstructorArguments ~indent:false args cmtTbl;
+      constrArgsDoc;
       gadtDoc
     ]
   in
-  let name =
-    printComments
-      (Doc.text constr.pext_name.txt)
-      cmtTbl
-      constr.pext_name.loc
-  in
-  let doc = Doc.group (
+  Doc.group (
     Doc.concat [
-      printAttributes constr.pext_attributes cmtTbl;
+      attrsDoc;
       Doc.text "exception ";
-      name;
-      kind
+      nameDoc;
+      kindDoc
     ]
-  ) in
-  printComments doc cmtTbl constr.pext_loc
+  )
 
 and printExtensionConstructor (constr : Parsetree.extension_constructor) cmtTbl i =
   let attrs = printAttributes constr.pext_attributes cmtTbl in
   let bar = if i > 0 then Doc.text "| "
     else Doc.ifBreaks (Doc.text "| ") Doc.nil
+  in
+  let name =
+    let leadingComments = printLeadingCommentsFast cmtTbl constr.pext_name.loc in
+    let trailingComments = printTrailingCommentsFast cmtTbl constr.pext_name.loc in
+    Doc.concat [
+      leadingComments;
+      Doc.text constr.pext_name.txt;
+      trailingComments;
+    ]
   in
   let kind = match constr.pext_kind with
   | Pext_rebind longident -> Doc.indent (
@@ -5268,6 +5307,7 @@ and printExtensionConstructor (constr : Parsetree.extension_constructor) cmtTbl 
    )
   | Pext_decl (Pcstr_tuple [], None) -> Doc.nil
   | Pext_decl (args, gadt) ->
+    let constrArgsDoc = printConstructorArguments ~indent:false args cmtTbl in
     let gadtDoc = match gadt with
     | Some typ -> Doc.concat [
         Doc.text ": ";
@@ -5276,12 +5316,9 @@ and printExtensionConstructor (constr : Parsetree.extension_constructor) cmtTbl 
     | None -> Doc.nil
     in
     Doc.concat [
-      printConstructorArguments ~indent:false args cmtTbl;
+      constrArgsDoc;
       gadtDoc
     ]
-  in
-  let name =
-    printComments (Doc.text constr.pext_name.txt) cmtTbl constr.pext_name.loc
   in
   Doc.concat [
     bar;
