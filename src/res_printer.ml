@@ -800,7 +800,7 @@ and printModuleBinding ~isRec moduleBinding cmtTbl i =
 and printModuleTypeDeclaration (modTypeDecl : Parsetree.module_type_declaration) cmtTbl =
   let modName =
     let leadingComments = printLeadingCommentsFast cmtTbl modTypeDecl.pmtd_name.loc in
-    let trailingComments = printLeadingCommentsFast cmtTbl modTypeDecl.pmtd_name.loc in
+    let trailingComments = printTrailingCommentsFast cmtTbl modTypeDecl.pmtd_name.loc in
     Doc.concat [
       leadingComments;
       Doc.text modTypeDecl.pmtd_name.txt;
@@ -822,10 +822,18 @@ and printModuleTypeDeclaration (modTypeDecl : Parsetree.module_type_declaration)
   ]
 
 and printModType modType cmtTbl =
+  let leadingComments = printLeadingCommentsFast cmtTbl modType.pmty_loc in
+  let attrsAlreadyPrinted = match modType.pmty_desc with
+  | Pmty_functor _ | Pmty_signature _ | Pmty_ident _ -> true
+  | _ -> false
+  in
+  let attrsDoc = if attrsAlreadyPrinted then Doc.nil else printAttributes modType.pmty_attributes cmtTbl in
   let modTypeDoc = match modType.pmty_desc with
   | Parsetree.Pmty_ident longident ->
+    let attrsDoc =
+      printAttributes ~loc:longident.loc modType.pmty_attributes cmtTbl in
     Doc.concat [
-      printAttributes ~loc:longident.loc modType.pmty_attributes cmtTbl;
+      attrsDoc;
       printLongidentLocation longident cmtTbl
     ]
   | Pmty_signature [] ->
@@ -846,6 +854,7 @@ and printModType modType cmtTbl =
       ]
     )
   | Pmty_signature signature ->
+    let attrsDoc = printAttributes modType.pmty_attributes cmtTbl in
     let signatureDoc = Doc.breakableGroup ~forceBreak:true (
       Doc.concat [
         Doc.lbrace;
@@ -860,23 +869,22 @@ and printModType modType cmtTbl =
       ]
     ) in
     Doc.concat [
-      printAttributes modType.pmty_attributes cmtTbl;
+      attrsDoc;
       signatureDoc
     ]
   | Pmty_functor _ ->
     let (parameters, returnType) = ParsetreeViewer.functorType modType in
     let parametersDoc = match parameters with
     | [] -> Doc.nil
-    | [attrs, {Location.txt = "_"; loc}, Some modType] ->
-      let cmtLoc =
-        {loc with loc_end = modType.Parsetree.pmty_loc.loc_end}
-      in
+    | [attrs, {Location.txt = "_"; (* _loc *)}, Some modType] ->
+      (* let cmtLoc = *)
+        (* {loc with loc_end = modType.Parsetree.pmty_loc.loc_end} *)
+      (* in *)
       let attrs = printAttributes attrs cmtTbl in
-      let doc = Doc.concat [
+      Doc.concat [
         attrs;
         printModType modType cmtTbl
-      ] in
-      printComments doc cmtTbl cmtLoc
+      ]
     | params ->
       Doc.group (
         Doc.concat [
@@ -886,28 +894,35 @@ and printModType modType cmtTbl =
               Doc.softLine;
               Doc.join ~sep:(Doc.concat [Doc.comma; Doc.line]) (
                 List.map (fun (attrs, lbl, modType) ->
-                  let cmtLoc = match modType with
-                  | None -> lbl.Asttypes.loc
-                  | Some modType ->
-                    {lbl.Asttypes.loc with loc_end = modType.Parsetree.pmty_loc.loc_end}
-                  in
+                  (* let cmtLoc = match modType with *)
+                  (* | None -> lbl.Asttypes.loc *)
+                  (* | Some modType -> *)
+                    (* {lbl.Asttypes.loc with loc_end = modType.Parsetree.pmty_loc.loc_end} *)
+                  (* in *)
                   let attrs = printAttributes attrs cmtTbl in
                   let lblDoc = if lbl.Location.txt = "_" then Doc.nil
                     else
-                      let doc = Doc.text lbl.txt in
-                      printComments doc cmtTbl lbl.loc
+                      let leadingComments = printLeadingCommentsFast cmtTbl lbl.loc in
+                      let trailingComments = printTrailingCommentsFast cmtTbl lbl.loc in
+                      Doc.concat [
+                        leadingComments;
+                        Doc.text lbl.txt;
+                        trailingComments;
+                      ]
                   in
-                  let doc = Doc.concat [
-                    attrs;
-                    lblDoc;
-                    (match modType with
+                  let modTypeDoc = match modType with
                     | None -> Doc.nil
                     | Some modType -> Doc.concat [
                       if lbl.txt = "_" then Doc.nil else Doc.text ": ";
                       printModType modType cmtTbl;
-                    ]);
-                  ] in
-                  printComments doc cmtTbl cmtLoc
+                    ];
+                  in
+                  Doc.concat [
+                    attrs;
+                    lblDoc;
+                    modTypeDoc;
+                  ]
+                  (* TODO: extra comments?? *)
                 ) params
               );
             ]
@@ -960,15 +975,13 @@ and printModType modType cmtTbl =
       ]
     )
   in
-  let attrsAlreadyPrinted = match modType.pmty_desc with
-  | Pmty_functor _ | Pmty_signature _ | Pmty_ident _ -> true
-  | _ -> false
-  in
-  let doc =Doc.concat [
-    if attrsAlreadyPrinted then Doc.nil else printAttributes modType.pmty_attributes cmtTbl;
+  let trailingComments = printTrailingCommentsFast cmtTbl modType.pmty_loc in
+  Doc.concat [
+    leadingComments;
+    attrsDoc;
     modTypeDoc;
-  ] in
-  printComments doc cmtTbl modType.pmty_loc
+    trailingComments;
+  ]
 
 and printWithConstraints withConstraints cmtTbl =
   let rows = List.mapi (fun i withConstraint ->
@@ -1066,9 +1079,11 @@ and printSignatureItem (si : Parsetree.signature_item) cmtTbl =
       Doc.text "@";
       printAttribute attr cmtTbl
     ]
-  | Psig_extension (extension, attrs) -> Doc.concat [
-      printAttributes attrs cmtTbl;
-      Doc.concat [printExtension ~atModuleLvl:true extension cmtTbl];
+  | Psig_extension (extension, attrs) ->
+    let attrsDoc = printAttributes attrs cmtTbl in
+    Doc.concat [
+      attrsDoc;
+      printExtension ~atModuleLvl:true extension cmtTbl;
     ]
   | Psig_class _ | Psig_class_type _ -> Doc.nil
 
@@ -1080,9 +1095,21 @@ and printRecModuleDeclarations moduleDeclarations cmtTbl =
       cmtTbl
 
 and printRecModuleDeclaration md cmtTbl i =
+  let modDeclName =
+    let leadingComments = printLeadingCommentsFast cmtTbl md.pmd_name.loc in
+    let trailingComments = printTrailingCommentsFast cmtTbl md.pmd_name.loc in
+    Doc.concat [
+      leadingComments;
+      Doc.text md.pmd_name.txt;
+      trailingComments;
+    ]
+  in
   let body = match md.pmd_type.pmty_desc with
   | Parsetree.Pmty_alias longident ->
-    Doc.concat [Doc.text " = "; printLongidentLocation longident cmtTbl]
+    Doc.concat [
+      Doc.text " = ";
+      printLongidentLocation longident cmtTbl
+    ]
   | _ ->
     let needsParens = match md.pmd_type.pmty_desc with
     | Pmty_with _ -> true
@@ -1098,26 +1125,39 @@ and printRecModuleDeclaration md cmtTbl i =
   Doc.concat [
     printAttributes ~loc:md.pmd_name.loc md.pmd_attributes cmtTbl;
     Doc.text prefix;
-    printComments (Doc.text md.pmd_name.txt) cmtTbl md.pmd_name.loc;
-    body
+    modDeclName;
+    body;
   ]
 
 and printModuleDeclaration (md: Parsetree.module_declaration) cmtTbl =
+  let modDeclName =
+    let leadingComments = printLeadingCommentsFast cmtTbl md.pmd_name.loc in
+    let trailingComments = printTrailingCommentsFast cmtTbl md.pmd_name.loc in
+    Doc.concat [
+      leadingComments;
+      Doc.text md.pmd_name.txt;
+      trailingComments;
+    ]
+  in
   let body = match md.pmd_type.pmty_desc with
   | Parsetree.Pmty_alias longident ->
-    Doc.concat [Doc.text " = "; printLongidentLocation longident cmtTbl]
+    Doc.concat [
+      Doc.text " = ";
+      printLongidentLocation longident cmtTbl
+    ]
   | _ -> Doc.concat [Doc.text ": "; printModType md.pmd_type cmtTbl]
   in
   Doc.concat [
     printAttributes ~loc:md.pmd_name.loc md.pmd_attributes cmtTbl;
     Doc.text "module ";
-    printComments (Doc.text md.pmd_name.txt) cmtTbl md.pmd_name.loc;
+    modDeclName;
     body
   ]
 
 and printOpenDescription (openDescription : Parsetree.open_description) cmtTbl =
+  let attrsDoc = printAttributes openDescription.popen_attributes cmtTbl in
   Doc.concat [
-    printAttributes openDescription.popen_attributes cmtTbl;
+    attrsDoc;
     Doc.text "open";
     (match openDescription.popen_override with
     | Asttypes.Fresh -> Doc.space
@@ -1126,8 +1166,9 @@ and printOpenDescription (openDescription : Parsetree.open_description) cmtTbl =
   ]
 
 and printIncludeDescription (includeDescription: Parsetree.include_description) cmtTbl =
+  let attrsDoc = printAttributes includeDescription.pincl_attributes cmtTbl in
   Doc.concat [
-    printAttributes includeDescription.pincl_attributes cmtTbl;
+    attrsDoc;
     Doc.text "include ";
     printModType includeDescription.pincl_mod cmtTbl;
   ]
@@ -5339,5 +5380,5 @@ let printImplementation ~width (s: Parsetree.structure) ~comments =
 
 let printInterface ~width (s: Parsetree.signature) ~comments =
   let cmtTbl = CommentTable.make ~comments () in
-  CommentTable.walkSignature s cmtTbl comments;
+  (* CommentTable.walkSignature s cmtTbl comments; *)
   Doc.toString ~width (printSignature s cmtTbl) ^ "\n"
