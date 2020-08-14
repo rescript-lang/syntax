@@ -366,6 +366,12 @@ let printComments doc (tbl: CommentTable.t) loc =
     (* trailingComments; *)
   (* ] *)
 
+let getPrevComment (tbl : CommentTable.t) =
+  if tbl.currentCommentIndex == 0 then None
+  else
+    let prevComment = Array.unsafe_get tbl.comments (tbl.currentCommentIndex - 1) in
+    Some prevComment
+
 let printListFast ~getLoc ~nodes ~print ?(forceBreak=false) tbl =
   let rec loop (prevLoc: Location.t) acc nodes =
     match nodes with
@@ -373,23 +379,20 @@ let printListFast ~getLoc ~nodes ~print ?(forceBreak=false) tbl =
     | node::nodes ->
       let nodeLoc = getLoc node in
       (* 1| let a = ()
-       * 2|            --> check if we have a gap here
-       * 3| // comment
+       * 2| // comment
+       * 3|            --> check if we have a gap here
        * 4| let b = ()
        *)
        let gapDoc =
-         let startPosCurrentNode =
-           (* What is the start of `let b = ()` in the example above?
-            * -> if there is a comment, line 3 with `// comment`
-            * -> if there aren't comments, line 4 `let b = ()` *)
-           match getCommentRangeBefore ~before:nodeLoc tbl with
-           | 0 -> nodeLoc.loc_start
-           | _ ->
-            let firstComment = Array.unsafe_get tbl.comments tbl.currentCommentIndex in
-            (Comment.loc firstComment).loc_start
+         let endPrev = match getPrevComment tbl with
+         | Some prevComment when
+           let loc = Comment.loc prevComment in
+           loc.loc_start.pos_cnum >= prevLoc.loc_end.pos_cnum ->
+           (Comment.loc prevComment).loc_end
+          | _ ->
+            prevLoc.loc_end
           in
-          (* Are thre one or more newlines between the current and previous node? *)
-          if startPosCurrentNode.pos_lnum - prevLoc.loc_end.pos_lnum > 1 then
+          if nodeLoc.Location.loc_start.pos_lnum - endPrev.pos_lnum > 1 then
             Doc.hardLine
           else
             Doc.nil
@@ -399,7 +402,7 @@ let printListFast ~getLoc ~nodes ~print ?(forceBreak=false) tbl =
         let trailingComments = printTrailingCommentsFast tbl nodeLoc in
         loop
           nodeLoc
-          (trailingComments::nodeDoc::leadingComments::gapDoc::Doc.hardLine::acc)
+          (trailingComments::nodeDoc::leadingComments::gapDoc::Doc.line::acc)
           nodes
   in
   match nodes with
@@ -423,23 +426,20 @@ let printListiFast ~getLoc ~nodes ~print ?(forceBreak=false) tbl =
     | node::nodes ->
       let nodeLoc = getLoc node in
       (* 1| let a = ()
-       * 2|            --> check if we have a gap here
-       * 3| // comment
+       * 2| // comment
+       * 3|            --> check if we have a gap here
        * 4| let b = ()
        *)
        let gapDoc =
-         let startPosCurrentNode =
-           (* What is the start of `let b = ()` in the example above?
-            * -> if there is a comment, line 3 with `// comment`
-            * -> if there aren't comments, line 4 `let b = ()` *)
-           match getCommentRangeBefore ~before:nodeLoc tbl with
-           | 0 -> nodeLoc.loc_start
-           | _ ->
-            let firstComment = Array.unsafe_get tbl.comments tbl.currentCommentIndex in
-            (Comment.loc firstComment).loc_start
+         let endPrev = match getPrevComment tbl with
+         | Some prevComment when
+           let loc = Comment.loc prevComment in
+           loc.loc_start.pos_cnum >= prevLoc.loc_end.pos_cnum ->
+           (Comment.loc prevComment).loc_end
+          | _ ->
+            prevLoc.loc_end
           in
-          (* Are thre one or more newlines between the current and previous node? *)
-          if startPosCurrentNode.pos_lnum - prevLoc.loc_end.pos_lnum > 1 then
+          if nodeLoc.Location.loc_start.pos_lnum - endPrev.pos_lnum > 1 then
             Doc.hardLine
           else
             Doc.nil
@@ -450,7 +450,7 @@ let printListiFast ~getLoc ~nodes ~print ?(forceBreak=false) tbl =
         loop
           (i + 1)
           nodeLoc
-          (trailingComments::nodeDoc::leadingComments::gapDoc::Doc.hardLine::acc)
+          (trailingComments::nodeDoc::leadingComments::gapDoc::Doc.line::acc)
           nodes
   in
   match nodes with
