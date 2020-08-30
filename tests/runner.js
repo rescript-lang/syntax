@@ -29,6 +29,12 @@ function classifyLang(filename) {
       return "ocaml";
     }
   }
+  if (filename.length > 10) {
+    let suffix = filename.substring(filename.length - 10);
+    if (suffix === ".react.res" || suffix === "react.resi") {
+      return "reactJsx";
+    }
+  }
   return "rescript";
 }
 
@@ -81,10 +87,10 @@ function parseReasonFileToSexp(filename) {
     .stdout.toString();
 }
 
-function parseNapkinFileToSexp(filename) {
+function parseNapkinFileToSexp(filename, reactJsx) {
   let { stdout } = cp.spawnSync(parser, [
     "-parse",
-    "res",
+    reactJsx ? "reactJsx" : "res",
     "-print",
     "sexp",
     filename,
@@ -102,8 +108,11 @@ function parseFileToSexp(filename) {
     case "ocaml":
       return parseOcamlFileToSexp(filename);
 
+    case "reactJsx":
+      return parseOcamlFileToSexp(filename, true);
+
     default:
-      return parseNapkinFileToSexp(filename);
+      return parseNapkinFileToSexp(filename, false);
   }
 }
 
@@ -154,7 +163,15 @@ function printFile(filename) {
 
     case "reason":
       parserSrc = "re";
-      return parseReasonFileToNapkin(filename, 80);
+      return {
+        result: parseReasonFileToNapkin(filename, 80),
+        status: 0,
+        errorOutput: ""
+      };
+      break;
+
+    case "reactJsx":
+      parserSrc = "reactJsx";
       break;
 
     case "rescript":
@@ -164,7 +181,6 @@ function printFile(filename) {
   }
 
   let intf = isInterface(filename);
-
   let args = ["-parse", parserSrc, "-print", "res", "-width", "80"];
 
   if (intf) {
@@ -173,7 +189,13 @@ function printFile(filename) {
 
   args.push(filename);
 
-  return cp.spawnSync(parser, args).stdout.toString("utf8");
+  let result = cp.spawnSync(parser, args);
+  
+  return {
+    result: result.stdout.toString("utf8"),
+    status: result.status,
+    errorOutput: result.stderr
+  }
 }
 
 /* Parser error output format:
@@ -196,16 +218,20 @@ global.runPrinter = (dirname) => {
     }
 
     test(base, () => {
-      let napkin = printFile(filename);
-      expect(napkin).toMatchSnapshot();
+      let {result, errorOutput, status} = printFile(filename);
+      if (status > 0) {
+        fail(new Error(`Test from file: ${filename} failed with error output: ${errorOutput}`));
+      } else {
+        expect(result).toMatchSnapshot();
+      }
 
       if (process.env.ROUNDTRIP_TEST) {
         let intf = isInterface(filename);
         let sexpAst = parseFileToSexp(filename);
-        let napkin2 = parseNapkinStdinToNapkin(napkin, intf, 80);
-        let napkinSexpAst = parseNapkinStdinToSexp(napkin, intf);
-        expect(sexpAst).toEqual(napkinSexpAst);
-        expect(napkin).toEqual(napkin2);
+        let result2 = parseNapkinStdinToNapkin(result, intf, 80);
+        let resultSexpAst = parseNapkinStdinToSexp(result, intf);
+        expect(sexpAst).toEqual(resultSexpAst);
+        expect(result).toEqual(result2);
       }
     });
   });

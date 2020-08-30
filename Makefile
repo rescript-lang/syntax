@@ -11,6 +11,7 @@ depend:
 	$(OCAMLDEP) -native -I tests -I src src/*.ml src/*.mli tests/*.ml tests/*.mli > .depend
 
 API_FILES = \
+	src/reactjs_jsx_ppx.cmx\
 	src/res_io.cmx\
 	src/res_minibuffer.cmx\
 	src/res_doc.cmx\
@@ -48,6 +49,8 @@ lib/rescript.exe: $(CLI_FILES)
 	$(OCAMLOPT) $(OCAMLFLAGS) -O2 -o ./lib/rescript.exe -I +compiler-libs ocamlcommon.cmxa  -I src $(CLI_FILES)
 
 build-native: lib/refmt.exe lib/rescript.exe depend
+
+build-ppx: src/reactjs_jsx_ppx.cmx
 
 bootstrap: build-native
 	ocaml unix.cma ./scripts/bspack.ml -bs-main Res_cli -I src -o ./lib/rescript.ml
@@ -94,4 +97,4 @@ clean:
 	rm -rf lib/rescript.exe
 	rm -rf lib/test.exe
 	git clean -dfx src
-.PHONY: clean test roundtrip-test termination dce exception reanalyze bootstrap build-native
+.PHONY: clean test roundtrip-test termination dce exception reanalyze bootstrap build-native build-ppx

@@ -207,11 +207,12 @@ module CliArgProcessor = struct
       let processInterface =
         isInterface || len > 0 && (String.get [@doesNotRaise]) filename (len - 1) = 'i'
       in
-      let parsingEngine =
+      let parsingEngine, react =
           match origin with
-          | "reasonBinary" -> Parser Res_driver_reason_binary.parsingEngine
-          | "ml" | "ocaml" -> Parser Res_driver_ml_parser.parsingEngine
-          | _ -> Parser Res_driver.parsingEngine
+          | "reasonBinary" -> Parser Res_driver_reason_binary.parsingEngine, false
+          | "ml" | "ocaml" -> Parser Res_driver_ml_parser.parsingEngine, false
+          | "reactJsx" -> Parser Res_driver.parsingEngine, true
+          | _ -> Parser Res_driver.parsingEngine, false
       in
       let printEngine =
         match target with
@@ -237,14 +238,19 @@ module CliArgProcessor = struct
             ~source:parseResult.source
             ~filename:parseResult.filename
             parseResult.diagnostics;
-          if recover || not parseResult.invalid then
+          if react then
+            exit 1
+          else if recover then
             printEngine.printInterface
               ~width ~filename ~comments:parseResult.comments parseResult.parsetree
           else ()
         end
         else
+          let parsetree =
+            if react then Reactjs_jsx_ppx.rewrite_signature parseResult.parsetree else parseResult.parsetree
+          in
           printEngine.printInterface
-            ~width ~filename ~comments:parseResult.comments parseResult.parsetree
+            ~width ~filename ~comments:parseResult.comments parsetree
       else
         let parseResult = backend.parseImplementation ~forPrinter ~filename in
         if parseResult.invalid then begin
@@ -252,25 +258,30 @@ module CliArgProcessor = struct
             ~source:parseResult.source
             ~filename:parseResult.filename
             parseResult.diagnostics;
-          if recover || not parseResult.invalid then
+          if react then
+            exit 1
+          else if recover then
             printEngine.printImplementation
               ~width ~filename ~comments:parseResult.comments parseResult.parsetree
           else ()
         end
         else
+          let parsetree =
+            if react then Reactjs_jsx_ppx.rewrite_implementation parseResult.parsetree else parseResult.parsetree
+          in
           printEngine.printImplementation
-            ~width ~filename ~comments:parseResult.comments parseResult.parsetree
+            ~width ~filename ~comments:parseResult.comments parsetree
     with
     | Failure txt ->
       prerr_string txt;
       prerr_newline();
       exit 1
     | _ -> exit 1
-  [@@raises exit]
+  [@@raises Invalid_argument, exit]
 end
 
 
-let [@raises exit] () =
+let [@raises Invalid_argument, exit] () =
   if not !Sys.interactive then begin
     ResClflags.parse ();
     match !ResClflags.files with
