@@ -20,6 +20,7 @@ let _ = <div className="menu" onClick={_ => Js.log("click")}></div>
 
 let _ = <Navbar> </Navbar>
 let _ = <Nav.Navbar> </Nav.Navbar>
+let _ = <Nav.navbar> </Nav.navbar>
 
 // punning
 let _ = <el punned> </el>

@@ -542,6 +542,7 @@ let _ =
   [@JSX ])
 let _ = ((Navbar.createElement ~children:[] ())[@JSX ])
 let _ = ((Nav.Navbar.createElement ~children:[] ())[@JSX ])
+let _ = ((Nav.navbar.createElement ~children:[] ())[@JSX ])
 let _ = ((el ~punned:((punned)[@ns.namedArgLoc ]) ~children:[] ())[@JSX ])
 let _ = ((el ?punned:((punned)[@ns.namedArgLoc ]) ~children:[] ())[@JSX ])
 let _ = ((el ~punned:((punned)[@ns.namedArgLoc ]) ~children:[] ())[@JSX ])
