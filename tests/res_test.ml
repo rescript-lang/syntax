@@ -1,5 +1,7 @@
 module IO = Res_io
 
+let ( / ) = Filename.concat
+
 module Snapshot = struct
   (* If set to true, will always create a new snapshot file.
    * Previous snapshots will be overwritten *)
@@ -45,7 +47,7 @@ let () = Arg.parse spec (fun _ -> ()) usage
 
 (* test printing of .res file*)
 let () =
-  let filename = "./tests/api/resSyntax.res" in
+  let filename = "." / "tests" / "api" / "resSyntax.res" in
   let prettySource = Res_multi_printer.print `res ~input:filename in
   assert (
     prettySource = {|// test file
@@ -60,7 +62,7 @@ if true {
 
 (* test printing of .resi file*)
 let () =
-  let filename = "./tests/api/resiSyntax.resi" in
+  let filename = "." / "tests" / "api" / "resiSyntax.resi" in
   let prettySource = Res_multi_printer.print `res ~input:filename in
   assert (
     prettySource = {|// test interface file
@@ -69,11 +71,11 @@ let x: int
 |}
   )
 
-let refmtBinaryPath = "./lib/refmt.exe"
+let refmtBinaryPath = "." / "lib" / "refmt.exe"
 
 (* test printing of reason .re file *)
 let () =
-  let filename = "./tests/api/reasonSyntax.re" in
+  let filename = "." / "tests" / "api" / "reasonSyntax.re" in
   let prettySource = Res_multi_printer.print (`refmt refmtBinaryPath) ~input:filename in
   assert (
     prettySource = {|// test .re file
@@ -89,7 +91,7 @@ let () = print_endline("foo")
 
 (* test printing of reason .rei file *)
 let () =
-  let filename = "./tests/api/reiSyntax.rei" in
+  let filename = "." / "tests" / "api" / "reiSyntax.rei" in
   let prettySource = Res_multi_printer.print (`refmt refmtBinaryPath) ~input:filename in
   assert (
     prettySource = {|// test .rei file
@@ -99,7 +101,7 @@ let x: int
 
 (* test printing of ocaml .ml file *)
 let () =
-  let filename = "./tests/api/mlSyntax.ml" in
+  let filename = "." / "tests" / "api" / "mlSyntax.ml" in
   let prettySource = Res_multi_printer.print `ml ~input:filename in
   assert (
     prettySource = {|/* test ml file */
@@ -114,7 +116,7 @@ let d = `Sehr Schön`
 
 (* test printing of ocaml .mli file *)
 let () =
-  let filename = "./tests/api/mliSyntax.mli" in
+  let filename = "." / "tests" / "api" / "mliSyntax.mli" in
   let prettySource = Res_multi_printer.print `ml ~input:filename in
   assert (
     prettySource = {|/* test mli file */
@@ -169,7 +171,7 @@ module OutcomePrinterTests = struct
    * The outcome tree is printed to a string
    * and stored in a snapshot `tests/oprint/oprint.res.snapshot` *)
   let run () =
-    let testFileName = "tests/oprint/oprint.res" in
+    let testFileName = "tests" / "oprint" / "oprint.res" in
     let printedOutcomeTree =
       parseFile testFileName |> outcomeOfStructure
     in
