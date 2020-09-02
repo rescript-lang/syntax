@@ -1,7 +1,7 @@
 {
   "name": "rescript-syntax",
   "version": "0.0.8-dev",
-  "description": "",
+  "description": "ReScript parser and printer to be used with ReScript compiler",
   "main": "Napkinscript.ml",
   "bin": {
     "napkinscript": "./lib/napkinscript.exe"

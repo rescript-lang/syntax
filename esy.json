@@ -1,0 +1,34 @@
+{
+  "name": "rescript-syntax",
+  "version": "0.0.8-dev",
+  "description": "ReScript parser and printer to be used with ReScript compiler",
+  "esy": {
+    "build": [
+      "sh -c \"cp -pr #{self.root / 'lib'} #{self.root / 'src'} #{self.root / 'tests'} #{self.root / 'vendor'} Makefile .depend #{self.target_dir}\"",
+      "make -C #{self.target_dir}"
+    ],
+    "install": "sh -c \"cp -p #{self.target_dir / 'lib' / 'rescript.exe'} #{self.bin}\""
+  },
+  "dependencies": {
+    "ocaml": "4.6.1000+BS"
+  },
+  "resolutions": {
+    "ocaml": "Et7f3/ocaml:package.json#cbb2b619757d41241c07f4fd39d240e46b0bd59f"
+  },
+  "scripts": {
+    "doc": "echo here we can generate doc for rescript.exe here and push",
+    "test": "esy b sh -c \"cp -pr #{self.root / 'lib'} #{self.root / 'src'} #{self.root / 'tests'} #{self.root / 'vendor'} Makefile .depend #{self.target_dir}; make -C #{self.target_dir} lib/refmt.exe lib/test.exe && (cd #{self.target_dir}; lib/test.exe\")",
+    "clean": "node ./scripts/ninja.js clean"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rescript-lang/syntax.git"
+  },
+  "keywords": ["ocaml", "rescript", "stdlib", "functional programming"],
+  "author": "Iwan (valcke.maxim@gmail.com)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/rescript-lang/syntax/issues"
+  },
+  "homepage": "https://github.com/rescript-lang/syntax#readme"
+}
