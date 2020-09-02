@@ -119,3 +119,51 @@ let () = match p.Parser.diagnostics with
       diagnostics src
   )
 ```
+
+### Usage in native (experimental)
+
+#### With dune/esy
+in your json file you have to add:
+```
+  "dependencies": {
+    "@opam/dune": ">1.11.0 <2.0.0",
+    "ocaml": "4.6.1000+BS",
+    "rescript":
+      "github:Et7f3/syntax:esy.json#80ef3e5f78ed5c7e9cda32b6708f2e5b3a2c9234"
+  },
+  "resolutions": {
+    "ocaml":
+      "Et7f3/ocaml:package.json#cbb2b619757d41241c07f4fd39d240e46b0bd59f"
+  }
+```
+this ocaml fork correspond to https://github.com/rescript-lang/ocaml/pull/44 (once merged you can use head)
+rescript point to head of https://github.com/rescript-lang/syntax/pull/128 (once merged you can use head)
+we have to use <2.0.0 of dune because of how esy handle resolutions https://github.com/esy/esy/issues/1112 (once solved you can remove this upper bound)
+
+we need then to define a dialect in `dune-project` (to explain to dune how to handle .res/.resi files)
+```
+(lang dune 1.11)
+(using fmt 1.2 (enabled_for rescript))
+
+(dialect
+ (name rescript)
+ (implementation
+  (extension res)
+  (preprocess
+   (run rescript.exe -print binary %{input-file}))
+  (format
+   (run rescript.exe %{input-file})))
+ (interface
+  (extension resi)
+  (preprocess
+   (run rescript.exe -interface -print binary %{input-file}))
+  (format
+   (run rescript.exe -interface %{input-file}))))
+```
+here we print in binary you can choose: `-print ml` instead.
+The first works only for 4.06 and is much faster
+The latter works for any OCaml > 4.06 but a bit slower
+
+### As library
+
+the main user copy directly the file so no library is builded while it can be added easily < 5 lines
