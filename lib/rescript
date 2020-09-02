@@ -4,8 +4,8 @@
 var child_process = require('child_process')
 var path = require('path')
 
-// the underlying binary is called napkinscript.exe
-var exe = path.join(__dirname, 'napkinscript.exe')
+// the underlying binary is called rescript.exe
+var exe = path.join(__dirname, 'rescript.exe')
 var delegate_args = process.argv.slice(2)
 
 try {
