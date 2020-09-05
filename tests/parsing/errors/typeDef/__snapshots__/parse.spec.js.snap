@@ -170,6 +170,10 @@ type stack =
   | Empty 
 type nonrec t = [%rescript.typehole ]
 type nonrec state = [%rescript.typehole ]
+type nonrec _
+;;string
+type nonrec _
+;;a > string
 =====Errors=============================================
 
   Syntax error!
@@ -183,20 +187,51 @@ type nonrec state = [%rescript.typehole ]
 
   Syntax error!
   parsing/errors/typeDef/typeDef.js:8:1-4  
-  6 │ 
-  7 │ // missing type
-  8 │ type state =
-  9 │ 
+   6 │ 
+   7 │ // missing type
+   8 │ type state =
+   9 │ 
+  10 │ // uppercase type case 1
   
   Missing a type here
 
   Syntax error!
-  parsing/errors/typeDef/typeDef.js:9:1  
-  7 │ // missing type
-  8 │ type state =
-  9 │ 
+  parsing/errors/typeDef/typeDef.js:11:1-4  
+   9 │ 
+  10 │ // uppercase type case 1
+  11 │ type Foo = string
+  12 │ 
+  13 │ // uppercase type case 2
   
   Missing a type here
+
+  Syntax error!
+  parsing/errors/typeDef/typeDef.js:11:6-8  
+   9 │ 
+  10 │ // uppercase type case 1
+  11 │ type Foo = string
+  12 │ 
+  13 │ // uppercase type case 2
+  
+  Type names start with lower case, like: foo
+
+  Syntax error!
+  parsing/errors/typeDef/typeDef.js:14:6-8  
+  12 │ 
+  13 │ // uppercase type case 2
+  14 │ type Foo<'a> = string
+  15 │ 
+  
+  Type names start with lower case, like: foo
+
+  Syntax error!
+  parsing/errors/typeDef/typeDef.js:14:10  
+  12 │ 
+  13 │ // uppercase type case 2
+  14 │ type Foo<'a> = string
+  15 │ 
+  
+  I'm not sure what to parse here when looking at \\"'\\".
 
 
 ========================================================"

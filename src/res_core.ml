@@ -493,8 +493,9 @@ let parseHashIdent ~startPos p =
   parseIdent ~startPos ~msg:ErrorMessages.variantIdent p
 
 (* Ldot (Ldot (Lident "Foo", "Bar"), "baz") *)
-let parseValuePath p =
+let parseValuePath ?customError p =
   let startPos = p.Parser.startPos in
+  let endPos = p.Parser.endPos in
   let rec aux p path =
     match p.Parser.token with
     | Lident ident -> Longident.Ldot(path, ident)
@@ -510,8 +511,19 @@ let parseValuePath p =
   | Lident ident -> Longident.Lident ident
   | Uident ident ->
     Parser.next p;
-    Parser.expect Dot p;
-    aux p (Lident ident)
+    (match customError with
+    | None ->
+      Parser.expect Dot p;
+      aux p (Lident ident)
+    | Some customError ->
+      match p.token with
+      | Dot ->
+        Parser.next p;
+        aux p (Lident ident)
+      | _ ->
+        let () = customError ~startPos ~endPos ident
+        in
+        Longident.Lident "_")
   | token ->
     Parser.err p (Diagnostics.unexpected token p.breadcrumbs);
     Longident.Lident "_"
@@ -4938,7 +4950,13 @@ and parseTypeDefinitionOrExtension ~attrs p =
       Asttypes.Nonrecursive
     | _ -> Asttypes.Nonrecursive
   in
-  let name = parseValuePath p in
+  let customError ~startPos ~endPos name =
+    let error =
+      Diagnostics.message ("Type names start with lower case, like: " ^ String.lowercase_ascii name)
+    in
+    Parser.err ~startPos ~endPos p error
+  in
+  let name = parseValuePath ~customError p in
   let params = parseTypeParams ~parent:name p in
   match p.Parser.token with
   | PlusEqual ->
