@@ -206,13 +206,6 @@ global.runPrinter = (dirname, ppx = "none") => {
   fs.readdirSync(dirname).forEach((base) => {
     let filename = path.join(dirname, base);
 
-    if (filename.length > 6) {
-      let suffix = filename.substring(filename.length - 6);
-      if (suffix === ".fixme") {
-        return;
-      }
-    }
-  
     if (!fs.lstatSync(filename).isFile() || base === "render.spec.js") {
       return;
     }

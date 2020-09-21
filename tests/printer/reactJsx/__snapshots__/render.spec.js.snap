@@ -15,6 +15,29 @@ let make = {
 "
 `;
 
+exports[`externalWithCustomName.res 1`] = `
+"module Foo = {
+  @bs.obj
+  external componentProps: (
+    ~a: int,
+    ~b: string,
+    ~key: string=?,
+    unit,
+  ) => {\\"a\\": int, \\"b\\": string} = \\"\\"
+  @bs.module(\\"Foo\\")
+  external component: React.componentLike<
+    {\\"a\\": int, \\"b\\": string},
+    React.element,
+  > = \\"component\\"
+}
+
+let t = React.createElement(
+  Foo.component,
+  Foo.componentProps(~a=1, ~b={\\"1\\"}, ()),
+)
+"
+`;
+
 exports[`innerModule.res 1`] = `
 "module Bar = {
   @bs.obj
