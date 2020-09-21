@@ -225,7 +225,7 @@ Make sure the test input is syntactically valid.`;
         expect(result).toMatchSnapshot();
       }
 
-      if (process.env.ROUNDTRIP_TEST) {
+      if (process.env.ROUNDTRIP_TEST && ppx === "none") {
         let intf = isInterface(filename);
         let sexpAst = parseFileToSexp(filename);
         let result2 = parseNapkinStdinToNapkin(result, intf, 80);
