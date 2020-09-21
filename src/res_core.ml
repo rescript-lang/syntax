@@ -99,6 +99,9 @@ Solution: directly use `concat`."
   let attributeWithoutNode (attr : Parsetree.attribute) =
     let ({Asttypes.txt = attrName}, _) = attr in
     "Did you forget to attach `" ^ attrName ^ "` to an item?\n  Standalone attributes start with `@@` like: `@@" ^ attrName ^"`"
+
+  let typeDeclarationNameLongident longident =
+    "A type declaration's name cannot contain a module access path. Did you mean `" ^ (Longident.last longident) ^"`?"
 end
 
 
@@ -4950,6 +4953,13 @@ and parseTypeDefinitionOrExtension ~attrs p =
   | PlusEqual ->
     TypeExt(parseTypeExtension ~params ~attrs ~name p)
   | _ ->
+    (* shape of type name should be Lident, i.e. `t` is accepted. `User.t` not *)
+    let () = match name.Location.txt with
+    | Lident _ -> ()
+    | longident ->
+      Parser.err ~startPos:name.loc.loc_start ~endPos:name.loc.loc_end p
+        (longident |> ErrorMessages.typeDeclarationNameLongident |> Diagnostics.message)
+    in
     let typeDefs = parseTypeDefinitions ~attrs ~name ~params ~startPos p in
     TypeDef {recFlag; types = typeDefs}
 
