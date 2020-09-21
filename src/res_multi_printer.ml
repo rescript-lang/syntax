@@ -51,40 +51,6 @@ let printMl ~isInterface ~filename =
       ~comments:parseResult.comments
       parseResult.parsetree
 
-(* print files using React JSX ppx to res syntax *)
-let printJsx ~isInterface ~filename =
-  if isInterface then
-    let parseResult =
-      Res_driver.parsingEngine.parseInterface ~forPrinter:true ~filename
-    in
-    if parseResult.invalid then
-      begin
-        Res_diagnostics.printReport parseResult.diagnostics parseResult.source;
-        exit 1
-      end
-    else
-      let jsxPass = Reactjs_jsx_ppx.rewrite_signature parseResult.parsetree in
-      Res_printer.printInterface
-        ~width:defaultPrintWidth
-        ~comments:parseResult.comments
-        jsxPass
-  else
-    let parseResult =
-      Res_driver.parsingEngine.parseImplementation ~forPrinter:true ~filename
-    in
-    if parseResult.invalid then
-      begin
-        Res_diagnostics.printReport parseResult.diagnostics parseResult.source;
-        exit 1
-      end
-    else
-      let jsxPass = Reactjs_jsx_ppx.rewrite_implementation parseResult.parsetree in
-      Res_printer.printImplementation
-        ~width:defaultPrintWidth
-        ~comments:parseResult.comments
-        jsxPass
-[@@raises Invalid_argument, Failure, exit]
-
 (* How does printing Reason to Res work?
  * -> open a tempfile
  * -> write the source code found in "filename" into the tempfile
@@ -156,8 +122,7 @@ let print language ~input =
     len > 0 && String.unsafe_get input (len - 1) = 'i'
   in
   match language with
-  | `jsx -> printJsx ~isInterface ~filename:input
   | `res -> printRes ~isInterface ~filename:input
   | `ml -> printMl ~isInterface ~filename:input
   | `refmt path -> printReason ~refmtPath:path ~isInterface ~filename:input
-[@@raises Invalid_argument, Failure, Sys_error, exit]
+[@@raises Sys_error, exit]

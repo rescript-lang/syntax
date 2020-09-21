@@ -126,31 +126,6 @@ let y: float
 |}
   )
 
-(* test printing of React jsx file *)
-let () =
-let filename = "./tests/api/resReactJsx.res" in
-let prettySource = Res_multi_printer.print `jsx ~input:filename in
-assert (
-  prettySource = {|@bs.obj
-external makeProps: (
-  ~msg: 'msg,
-  ~key: string=?,
-  unit,
-) => {
-  "msg": 'msg,
-  // test React JSX file
-} = ""
-
-let make =
-  (@warning("-16") ~msg) => {
-    ReactDOMRe.createDOMElementVariadic("div", [{msg->React.string}])
-  }
-let make = {
-  let \"ResReactJsx" = (\"Props": {"msg": 'msg}) => make(~msg=\"Props"["msg"])
-  \"ResReactJsx"
-}
-|})
-
 let () = print_endline "✅ multi printer api tests"
 
 module OutcomePrinterTests = struct
