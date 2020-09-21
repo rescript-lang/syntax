@@ -2,14 +2,7 @@
 
 exports[`commentAtTop.react.res 1`] = `
 "@bs.obj
-external makeProps: (
-  ~msg: 'msg,
-  ~key: string=?,
-  unit,
-) => {
-  \\"msg\\": 'msg,
-  // test React JSX file
-} = \\"\\"
+external makeProps: (~msg: 'msg, ~key: string=?, unit) => {\\"msg\\": 'msg} = \\"\\" // test React JSX file
 
 let make =
   (@warning(\\"-16\\") ~msg) => {

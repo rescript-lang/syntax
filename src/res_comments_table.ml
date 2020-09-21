@@ -85,6 +85,7 @@ let log t =
     ]
   ) |> Doc.toString ~width:80 |> print_endline
   [@@live]
+
 let attach tbl loc comments =
   match comments with
   | [] -> ()
@@ -776,6 +777,12 @@ let rec walkStructure s t comments =
         partitionLeadingTrailing comments longident.loc in
       attach t.leading longident.loc leading;
       attach t.trailing longident.loc trailing;
+    | Pexp_let (
+        _recFlag,
+        valueBindings,
+        {pexp_desc = Pexp_construct ({txt = Longident.Lident "()"}, None)}
+      ) ->
+      walkValueBindings valueBindings t comments
     | Pexp_let (_recFlag, valueBindings, expr2) ->
       let comments = visitListButContinueWithRemainingComments
         ~getLoc:(fun n ->
@@ -1423,6 +1430,8 @@ and walkExprArgument (_argLabel, expr) t comments =
       let (before, after) = partitionLeadingTrailing comments longident.loc in
       attach t.leading longident.loc before;
       attach t.trailing longident.loc after
+    | Pmod_structure [] ->
+      attach t.inside modExpr.pmod_loc comments
     | Pmod_structure structure ->
       walkStructure structure t comments
     | Pmod_extension extension ->
@@ -1516,6 +1525,8 @@ and walkExprArgument (_argLabel, expr) t comments =
       let (leading, trailing) = partitionLeadingTrailing comments longident.loc in
       attach t.leading longident.loc leading;
       attach t.trailing longident.loc trailing;
+    | Pmty_signature [] ->
+      attach t.inside modType.pmty_loc comments
     | Pmty_signature signature ->
       walkSignature signature t comments
     | Pmty_extension extension ->

@@ -50,7 +50,13 @@ function parseFile(filename, recover, env) {
   let args = ["-print", "ml"];
   if (recover) args.push("-recover");
   args.push(filename);
-  return env ? cp.spawnSync(parser, args, { env }) : cp.spawnSync(parser, args);
+  let result = env ? cp.spawnSync(parser, args, { env }) : cp.spawnSync(parser, args);
+
+  return {
+    result: result.stdout.toString(),
+    status: result.status,
+    errorOutput: result.stderr
+  }
 }
 
 function parseOcamlFileToNapkin(filename) {
@@ -190,7 +196,7 @@ function printFile(filename) {
   args.push(filename);
 
   let result = cp.spawnSync(parser, args);
-  
+
   return {
     result: result.stdout.toString("utf8"),
     status: result.status,
@@ -205,7 +211,7 @@ function printFile(filename) {
    machine-independent
 */
 let makeReproducibleFilename = (txt) => {
-  return txt.replace(/(  Syntax error!\n  )(.+)( .+)\n/g, (match, intro, filepath, loc) => {
+  return txt.replace(/(  Syntax error!\n  )(.+)(:.+)\n/g, (match, intro, filepath, loc) => {
     return intro + path.relative(__dirname, filepath) + loc
   })
 };
@@ -228,7 +234,14 @@ global.runPrinter = (dirname) => {
     test(base, () => {
       let {result, errorOutput, status} = printFile(filename);
       if (status > 0) {
-        fail(new Error(`Test from file: ${filename} failed with error output: ${errorOutput}`));
+        let msg = `Test from file: ${filename} failed with error output:
+
+------------ BEGIN ------------
+${errorOutput}
+------------- END -------------
+
+Make sure the test input is syntactically valid.`;
+        fail(msg);
       } else {
         expect(result).toMatchSnapshot();
       }
@@ -253,20 +266,31 @@ global.runParser = (dirname, recover = false, showError = false, env) => {
     }
 
     test(base, () => {
-      let res = parseFile(filename, recover, env);
-      let parsetree = res.stdout.toString();
-      let output = "";
-      if (showError) {
-        output += `=====Parsetree==========================================\n`;
-        output += `${parsetree}\n`;
-        output += `=====Errors=============================================\n`;
-        output += `${makeReproducibleFilename(res.stderr.toString())}\n`;
-        output += `========================================================`;
-      } else {
-        output = parsetree;
-      }
+      let {result, errorOutput, status} = parseFile(filename, recover, env);
+      if (status > 0) {
+        let msg = `Test from file: ${filename} failed with error output:
 
-      expect(output).toMatchSnapshot();
+------------ BEGIN ------------
+${errorOutput}
+------------- END -------------
+
+Make sure the test input is syntactically valid or run your test suite with 'recover' set to true.`;
+        fail(msg);
+      } else {
+        let parsetree = result;
+        let output = "";
+        if (showError) {
+          output += `=====Parsetree==========================================\n`;
+          output += `${parsetree}\n`;
+          output += `=====Errors=============================================\n`;
+          output += `${makeReproducibleFilename(errorOutput.toString())}\n`;
+          output += `========================================================`;
+        } else {
+          output = parsetree;
+        }
+
+        expect(output).toMatchSnapshot();
+      }
     });
   });
 };
