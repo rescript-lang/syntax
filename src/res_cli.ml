@@ -165,6 +165,7 @@ module ResClflags: sig
   val files: string list ref
   val interface: bool ref
   val report: string ref
+  val ppx: string ref
 
   val parse: unit -> unit
 end = struct
@@ -178,6 +179,7 @@ end = struct
   let origin = ref ""
   let interface = ref false
   let report = ref "pretty"
+  let ppx = ref "none"
 
   let usage = "Usage:\n  rescript <options> <file>\n\n" ^
   "Examples:\n" ^
@@ -192,6 +194,7 @@ end = struct
     ("-print", Arg.String (fun txt -> print := txt), "Print either binary or ns. Default: ns");
     ("-width", Arg.Int (fun w -> width := w), "Specify the line length for the printer (formatter)");
     ("-interface", Arg.Unit (fun () -> interface := true), "Parse as interface");
+    ("-ppx", Arg.String (fun txt -> ppx := txt), "Apply a specific built-in ppx before parsing, none or jsx. Default: none");
     (* ("-report", Arg.String (fun txt -> report := txt), "Stylize errors and messages using color and context. Accepts `Pretty` and `Plain`. Default `Plain`") *)
   ]
 
@@ -201,18 +204,17 @@ end
 module CliArgProcessor = struct
   type backend = Parser: ('diagnostics) Res_driver.parsingEngine -> backend [@@unboxed]
 
-  let processFile ~isInterface ~width ~recover ~origin ~target ~report:_ filename =
+  let processFile ~isInterface ~width ~recover ~origin ~target ~report:_ ~ppx filename =
     try
       let len = String.length filename in
       let processInterface =
         isInterface || len > 0 && (String.get [@doesNotRaise]) filename (len - 1) = 'i'
       in
-      let parsingEngine, react =
+      let parsingEngine =
           match origin with
-          | "reasonBinary" -> Parser Res_driver_reason_binary.parsingEngine, false
-          | "ml" | "ocaml" -> Parser Res_driver_ml_parser.parsingEngine, false
-          | "reactJsx" -> Parser Res_driver.parsingEngine, true
-          | _ -> Parser Res_driver.parsingEngine, false
+          | "reasonBinary" -> Parser Res_driver_reason_binary.parsingEngine
+          | "ml" | "ocaml" -> Parser Res_driver_ml_parser.parsingEngine
+          | _ -> Parser Res_driver.parsingEngine
       in
       let printEngine =
         match target with
@@ -226,6 +228,11 @@ module CliArgProcessor = struct
       let forPrinter = match target with
       | "res" | "rescript" | "sexp" -> true
       | _ -> false
+      in
+
+      let ppx = match ppx with
+      | "jsx" -> `Jsx
+      | _ -> `None
       in
 
       let Parser backend = parsingEngine in
@@ -244,8 +251,9 @@ module CliArgProcessor = struct
           else exit 1
         end
         else
-          let parsetree =
-            if react then Reactjs_jsx_ppx.rewrite_signature parseResult.parsetree else parseResult.parsetree
+          let parsetree = match ppx with
+            | `Jsx -> Reactjs_jsx_ppx.rewrite_signature parseResult.parsetree
+            | `None -> parseResult.parsetree
           in
           printEngine.printInterface
             ~width ~filename ~comments:parseResult.comments parsetree
@@ -262,8 +270,9 @@ module CliArgProcessor = struct
           else exit 1
         end
         else
-          let parsetree =
-            if react then Reactjs_jsx_ppx.rewrite_implementation parseResult.parsetree else parseResult.parsetree
+          let parsetree = match ppx with
+            | `Jsx -> Reactjs_jsx_ppx.rewrite_implementation parseResult.parsetree
+            | `None -> parseResult.parsetree
           in
           printEngine.printImplementation
             ~width ~filename ~comments:parseResult.comments parsetree
@@ -289,6 +298,7 @@ let [@raises Invalid_argument, exit] () =
         ~target:!ResClflags.print
         ~origin:!ResClflags.origin
         ~report:!ResClflags.report
+        ~ppx:!ResClflags.ppx
         ""
     | files ->
       List.iter (fun filename ->
@@ -299,6 +309,7 @@ let [@raises Invalid_argument, exit] () =
           ~target:!ResClflags.print
           ~origin:!ResClflags.origin
           ~report:!ResClflags.report
+          ~ppx:!ResClflags.ppx
           filename
         ) files
 end

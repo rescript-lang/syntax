@@ -29,12 +29,6 @@ function classifyLang(filename) {
       return "ocaml";
     }
   }
-  if (filename.length > 10) {
-    let suffix = filename.substring(filename.length - 10);
-    if (suffix === ".react.res" || suffix === "react.resi") {
-      return "reactJsx";
-    }
-  }
   return "rescript";
 }
 
@@ -93,10 +87,10 @@ function parseReasonFileToSexp(filename) {
     .stdout.toString();
 }
 
-function parseNapkinFileToSexp(filename, reactJsx) {
+function parseNapkinFileToSexp(filename) {
   let { stdout } = cp.spawnSync(parser, [
     "-parse",
-    reactJsx ? "reactJsx" : "res",
+    "res",
     "-print",
     "sexp",
     filename,
@@ -114,11 +108,8 @@ function parseFileToSexp(filename) {
     case "ocaml":
       return parseOcamlFileToSexp(filename);
 
-    case "reactJsx":
-      return parseNapkinFileToSexp(filename, true);
-
     default:
-      return parseNapkinFileToSexp(filename, false);
+      return parseNapkinFileToSexp(filename);
   }
 }
 
@@ -160,7 +151,7 @@ function parseNapkinStdinToNapkin(src, isInterface, width = 100) {
     .stdout.toString("utf8");
 }
 
-function printFile(filename) {
+function printFile(filename, ppx) {
   let parserSrc;
   switch (classifyLang(filename)) {
     case "ocaml":
@@ -174,12 +165,7 @@ function printFile(filename) {
         status: 0,
         errorOutput: ""
       };
-      break;
-
-    case "reactJsx":
-      parserSrc = "reactJsx";
-      break;
-
+    
     case "rescript":
     default:
       parserSrc = "res";
@@ -187,7 +173,7 @@ function printFile(filename) {
   }
 
   let intf = isInterface(filename);
-  let args = ["-parse", parserSrc, "-print", "res", "-width", "80"];
+  let args = ["-parse", parserSrc, "-print", "res", "-width", "80", "-ppx", ppx];
 
   if (intf) {
     args.push("-interface");
@@ -216,7 +202,7 @@ let makeReproducibleFilename = (txt) => {
   })
 };
 
-global.runPrinter = (dirname) => {
+global.runPrinter = (dirname, ppx = "none") => {
   fs.readdirSync(dirname).forEach((base) => {
     let filename = path.join(dirname, base);
 
@@ -232,7 +218,7 @@ global.runPrinter = (dirname) => {
     }
 
     test(base, () => {
-      let {result, errorOutput, status} = printFile(filename);
+      let {result, errorOutput, status} = printFile(filename, ppx);
       if (status > 0) {
         let msg = `Test from file: ${filename} failed with error output:
 
