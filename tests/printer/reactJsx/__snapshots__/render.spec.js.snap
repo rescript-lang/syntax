@@ -1,6 +1,6 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`commentAtTop.react.res 1`] = `
+exports[`commentAtTop.res 1`] = `
 "@bs.obj
 external makeProps: (~msg: 'msg, ~key: string=?, unit) => {\\"msg\\": 'msg} = \\"\\" // test React JSX file
 
@@ -9,14 +9,13 @@ let make =
     ReactDOMRe.createDOMElementVariadic(\\"div\\", [{msg->React.string}])
   }
 let make = {
-  let \\\\\\"CommentAtTop.react\\" = (\\\\\\"Props\\": {\\"msg\\": 'msg}) =>
-    make(~msg=\\\\\\"Props\\"[\\"msg\\"])
-  \\\\\\"CommentAtTop.react\\"
+  let \\\\\\"CommentAtTop\\" = (\\\\\\"Props\\": {\\"msg\\": 'msg}) => make(~msg=\\\\\\"Props\\"[\\"msg\\"])
+  \\\\\\"CommentAtTop\\"
 }
 "
 `;
 
-exports[`innerModule.react.res 1`] = `
+exports[`innerModule.res 1`] = `
 "module Bar = {
   @bs.obj
   external makeProps: (
@@ -31,9 +30,9 @@ exports[`innerModule.react.res 1`] = `
       ReactDOMRe.createDOMElementVariadic(\\"div\\", [])
     }
   let make = {
-    let \\\\\\"InnerModule.react$Bar\\" = (\\\\\\"Props\\": {\\"a\\": 'a, \\"b\\": 'b}) =>
+    let \\\\\\"InnerModule$Bar\\" = (\\\\\\"Props\\": {\\"a\\": 'a, \\"b\\": 'b}) =>
       make(~b=\\\\\\"Props\\"[\\"b\\"], ~a=\\\\\\"Props\\"[\\"a\\"], ())
-    \\\\\\"InnerModule.react$Bar\\"
+    \\\\\\"InnerModule$Bar\\"
   }
   @bs.obj
   external componentProps: (
@@ -49,15 +48,15 @@ exports[`innerModule.react.res 1`] = `
       ReactDOMRe.createDOMElementVariadic(\\"div\\", [])
     }
   let component = {
-    let \\\\\\"InnerModule.react$Bar$component\\" = (\\\\\\"Props\\": {\\"a\\": 'a, \\"b\\": 'b}) =>
+    let \\\\\\"InnerModule$Bar$component\\" = (\\\\\\"Props\\": {\\"a\\": 'a, \\"b\\": 'b}) =>
       component(~b=\\\\\\"Props\\"[\\"b\\"], ~a=\\\\\\"Props\\"[\\"a\\"], ())
-    \\\\\\"InnerModule.react$Bar$component\\"
+    \\\\\\"InnerModule$Bar$component\\"
   }
 }
 "
 `;
 
-exports[`topLevel.react.res 1`] = `
+exports[`topLevel.res 1`] = `
 "@bs.obj
 external makeProps: (
   ~a: 'a,
@@ -71,9 +70,9 @@ let make =
     ReactDOMRe.createDOMElementVariadic(\\"div\\", [])
   }
 let make = {
-  let \\\\\\"TopLevel.react\\" = (\\\\\\"Props\\": {\\"a\\": 'a, \\"b\\": 'b}) =>
+  let \\\\\\"TopLevel\\" = (\\\\\\"Props\\": {\\"a\\": 'a, \\"b\\": 'b}) =>
     make(~b=\\\\\\"Props\\"[\\"b\\"], ~a=\\\\\\"Props\\"[\\"a\\"], ())
-  \\\\\\"TopLevel.react\\"
+  \\\\\\"TopLevel\\"
 }
 "
 `;
