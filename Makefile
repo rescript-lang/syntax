@@ -50,8 +50,6 @@ lib/rescript.exe: $(CLI_FILES)
 
 build-native: lib/refmt.exe lib/rescript.exe depend
 
-build-ppx: src/reactjs_jsx_ppx.cmx
-
 bootstrap: build-native
 	ocaml unix.cma ./scripts/bspack.ml -bs-main Res_cli -I src -o ./lib/rescript.ml
 	./lib/rescript.exe -parse ml -print ns ./lib/Rescript.ml > ./lib/Rescript2.ml
@@ -97,4 +95,4 @@ clean:
 	rm -rf lib/rescript.exe
 	rm -rf lib/test.exe
 	git clean -dfx src
-.PHONY: clean test roundtrip-test termination dce exception reanalyze bootstrap build-native build-ppx
+.PHONY: clean test roundtrip-test termination dce exception reanalyze bootstrap build-native

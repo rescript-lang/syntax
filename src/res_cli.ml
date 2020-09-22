@@ -179,7 +179,7 @@ end = struct
   let origin = ref ""
   let interface = ref false
   let report = ref "pretty"
-  let ppx = ref "none"
+  let ppx = ref ""
 
   let usage = "Usage:\n  rescript <options> <file>\n\n" ^
   "Examples:\n" ^
@@ -230,11 +230,6 @@ module CliArgProcessor = struct
       | _ -> false
       in
 
-      let ppx = match ppx with
-      | "jsx" -> `Jsx
-      | _ -> `None
-      in
-
       let Parser backend = parsingEngine in
       (* This is the whole purpose of the Color module above *)
       Color.setup None;
@@ -252,8 +247,8 @@ module CliArgProcessor = struct
         end
         else
           let parsetree = match ppx with
-            | `Jsx -> Reactjs_jsx_ppx.rewrite_signature parseResult.parsetree
-            | `None -> parseResult.parsetree
+            | "jsx" -> Reactjs_jsx_ppx.rewrite_signature parseResult.parsetree
+            | _ -> parseResult.parsetree
           in
           printEngine.printInterface
             ~width ~filename ~comments:parseResult.comments parsetree
@@ -271,8 +266,8 @@ module CliArgProcessor = struct
         end
         else
           let parsetree = match ppx with
-            | `Jsx -> Reactjs_jsx_ppx.rewrite_implementation parseResult.parsetree
-            | `None -> parseResult.parsetree
+            | "jsx" -> Reactjs_jsx_ppx.rewrite_implementation parseResult.parsetree
+            | _ -> parseResult.parsetree
           in
           printEngine.printImplementation
             ~width ~filename ~comments:parseResult.comments parsetree
