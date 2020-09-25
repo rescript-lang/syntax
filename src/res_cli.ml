@@ -236,7 +236,7 @@ module CliArgProcessor = struct
           backend.stringOfDiagnostics
             ~source:parseResult.source
             ~filename:parseResult.filename
-            parseResult.diagnostics; 
+            parseResult.diagnostics;
           if recover then
             printEngine.printInterface
               ~width ~filename ~comments:parseResult.comments parseResult.parsetree
@@ -266,11 +266,10 @@ module CliArgProcessor = struct
       prerr_newline();
       exit 1
     | _ -> exit 1
-  [@@raises exit]
 end
 
 
-let [@raises exit] () =
+let  () =
   if not !Sys.interactive then begin
     ResClflags.parse ();
     match !ResClflags.files with

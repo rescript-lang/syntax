@@ -27,7 +27,11 @@ let getCommentRangeBefore ~before:start (cmtTbl : CommentTable.t) =
   in
   loop 0
 
-let getAdjacentCommentRangeAfter ~after:loc (cmtTbl : CommentTable.t) =
+let getAdjacentCommentRangeAfter ?onSameLine:onSameLine ~after:loc (cmtTbl : CommentTable.t) =
+  let onSameLine = match onSameLine with
+  | Some x -> x
+  | None -> false
+  in
   let len = Array.length cmtTbl.comments in
   let startIndex = cmtTbl.currentCommentIndex in
   let rec loop count prevLoc =
@@ -35,7 +39,9 @@ let getAdjacentCommentRangeAfter ~after:loc (cmtTbl : CommentTable.t) =
     else if startIndex + count == len then count
     else
       let comment = Array.unsafe_get cmtTbl.comments (startIndex + count) in
-      if (Comment.prevTokEndPos comment).pos_cnum == prevLoc.Location.loc_end.pos_cnum then
+      if (Comment.prevTokEndPos comment).pos_cnum == prevLoc.Location.loc_end.pos_cnum
+        && (not onSameLine || onSameLine && prevLoc.Location.loc_end.pos_lnum == (Comment.loc comment).loc_start.pos_lnum)
+      then
         loop (count + 1) (Comment.loc comment)
       else
         count
@@ -333,21 +339,21 @@ let printTrailingComments node tbl loc =
       cmtsDoc;
     ]
 
-let printTrailingCommentsFast tbl loc =
-  match getAdjacentCommentRangeAfter ~after:loc tbl with
+let printTrailingCommentsFast ?onSameLine tbl loc =
+  match getAdjacentCommentRangeAfter ?onSameLine ~after:loc tbl with
   | 0 -> Doc.nil
   | 1 ->
     (* fast path, in general there's only one comment on each node *)
     let comment = Array.unsafe_get tbl.comments tbl.currentCommentIndex in
     tbl.currentCommentIndex <- tbl.currentCommentIndex + 1;
-    printTrailingComment loc comment
+    printTrailingComment loc loc comment
   | count ->
     let currentIndex = tbl.currentCommentIndex in
     let lastIndex = currentIndex + count - 1 in
     let docs = ref [] in
     for i = currentIndex to lastIndex do
       let comment = Array.unsafe_get tbl.comments i in
-      let cmtDoc = printTrailingComment loc comment in
+      let cmtDoc = printTrailingComment loc loc comment in
       docs.contents <- cmtDoc::docs.contents
     done;
     tbl.currentCommentIndex <- tbl.currentCommentIndex + count;
@@ -399,7 +405,7 @@ let printListFast ~getLoc ~nodes ~print ?(forceBreak=false) tbl =
         in
         let leadingComments = printLeadingCommentsFast tbl nodeLoc in
         let nodeDoc = print node tbl in
-        let trailingComments = printTrailingCommentsFast tbl nodeLoc in
+        let trailingComments = printTrailingCommentsFast ~onSameLine:true tbl nodeLoc in
         loop
           nodeLoc
           (trailingComments::nodeDoc::leadingComments::gapDoc::Doc.line::acc)
@@ -411,7 +417,7 @@ let printListFast ~getLoc ~nodes ~print ?(forceBreak=false) tbl =
     let nodeLoc = getLoc node in
     let leadingComments = printLeadingCommentsFast tbl nodeLoc in
     let nodeDoc = print node tbl in
-    let trailingComments = printLeadingCommentsFast tbl nodeLoc in
+    let trailingComments = printTrailingCommentsFast ~onSameLine:true tbl nodeLoc in
     let (lastLoc, docs) = loop nodeLoc [trailingComments; nodeDoc; leadingComments] nodes in
     let forceBreak =
       forceBreak ||
@@ -446,7 +452,7 @@ let printListiFast ~getLoc ~nodes ~print ?(forceBreak=false) tbl =
         in
         let leadingComments = printLeadingCommentsFast tbl nodeLoc in
         let nodeDoc = print node tbl i in
-        let trailingComments = printTrailingCommentsFast tbl nodeLoc in
+        let trailingComments = printTrailingCommentsFast ~onSameLine:true tbl nodeLoc in
         loop
           (i + 1)
           nodeLoc
@@ -459,7 +465,7 @@ let printListiFast ~getLoc ~nodes ~print ?(forceBreak=false) tbl =
     let nodeLoc = getLoc node in
     let leadingComments = printLeadingCommentsFast tbl nodeLoc in
     let nodeDoc = print node tbl 0 in
-    let trailingComments = printLeadingCommentsFast tbl nodeLoc in
+    let trailingComments = printTrailingCommentsFast ~onSameLine:true tbl nodeLoc in
     let (lastLoc, docs) = loop 1 nodeLoc [trailingComments; nodeDoc; leadingComments] nodes in
     let forceBreak =
       forceBreak ||
@@ -2026,11 +2032,9 @@ and printTypExpr (typExpr : Parsetree.core_type) cmtTbl =
     )
   | _ -> renderedType
   in
-  let trailingComments = printTrailingCommentsFast cmtTbl typExpr.ptyp_loc in
   Doc.concat [
     leadingComments;
     doc;
-    trailingComments;
   ]
 
 and printBsObjectSugar ~inline fields openFlag cmtTbl =
