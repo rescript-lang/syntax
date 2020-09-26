@@ -101,7 +101,7 @@ Solution: directly use `concat`."
     "Did you forget to attach `" ^ attrName ^ "` to an item?\n  Standalone attributes start with `@@` like: `@@" ^ attrName ^"`"
 
   let typeDeclarationNameLongident longident =
-    "A type declaration's name cannot contain a module access path. Did you mean `" ^ (Longident.last longident) ^"`?"
+    "A type declaration's name cannot contain a module access. Did you mean `" ^ (Longident.last longident) ^"`?"
 end
 
 
@@ -1977,7 +1977,7 @@ and parsePrimaryExpr ~operand ?(noCall=false) p =
           ~startPos:expr.pexp_loc.loc_start
           ~endPos:expr.pexp_loc.loc_end
           p
-          (Diagnostics.message "Tagged template literals are currently restricted to identifiers like: json`null`.");
+          (Diagnostics.message "Tagged template literals are currently restricted to names like: json`null`.");
         parseTemplateExpr p
       end
     | _ -> expr
@@ -2434,7 +2434,7 @@ and parseJsxName p =
     let longident = parseModuleLongIdent ~lowercase:true p in
     Location.mkloc (Longident.Ldot (longident.txt, "createElement")) longident.loc
   | _ ->
-    let msg = "A jsx name should start with a lowercase or uppercase identifier, like: div in <div /> or Navbar in <Navbar />"
+    let msg = "A jsx name must be a lowercase or uppercase name, like: div in <div /> or Navbar in <Navbar />"
     in
     Parser.err p (Diagnostics.message msg);
     Location.mknoloc (Longident.Lident "_")

@@ -195,7 +195,7 @@ type nonrec state = [%rescript.typehole ]
   6 │ 
   7 │ // missing type
   
-  A type declaration's name cannot contain a module access path. Did you mean \`bar\`?
+  A type declaration's name cannot contain a module access. Did you mean \`bar\`?
 
 
   Syntax error!
