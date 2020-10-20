@@ -66,11 +66,11 @@ Update jest snapshots:
 
 Debug a file:
 ```sh
-# write code in test.re
-./lib/rescript.exe test.re # test printer
-./lib/rescript.exe -print ast test.re print ast
-./lib/rescript.exe -print ml test.re show ocaml code
-./lib/rescript.exe -print res -width 80 test.re test printer and change default print width
+# write code in test.res
+./lib/rescript.exe test.res # test printer
+./lib/rescript.exe -print ast test.res # print ast
+./lib/rescript.exe -print ml test.res # show ocaml code
+./lib/rescript.exe -print res -width 80 test.res # test printer and change default print width
 ```
 
 Benchmark:
