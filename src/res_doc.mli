@@ -34,5 +34,7 @@ val equal: t
 val trailingComma: t
 val doubleQuote: t
 
+val willBreak: t -> bool
+
 val toString: width: int -> t -> string
 val debug: t -> unit [@@live]

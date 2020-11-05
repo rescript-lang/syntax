@@ -3731,6 +3731,7 @@ and printPexpApply expr cmtTbl =
         printArgumentsWithCallbackInLastPosition ~uncurried args cmtTbl
       in
       Doc.concat [
+        if Doc.willBreak argsDoc then Doc.breakParent else Doc.nil;
         printAttributes attrs cmtTbl;
         callExprDoc;
         argsDoc;
