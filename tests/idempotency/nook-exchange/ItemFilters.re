@@ -901,6 +901,7 @@ let make =
         ->unsafeAsHtmlInputElement
         ->HtmlInputElement.setValue(filters.text)
       );
+
       Some(
         () => {
           switch (React.Ref.current(updateTextTimeoutRef)) {

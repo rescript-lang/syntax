@@ -89,6 +89,7 @@ module WithUser = {
 
     let onSubmit = e => {
       ReactEvent.Form.preventDefault(e);
+
       {
         let prevUsername = user.username;
         setIsSubmitting(_ => true);
@@ -153,9 +154,11 @@ module WithUser = {
                      let state =
                        "connect_"
                        ++ string_of_int(Js.Math.random_int(100000, 999999));
+
                      Dom.Storage.(
                        localStorage |> setItem("discord_state", state)
                      );
+
                      Webapi.Dom.(
                        location->Location.setHref(
                          Constants.discordOauthRedirectUri(state),

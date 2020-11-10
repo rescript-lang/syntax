@@ -3251,8 +3251,8 @@ let s = \`\${foo}after\`
 let s = \`\${foo} after\`
 let s = \`\${foo}  after\`
 
-let s = foo ++ bar
-let s = foo ++ bar ++ baz
+let s = \`\${foo}\${bar}\`
+let s = \`\${foo}\${bar}\${baz}\`
 
 let s = \`\${foo} \${bar}\`
 let s = \`\${foo} \${bar} \${baz}\`

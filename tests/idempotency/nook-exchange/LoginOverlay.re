@@ -265,6 +265,7 @@ let make = (~onClose) => {
   let (registerStatus, setRegisterStatus) = React.useState(() => None);
   let onLoginSubmit = e => {
     ReactEvent.Form.preventDefault(e);
+
     {
       setIsSubmitting(_ => true);
       let%Repromise result = UserStore.login(~username, ~password);
@@ -286,6 +287,7 @@ let make = (~onClose) => {
 
   let onRegisterSubmit = e => {
     ReactEvent.Form.preventDefault(e);
+
     {
       setIsSubmitting(_ => true);
       let%Repromise result = UserStore.register(~username, ~email, ~password);
@@ -332,9 +334,11 @@ let make = (~onClose) => {
                  let state =
                    "login_"
                    ++ string_of_int(Js.Math.random_int(100000, 999999));
+
                  Dom.Storage.(
                    localStorage |> setItem("discord_state", state)
                  );
+
                  Webapi.Dom.(
                    location->Location.setHref(
                      Constants.discordOauthRedirectUri(state),
@@ -445,9 +449,11 @@ let make = (~onClose) => {
                      let state =
                        "register_"
                        ++ string_of_int(Js.Math.random_int(100000, 999999));
+
                      Dom.Storage.(
                        localStorage |> setItem("discord_state", state)
                      );
+
                      Webapi.Dom.(
                        location->Location.setHref(
                          Constants.discordOauthRedirectUri(state),
