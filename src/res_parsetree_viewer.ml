@@ -222,6 +222,7 @@ let isUnaryExpression expr = match expr.pexp_desc with
     ) when isUnaryOperator operator -> true
   | _ -> false
 
+(* TODO: tweak this to check for ghost ^ as template literal *)
 let isBinaryOperator operator = match operator with
   | ":="
   | "||"
@@ -235,9 +236,11 @@ let isBinaryOperator operator = match operator with
 
 let isBinaryExpression expr = match expr.pexp_desc with
   | Pexp_apply(
-      {pexp_desc = Pexp_ident {txt = Longident.Lident operator}},
+      {pexp_desc = Pexp_ident {txt = Longident.Lident operator; loc = operatorLoc}},
       [(Nolabel, _operand1); (Nolabel, _operand2)]
-    ) when isBinaryOperator operator -> true
+    ) when isBinaryOperator operator &&
+        not (operatorLoc.loc_ghost && operator = "^") (* template literal *)
+    -> true
   | _ -> false
 
 let isEqualityOperator operator = match operator with
