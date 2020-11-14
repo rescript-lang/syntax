@@ -27,6 +27,7 @@ let ampersand = 0x26
 let at = 0x40
 let dollar = 0x24
 let percent = 0x25
+let caret = 0x5E (* ^ *)
 
 let lparen = 0x28
 let rparen = 0x29
@@ -158,3 +159,30 @@ let digitValue ch =
     (lower ch) - Lower.a + 10
   else
     16 (* larger than any legal value *)
+
+let isCustomOperatorChar ch =
+     ch == bang (* ! *)
+  || ch == dollar (* $ *)
+  || ch == percent (* % *)
+  || ch == ampersand (* & *)
+  || ch == asterisk (* * *)
+  || ch == plus (* + *)
+  || ch == minus (* - *)
+  || ch == dot (* . *)
+  || ch == forwardslash (* / *)
+  || ch == colon (* : *)
+  || ch == lessThan (* < *)
+  || ch == equal (* = *)
+  || ch == greaterThan (* > *)
+  || ch == question (* ? *)
+  || ch == at (* @ *)
+  || ch == caret (* ^ *)
+  || ch == bar (* | *)
+  || ch == tilde (* ~ *)
+
+  (* would it be more efficient to write:
+   *  match ch with
+   *  | '!' | '$' | '%' | '&' | '*' | '+' | '-' | '.'| '/'
+   *  | ':'| '<' | '=' | '>' | '?' | '@' | '^' | '|' | '~' -> true
+   *  | _ -> false
+   *)

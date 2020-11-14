@@ -417,6 +417,66 @@ let x = {js|foo\`bar$\\\\foo|js}
 let x = ((({js|foo\`bar$\\\\foo|js} ^ a) ^ {js| \` |js}) ^ b) ^ {js| \` xx|js}"
 `;
 
+exports[`exponentiationLikeOperators.res 1`] = `
+"let ( ** ) a b = a + b
+external ( ** ) : int -> int -> int = \\"js_call\\"
+;;2 ** 1
+let ( **!!!! ) a b = a + b
+external ( **!!!! ) : int -> int -> int = \\"js_call\\"
+;;2 **!!!! 1
+let ( **$$$$ ) a b = a + b
+external ( **$$$$ ) : int -> int -> int = \\"js_call\\"
+;;2 **$$$$ 1
+let ( **% ) a b = a + b
+external ( **% ) : int -> int -> int = \\"js_call\\"
+;;2 **% 1
+let ( **&& ) a b = a + b
+external ( **&& ) : int -> int -> int = \\"js_call\\"
+;;2 **&& 1
+let ( ****** ) a b = a + b
+external ( ****** ) : int -> int -> int = \\"js_call\\"
+;;2 ****** 1
+let ( **++++ ) a b = a + b
+external ( **++++ ) : int -> int -> int = \\"js_call\\"
+;;2 **++++ 1
+let ( **- ) a b = a + b
+external ( **- ) : int -> int -> int = \\"js_call\\"
+;;2 **- 1
+let ( **.... ) a b = a + b
+external ( **.... ) : int -> int -> int = \\"js_call\\"
+;;2 **.... 1
+let ( **///// ) a b = a + b
+external ( **///// ) : int -> int -> int = \\"js_call\\"
+;;2 **///// 1
+let ( **:::: ) a b = a + b
+external ( **:::: ) : int -> int -> int = \\"js_call\\"
+;;2 **:::: 1
+let ( **<<< ) a b = a + b
+external ( **<<< ) : int -> int -> int = \\"js_call\\"
+;;2 **<<< 1
+let ( **==== ) a b = a + b
+external ( **==== ) : int -> int -> int = \\"js_call\\"
+;;2 **==== 1
+let ( **>>>> ) a b = a + b
+external ( **>>>> ) : int -> int -> int = \\"js_call\\"
+;;2 **>>>> 1
+let ( **????? ) a b = a + b
+external ( **????? ) : int -> int -> int = \\"js_call\\"
+;;2 **????? 1
+let ( **@@@@ ) a b = a + b
+external ( **@@@@ ) : int -> int -> int = \\"js_call\\"
+;;2 **@@@@ 1
+let ( **^^ ) a b = a + b
+external ( **^^ ) : int -> int -> int = \\"js_call\\"
+;;2 **^^ 1
+let ( **|| ) a b = a + b
+external ( **|| ) : int -> int -> int = \\"js_call\\"
+;;2 **|| 1
+let ( **~~~~ ) a b = a + b
+external ( **~~~~ ) : int -> int -> int = \\"js_call\\"
+;;2 **~~~~ 1"
+`;
+
 exports[`extension.js 1`] = `
 ";;[%expr ]
 ;;[%expr.extension ]

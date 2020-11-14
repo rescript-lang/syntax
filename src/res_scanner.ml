@@ -448,6 +448,16 @@ let scanTemplateLiteralToken scanner =
   let endPos = position scanner in
   (startPos, endPos, token)
 
+let scanExponentationLikeOperator scanner =
+  (* we already scanned at least `**` *)
+  let startOff = scanner.offset - 2 in
+  while CharacterCodes.isCustomOperatorChar scanner.ch do
+    next scanner
+  done;
+  Token.ExponentiationLikeOperator (
+    Bytes.sub_string scanner.src startOff (scanner.offset - startOff)
+  )
+
 let rec scan scanner =
   skipWhitespace scanner;
   let startPos = position scanner in
@@ -641,12 +651,12 @@ let rec scan scanner =
         Token.Hash
       )
     else if ch == CharacterCodes.asterisk then
-      if scanner.ch == CharacterCodes.asterisk then (
-        next scanner;
-        Token.Exponentiation;
-      ) else if scanner.ch == CharacterCodes.dot then (
+      if scanner.ch == CharacterCodes.dot then (
         next scanner;
         Token.AsteriskDot
+      ) else if scanner.ch == CharacterCodes.asterisk then (
+        next scanner;
+        scanExponentationLikeOperator scanner
       ) else (
         Token.Asterisk
       )

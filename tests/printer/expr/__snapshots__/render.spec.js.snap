@@ -1664,6 +1664,73 @@ let x = <div \\\\\\"aria-foo\\"=\\\\\\"type\\"> \\\\\\"module\\" \\\\\\"let\\" <
 "
 `;
 
+exports[`exponentiationLikeOperators.res 1`] = `
+"let (**) = (a, b) => a + b
+external (**): (int, int) => int = \\"js_call\\"
+2 ** 1
+let (**!!!!) = (a, b) => a + b
+external (**!!!!): (int, int) => int = \\"js_call\\"
+2 **!!!! 1
+let (**$) = (a, b) => a + b
+external (**$): (int, int) => int = \\"js_call\\"
+2 **$ 1
+let (**%%%%) = (a, b) => a + b
+external (**%%%%): (int, int) => int = \\"js_call\\"
+2 **%%%% 1
+let (**&) = (a, b) => a + b
+external (**&): (int, int) => int = \\"js_call\\"
+2 **& 1
+let (****) = (a, b) => a + b
+external (****): (int, int) => int = \\"js_call\\"
+2 **** 1
+let (**+++++) = (a, b) => a + b
+external (**+++++): (int, int) => int = \\"js_call\\"
+2 **+++++ 1
+let (**-) = (a, b) => a + b
+external (**-): (int, int) => int = \\"js_call\\"
+2 **- 1
+let (**..) = (a, b) => a + b
+external (**..): (int, int) => int = \\"js_call\\"
+2 **.. 1
+let (**:) = (a, b) => a + b
+external (**:): (int, int) => int = \\"js_call\\"
+2 **: 1
+let (**<<<) = (a, b) => a + b
+external (**<<<): (int, int) => int = \\"js_call\\"
+2 **<<< 1
+let (**=====) = (a, b) => a + b
+external (**=====): (int, int) => int = \\"js_call\\"
+2 **===== 1
+let (**>) = (a, b) => a + b
+external (**>): (int, int) => int = \\"js_call\\"
+2 **> 1
+let (**?????) = (a, b) => a + b
+external (**?????): (int, int) => int = \\"js_call\\"
+2 **????? 1
+let (**@) = (a, b) => a + b
+external (**@): (int, int) => int = \\"js_call\\"
+2 **@ 1
+let (**^^^) = (a, b) => a + b
+external (**^^^): (int, int) => int = \\"js_call\\"
+2 **^^^ 1
+let (**||) = (a, b) => a + b
+external (**||): (int, int) => int = \\"js_call\\"
+2 **|| 1
+let (**~) = (a, b) => a + b
+external (**~): (int, int) => int = \\"js_call\\"
+2 **~ 1
+let (**/) = (a, b) => a + b
+external (**/): (int, int) => int = \\"js_call\\"
+2 **/ 1
+let (**//) = (a, b) => a + b
+external (**//): (int, int) => int = \\"js_call\\"
+2 **// 1
+let (**///) = (a, b) => a + b
+external (**///): (int, int) => int = \\"js_call\\"
+2 **/// 1
+"
+`;
+
 exports[`extension.js 1`] = `
 "let x = %eval
 let node = %bs.raw(\\"0\\")

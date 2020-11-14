@@ -33,7 +33,7 @@ type t =
   | Exception
   | Backslash [@live]
   | Forwardslash | ForwardslashDot
-  | Asterisk | AsteriskDot | Exponentiation
+  | Asterisk | AsteriskDot | ExponentiationLikeOperator of string
   | Minus | MinusDot
   | Plus | PlusDot | PlusPlus | PlusEqual
   | ColonGreaterThan
@@ -82,7 +82,7 @@ let precedence = function
   | BangEqual | BangEqualEqual | LessEqual | GreaterEqual | BarGreater -> 4
   | Plus | PlusDot | Minus | MinusDot | PlusPlus -> 5
   | Asterisk | AsteriskDot | Forwardslash | ForwardslashDot -> 6
-  | Exponentiation -> 7
+  | ExponentiationLikeOperator _ -> 7
   | MinusGreater -> 8
   | Dot -> 9
   | _ -> 0
@@ -123,7 +123,8 @@ let toString = function
   | GreaterThan -> ">"
   | LessThan -> "<"
   | LessThanSlash -> "</"
-  | Asterisk -> "*" | AsteriskDot -> "*." | Exponentiation -> "**"
+  | Asterisk -> "*" | AsteriskDot -> "*."
+  | ExponentiationLikeOperator operator -> operator
   | Assert -> "assert"
   | Lazy -> "lazy"
   | Tilde -> "tilde"
@@ -221,3 +222,8 @@ let isKeywordTxt str =
   | Not_found -> false
 
 let catch = Lident "catch"
+
+let isCustomOperator token =
+  match token with
+  | ExponentiationLikeOperator _ -> true
+  | _ -> false

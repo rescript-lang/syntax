@@ -1004,14 +1004,21 @@ and printValueDescription valueDescription cmtTbl =
   let attrs = printAttributes ~loc:valueDescription.pval_name.loc attrs cmtTbl in
   let header =
     if isExternal then "external " else (if hasGenType then "export " else "let ") in
+  let name =
+    let valueName = valueDescription.pval_name.txt in
+    let doc =
+      if ParsetreeViewer.isExponentiationLikeOperator valueName then
+        Doc.concat [Doc.lparen; Doc.text valueName; Doc.rparen]
+      else
+        printIdentLike valueName
+    in
+    printComments doc cmtTbl valueDescription.pval_name.loc
+  in
   Doc.group (
     Doc.concat [
       attrs;
       Doc.text header;
-      printComments
-        (printIdentLike valueDescription.pval_name.txt)
-        cmtTbl
-        valueDescription.pval_name.loc;
+      name;
       Doc.text ": ";
       printTypExpr valueDescription.pval_type cmtTbl;
       if isExternal then
@@ -2029,7 +2036,11 @@ and printExtension ~atModuleLvl (stringLoc, payload) cmtTbl =
 and printPattern (p : Parsetree.pattern) cmtTbl =
   let patternWithoutAttributes = match p.ppat_desc with
   | Ppat_any -> Doc.text "_"
-  | Ppat_var var -> printIdentLike var.txt
+  | Ppat_var var ->
+    if ParsetreeViewer.isExponentiationLikeOperator var.txt then
+      Doc.concat [Doc.lparen; Doc.text var.txt; Doc.rparen]
+    else
+      printIdentLike var.txt
   | Ppat_constant c -> printConstant c
   | Ppat_tuple patterns ->
     Doc.group(

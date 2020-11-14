@@ -200,6 +200,11 @@ let isHuggablePattern pattern =
   | Ppat_construct _ -> true
   | _ -> false
 
+let isExponentiationLikeOperator operator =
+   String.length operator >= 2 &&
+   String.unsafe_get operator 0 = '*' &&
+   String.unsafe_get operator 1 = '*'
+
 let operatorPrecedence operator = match operator with
   | ":=" -> 1
   | "||" -> 2
@@ -209,6 +214,7 @@ let operatorPrecedence operator = match operator with
   | "*" | "*." | "/" | "/." -> 6
   | "**" -> 7
   | "#" | "##" | "|." -> 8
+  | operator when isExponentiationLikeOperator operator -> 7
   | _ -> 0
 
 let isUnaryOperator operator = match operator with
@@ -222,8 +228,10 @@ let isUnaryExpression expr = match expr.pexp_desc with
     ) when isUnaryOperator operator -> true
   | _ -> false
 
+(* TODO: todo below *)
 (* TODO: tweak this to check for ghost ^ as template literal *)
-let isBinaryOperator operator = match operator with
+let isBinaryOperator operator =
+  match operator with
   | ":="
   | "||"
   | "&&"
@@ -232,7 +240,8 @@ let isBinaryOperator operator = match operator with
   | "*" | "*." | "/" | "/."
   | "**"
   | "|." | "<>" -> true
-  | _ -> false
+  | operator ->
+    isExponentiationLikeOperator operator
 
 let isBinaryExpression expr = match expr.pexp_desc with
   | Pexp_apply(
