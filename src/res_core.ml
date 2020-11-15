@@ -892,12 +892,7 @@ let parseTemplateStringLiteral s =
 (* constant	::=	integer-literal   *)
  (* ∣	 float-literal   *)
  (* ∣	 string-literal   *)
-let parseConstant p =
-  let isNegative = match p.Parser.token with
-  | Token.Minus -> Parser.next p; true
-  | Plus -> Parser.next p; false
-  | _ -> false
-  in
+let parseConstant ~isNegative p =
   let constant = match p.Parser.token with
   | Int {i; suffix} ->
     let intTxt = if isNegative then "-" ^ i else i in
@@ -1084,11 +1079,21 @@ let rec parsePattern ?(alias=true) ?(or_=true) ?(operator=false) p =
     Ast_helper.Pat.construct ~loc
       (Location.mkloc (Longident.Lident (Token.toString token)) loc) None
   | Int _ | String _ | Float _ | Character _ | Minus | Plus ->
-    let c = parseConstant p in
+    let isNegative = match p.Parser.token with
+    | Token.Minus -> Parser.next p; true
+    | Plus -> Parser.next p; false
+    | _ -> false
+    in
+    let c = parseConstant ~isNegative p in
      begin match p.token with
       | DotDot ->
         Parser.next p;
-        let c2 = parseConstant p in
+        let isNegative = match p.Parser.token with
+        | Token.Minus -> Parser.next p; true
+        | Plus -> Parser.next p; false
+        | _ -> false
+        in
+        let c2 = parseConstant ~isNegative p in
         Ast_helper.Pat.interval ~loc:(mkLoc startPos p.prevEndPos) c c2
       | _ ->
         Ast_helper.Pat.constant ~loc:(mkLoc startPos p.prevEndPos) c
@@ -1101,6 +1106,34 @@ let rec parsePattern ?(alias=true) ?(or_=true) ?(operator=false) p =
       let loc = mkLoc startPos p.prevEndPos in
       let lid = Location.mkloc (Longident.Lident "()") loc in
       Ast_helper.Pat.construct ~loc lid None
+    | Minus | Plus ->
+      let startPos = p.startPos in
+      let token = p.token in
+      Parser.next p;
+      begin match p.token with
+      | Rparen ->
+        let operatorValue = makeOperatorName p token startPos p.prevEndPos in
+        Parser.next p;
+        Ast_helper.Pat.var ~loc:operatorValue.loc operatorValue
+      | _ ->
+        let isNegative = match token with
+        | Minus -> true
+        | _ -> false
+        in
+        let c = parseConstant ~isNegative p in
+        let pat = Ast_helper.Pat.constant ~loc:(mkLoc startPos p.prevEndPos) c in
+        let fullPattern = match p.Parser.token with
+        | Colon ->
+          Parser.next p;
+          let typ = parseTypExpr p in
+          let loc = mkLoc pat.ppat_loc.loc_start typ.Parsetree.ptyp_loc.loc_end in
+          Ast_helper.Pat.constraint_ ~loc pat typ
+        | _ -> pat
+        in
+        Parser.expect Rparen p;
+        fullPattern
+
+      end
     | token when Token.isCustomOperator token ->
       if not operator then
         Parser.err p
@@ -1821,7 +1854,7 @@ and parseAtomicExpr p =
       Ast_helper.Exp.construct ~loc
         (Location.mkloc (Longident.Lident (Token.toString token)) loc) None
     | Int _ | String _ | Float _ | Character _ ->
-      let c = parseConstant p in
+      let c = parseConstant ~isNegative:false p in
       let loc = mkLoc startPos p.prevEndPos in
       Ast_helper.Exp.constant ~loc c
     | Backtick ->

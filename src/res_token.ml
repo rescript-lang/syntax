@@ -36,6 +36,7 @@ type t =
   | Asterisk | AsteriskDot | ExponentiationLikeOperator of string
   | Minus | MinusDot
   | Plus | PlusDot | PlusPlus | PlusEqual
+  | AdditionLikeOperator of string
   | ColonGreaterThan
   | GreaterThan
   | LessThan
@@ -80,7 +81,7 @@ let precedence = function
   | Land -> 3
   | Equal | EqualEqual | EqualEqualEqual | LessThan | GreaterThan
   | BangEqual | BangEqualEqual | LessEqual | GreaterEqual | BarGreater -> 4
-  | Plus | PlusDot | Minus | MinusDot | PlusPlus -> 5
+  | Plus | PlusDot | Minus | MinusDot | PlusPlus | AdditionLikeOperator _ -> 5
   | Asterisk | AsteriskDot | Forwardslash | ForwardslashDot -> 6
   | ExponentiationLikeOperator _ -> 7
   | MinusGreater -> 8
@@ -124,7 +125,8 @@ let toString = function
   | LessThan -> "<"
   | LessThanSlash -> "</"
   | Asterisk -> "*" | AsteriskDot -> "*."
-  | ExponentiationLikeOperator operator -> operator
+  | ExponentiationLikeOperator operator
+  | AdditionLikeOperator operator -> operator
   | Assert -> "assert"
   | Lazy -> "lazy"
   | Tilde -> "tilde"
@@ -223,7 +225,10 @@ let isKeywordTxt str =
 
 let catch = Lident "catch"
 
+(* TODO: rename to isOperatorToken ? *)
 let isCustomOperator token =
   match token with
+  | PlusDot | Plus | Minus | MinusDot | PlusPlus
+  | AdditionLikeOperator _
   | ExponentiationLikeOperator _ -> true
   | _ -> false

@@ -458,6 +458,15 @@ let scanExponentationLikeOperator scanner =
     Bytes.sub_string scanner.src startOff (scanner.offset - startOff)
   )
 
+let scanAdditionLikeOperator ~offset scanner =
+  let startOff = scanner.offset - offset in
+  while CharacterCodes.isCustomOperatorChar scanner.ch do
+    next scanner
+  done;
+  Token.AdditionLikeOperator (
+    Bytes.sub_string scanner.src startOff (scanner.offset - startOff)
+  )
+
 let rec scan scanner =
   skipWhitespace scanner;
   let startPos = position scanner in
@@ -592,23 +601,57 @@ let rec scan scanner =
     else if ch == CharacterCodes.minus then
       if scanner.ch == CharacterCodes.dot then (
         next scanner;
-        Token.MinusDot
+        if CharacterCodes.isCustomOperatorChar scanner.ch then (
+          next scanner;
+          scanAdditionLikeOperator ~offset:3 scanner
+        ) else (
+          Token.MinusDot
+        )
       ) else if scanner.ch == CharacterCodes.greaterThan then (
         next scanner;
-        Token.MinusGreater;
+        if CharacterCodes.isCustomOperatorChar scanner.ch then (
+          next scanner;
+          scanAdditionLikeOperator ~offset:3 scanner
+        ) else (
+          Token.MinusGreater;
+        )
+      ) else if CharacterCodes.isCustomOperatorChar scanner.ch then (
+        next scanner;
+        scanAdditionLikeOperator ~offset:1 scanner
       ) else (
         Token.Minus
       )
     else if ch == CharacterCodes.plus then
       if scanner.ch == CharacterCodes.dot then (
         next scanner;
-        Token.PlusDot
+        if CharacterCodes.isCustomOperatorChar scanner.ch then (
+          next scanner;
+          scanAdditionLikeOperator ~offset:3 scanner
+        ) else (
+          Token.PlusDot
+        )
       ) else if scanner.ch == CharacterCodes.plus then (
         next scanner;
-        Token.PlusPlus
+        if CharacterCodes.isCustomOperatorChar scanner.ch then (
+          next scanner;
+          (* TODO: add tests to check lenght offset *)
+          scanAdditionLikeOperator ~offset:3 scanner
+        ) else (
+          Token.PlusPlus
+        )
       ) else if scanner.ch == CharacterCodes.equal then (
         next scanner;
-        Token.PlusEqual
+        if CharacterCodes.isCustomOperatorChar scanner.ch then (
+          next scanner;
+          scanAdditionLikeOperator ~offset:3 scanner
+        ) else (
+          Token.PlusEqual
+        )
+      ) else if CharacterCodes.isCustomOperatorChar scanner.ch
+          && not (inDiamondMode scanner)
+        then (
+        next scanner;
+        scanAdditionLikeOperator ~offset:1 scanner
       ) else (
         Token.Plus
       )

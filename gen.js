@@ -50,4 +50,5 @@ function generateOperators(prefix) {
   });
 }
 
-generateOperators("**");
+generateOperators("+");
+generateOperators("-");

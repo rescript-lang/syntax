@@ -307,6 +307,17 @@ let printListi ~getLoc ~nodes ~print ?(forceBreak=false) t =
     in
     Doc.breakableGroup ~forceBreak docs
 
+let printOperatorValue operator =
+  Doc.concat [
+    Doc.lparen;
+    Doc.text (
+      match operator with
+      | "^" -> "++"
+      | op -> op
+    );
+    Doc.rparen;
+  ]
+
 let rec printLongidentAux accu = function
 | Longident.Lident s -> (Doc.text s) :: accu
 | Ldot(lid, s) -> printLongidentAux ((Doc.text s) :: accu) lid
@@ -1007,8 +1018,8 @@ and printValueDescription valueDescription cmtTbl =
   let name =
     let valueName = valueDescription.pval_name.txt in
     let doc =
-      if ParsetreeViewer.isExponentiationLikeOperator valueName then
-        Doc.concat [Doc.lparen; Doc.text valueName; Doc.rparen]
+      if ParsetreeViewer.isBinaryOperator valueName then
+        printOperatorValue valueName
       else
         printIdentLike valueName
     in
@@ -2037,8 +2048,8 @@ and printPattern (p : Parsetree.pattern) cmtTbl =
   let patternWithoutAttributes = match p.ppat_desc with
   | Ppat_any -> Doc.text "_"
   | Ppat_var var ->
-    if ParsetreeViewer.isExponentiationLikeOperator var.txt then
-      Doc.concat [Doc.lparen; Doc.text var.txt; Doc.rparen]
+    if ParsetreeViewer.isBinaryOperator var.txt then
+      printOperatorValue var.txt
     else
       printIdentLike var.txt
   | Ppat_constant c -> printConstant c

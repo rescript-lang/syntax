@@ -77,7 +77,7 @@ let () =
   let prettySource = Res_multi_printer.print (`refmt refmtBinaryPath) ~input:filename in
   assert (
     prettySource = {|// test .re file
-let \"+++" = (a, b) => a + b
+let (+++) = (a, b) => a + b
 
 let unicode = "🙈 😅 🙌"
 

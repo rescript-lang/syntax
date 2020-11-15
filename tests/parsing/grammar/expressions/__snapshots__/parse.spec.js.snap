@@ -1,5 +1,125 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`additionLikeOperator.res 1`] = `
+"let (+) a b = a + b
+external (+) : int -> int -> int = \\"js_call\\"
+;;2 + 1
+let (+.) a b = a + b
+external (+.) : int -> int -> int = \\"js_call\\"
+;;2 +. 1
+let (!!!!) a b = a + b
+external (!!!!) : int -> int -> int = \\"js_call\\"
+;;(!!!!) 2 1
+let ($$$$) a b = a + b
+external ($$$$) : int -> int -> int = \\"js_call\\"
+;;2 $$$$ 1
+let (%%%%) a b = a + b
+external (%%%%) : int -> int -> int = \\"js_call\\"
+;;2 %%%% 1
+let (&&) a b = a + b
+external (&&) : int -> int -> int = \\"js_call\\"
+;;2 && 1
+let ( **** ) a b = a + b
+external ( **** ) : int -> int -> int = \\"js_call\\"
+;;2 **** 1
+let (+++++) a b = a + b
+external (+++++) : int -> int -> int = \\"js_call\\"
+;;2 +++++ 1
+let (----) a b = a + b
+external (----) : int -> int -> int = \\"js_call\\"
+;;2 ---- 1
+let (+...) a b = a + b
+external (+...) : int -> int -> int = \\"js_call\\"
+;;2 +... 1
+let (////) a b = a + b
+external (////) : int -> int -> int = \\"js_call\\"
+;;2 //// 1
+let (::) a b = a + b
+external (::) : int -> int -> int = \\"js_call\\"
+;;2 :: 1
+let (<<) a b = a + b
+external (<<) : int -> int -> int = \\"js_call\\"
+;;2 << 1
+let (+=====) a b = a + b
+external (+=====) : int -> int -> int = \\"js_call\\"
+;;2 +===== 1
+let (>>>>) a b = a + b
+external (>>>>) : int -> int -> int = \\"js_call\\"
+;;2 >>>> 1
+let (????) a b = a + b
+external (????) : int -> int -> int = \\"js_call\\"
+;;(????) 2 1
+let (@@) a b = a + b
+external (@@) : int -> int -> int = \\"js_call\\"
+;;2 @@ 1
+let (^^^^^) a b = a + b
+external (^^^^^) : int -> int -> int = \\"js_call\\"
+;;2 ^^^^^ 1
+let (|||) a b = a + b
+external (|||) : int -> int -> int = \\"js_call\\"
+;;2 ||| 1
+let (~~~~) a b = a + b
+external (~~~~) : int -> int -> int = \\"js_call\\"
+;;(~~~~) 2 1
+let (-) a b = a + b
+external (-) : int -> int -> int = \\"js_call\\"
+;;2 - 1
+let (-.) a b = a + b
+external (-.) : int -> int -> int = \\"js_call\\"
+;;2 -. 1
+let (!!!!) a b = a + b
+external (!!!!) : int -> int -> int = \\"js_call\\"
+;;(!!!!) 2 1
+let ($$$$) a b = a + b
+external ($$$$) : int -> int -> int = \\"js_call\\"
+;;2 $$$$ 1
+let (%%%%) a b = a + b
+external (%%%%) : int -> int -> int = \\"js_call\\"
+;;2 %%%% 1
+let (&&&&&) a b = a + b
+external (&&&&&) : int -> int -> int = \\"js_call\\"
+;;2 &&&&& 1
+let ( **** ) a b = a + b
+external ( **** ) : int -> int -> int = \\"js_call\\"
+;;2 **** 1
+let (++++) a b = a + b
+external (++++) : int -> int -> int = \\"js_call\\"
+;;2 ++++ 1
+let (--) a b = a + b
+external (--) : int -> int -> int = \\"js_call\\"
+;;2 -- 1
+let (-...) a b = a + b
+external (-...) : int -> int -> int = \\"js_call\\"
+;;2 -... 1
+let (//) a b = a + b
+external (//) : int -> int -> int = \\"js_call\\"
+;;2 // 1
+let : a b = a + b
+external : : int -> int -> int = \\"js_call\\"
+;;: 2 1
+let (<<<) a b = a + b
+external (<<<) : int -> int -> int = \\"js_call\\"
+;;2 <<< 1
+let (===) a b = a + b
+external (===) : int -> int -> int = \\"js_call\\"
+;;2 === 1
+let (????) a b = a + b
+external (????) : int -> int -> int = \\"js_call\\"
+;;(????) 2 1
+let (@@@@@) a b = a + b
+external (@@@@@) : int -> int -> int = \\"js_call\\"
+;;2 @@@@@ 1
+let (^) a b = a + b
+external (^) : int -> int -> int = \\"js_call\\"
+;;2 ^ 1
+let (|||||) a b = a + b
+external (|||||) : int -> int -> int = \\"js_call\\"
+;;2 ||||| 1
+let (~~~~~) a b = a + b
+external (~~~~~) : int -> int -> int = \\"js_call\\"
+;;(~~~~~) 2 1"
+`;
+
 exports[`apply.js 1`] = `
 ";;foo (fun _ -> bla) blaz
 ;;foo (fun _ -> bla) blaz

@@ -205,6 +205,13 @@ let isExponentiationLikeOperator operator =
    String.unsafe_get operator 0 = '*' &&
    String.unsafe_get operator 1 = '*'
 
+(* TODO: unfinished paper lexing *)
+let isAdditionLikeOperator operator =
+  String.length operator > 0 && (
+    let firstChar = String.unsafe_get operator 0 in
+    firstChar == '+' || firstChar == '-'
+  )
+
 let operatorPrecedence operator = match operator with
   | ":=" -> 1
   | "||" -> 2
@@ -241,7 +248,7 @@ let isBinaryOperator operator =
   | "**"
   | "|." | "<>" -> true
   | operator ->
-    isExponentiationLikeOperator operator
+    isExponentiationLikeOperator operator || isAdditionLikeOperator operator
 
 let isBinaryExpression expr = match expr.pexp_desc with
   | Pexp_apply(

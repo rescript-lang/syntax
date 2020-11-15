@@ -58,7 +58,8 @@ val operatorPrecedence: string -> int
 
 val isUnaryExpression: Parsetree.expression -> bool
 val isBinaryOperator: string -> bool
-val isExponentiationLikeOperator: string -> bool
+(* val isExponentiationLikeOperator: string -> bool *)
+(* val isAdditionLikeOperator: string -> bool *)
 val isBinaryExpression: Parsetree.expression -> bool
 
 val flattenableOperators: string -> string -> bool
