@@ -181,17 +181,22 @@ let toString ~width doc =
         if mode = Break then (
           begin match lineSuffices with
           | [] ->
-            MiniBuffer.flush_newline buffer;
-            let ind = if lineStyle = Literal then 0 else ind in
-            MiniBuffer.add_string buffer (String.make ind ' ' [@doesNotRaise]);
-            process ~pos:ind [] rest
+            if lineStyle = Literal then (
+              MiniBuffer.add_char buffer '\n';
+              process ~pos:0 [] rest
+            ) else (
+              MiniBuffer.flush_newline buffer;
+              MiniBuffer.add_string buffer (String.make ind ' ' [@doesNotRaise]);
+              process ~pos:ind [] rest
+            )
           | _docs ->
             process ~pos:ind [] (List.concat [List.rev lineSuffices; cmd::rest])
           end
         ) else (* mode = Flat *) (
           let pos = match lineStyle with
           | Classic -> MiniBuffer.add_string buffer " "; pos + 1
-          | Hard | Literal -> MiniBuffer.flush_newline buffer; 0
+          | Hard -> MiniBuffer.flush_newline buffer; 0
+          | Literal -> MiniBuffer.add_char buffer '\n'; 0
           | Soft -> pos
           in
           process ~pos lineSuffices rest
