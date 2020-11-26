@@ -387,20 +387,8 @@ let printStringLoc sloc cmtTbl =
   let doc = printIdentLike sloc.Location.txt in
   printComments doc cmtTbl sloc.loc
 
-let splitOnLineBreak s =
-  let r = ref [] in
-  let j = ref (String.length s) in
-  for i = String.length s - 1 downto 0 do
-    let c = String.unsafe_get s i in
-    if c = '\n' || c = '\r' then begin
-      r := (String.sub [@doesNotRaise]) s (i + 1) (!j - i - 1) :: !r;
-      j := i
-    end
-  done;
-  (String.sub [@doesNotRaise]) s 0 !j :: !r
-
 let printStringContents txt =
-  let lines = splitOnLineBreak txt in
+  let lines = String.split_on_char '\n' txt in
   Doc.join ~sep:Doc.literalLine (List.map Doc.text lines)
 
 let printConstant c = match c with
