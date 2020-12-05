@@ -309,3 +309,13 @@ let make = fn(
     Js.log()
   }
 )
+
+// comments should not disappear on the pattern 
+let /* a */ decoratorTags /* b */ = items
+  ->Js.Array2.filter(items => {items.category === Decorators})
+
+let /* a */ decoratorTags /* b */ = items->Js.Array2.filter(items => {
+  items.category === Decorators
+  || items.category === ChristmasLighting
+  || items.category === Unknown
+})

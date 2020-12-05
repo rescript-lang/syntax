@@ -1912,6 +1912,7 @@ and printValueBinding ~recFlag vb cmtTbl i =
     | Braced braces  -> printBraces doc expr braces
     | Nothing -> doc
   in
+  let patternDoc = printPattern vb.pvb_pat cmtTbl in
   (*
    * we want to optimize the layout of one pipe:
    *   let tbl = data->Js.Array2.reduce((map, curr) => {
@@ -1930,7 +1931,7 @@ and printValueBinding ~recFlag vb cmtTbl i =
         Doc.concat [
           attrs;
           header;
-          printPattern vb.pvb_pat cmtTbl;
+          patternDoc;
           Doc.text " =";
           Doc.space;
           printedExpr;
@@ -1940,7 +1941,7 @@ and printValueBinding ~recFlag vb cmtTbl i =
         Doc.concat [
           attrs;
           header;
-          printPattern vb.pvb_pat cmtTbl;
+          patternDoc;
           Doc.text " =";
           Doc.indent (
             Doc.concat [
@@ -1973,7 +1974,7 @@ and printValueBinding ~recFlag vb cmtTbl i =
       Doc.concat [
         attrs;
         header;
-        printPattern vb.pvb_pat cmtTbl;
+        patternDoc;
         Doc.text " =";
         if shouldIndent then
           Doc.indent (
@@ -4023,9 +4024,10 @@ and printArgumentsWithCallbackInFirstPosition ~uncurried args cmtTbl =
       lblDoc;
       printPexpFun ~inCallback:FitsOnOneLine expr cmtTbl
     ] in
-    let printedArgs = List.map (fun arg ->
-      printArgument arg cmtTbl
-    ) args |> Doc.join ~sep:(Doc.concat [Doc.comma; Doc.line])
+    let printedArgs =
+      Doc.join ~sep:(Doc.concat [Doc.comma; Doc.line]) (
+        List.map (fun arg -> printArgument arg cmtTbl) args
+      )
     in
     (callback, printedArgs)
   | _ -> assert false
