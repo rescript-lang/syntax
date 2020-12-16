@@ -559,32 +559,37 @@ let extractValueDescriptionFromModExpr modExpr =
   | Pmod_structure structure -> loop structure []
   | _ -> []
 
-type jsImportScope =
-  | JsGlobalImport (* nothing *)
-  | JsModuleImport of string (* from "path" *)
-  | JsScopedImport of string list (* window.location *)
+type jsModuleFlavour =
+  (* import ceo: string from "company" *)
+  | JsDefaultImport of string
+  (* import {delimiter: string} from "path" *)
+  | JsNamedImport of string
+  (* import * as leftPad: (string, int) => string from "leftPad" *)
+  | JsNamespacedImport of string
 
-let classifyJsImport valueDescription =
-  let rec loop attrs =
-    let open Parsetree in
+let classifyJsModuleFlavour valueDescription =
+  let rec findModuleAttribute (attrs : Parsetree.attributes) =
     match attrs with
-    | [] -> JsGlobalImport
-    | ({Location.txt = "bs.scope"}, PStr [{pstr_desc = Pstr_eval ({pexp_desc = Pexp_constant (Pconst_string (s, _))}, _)}])::_ ->
-      JsScopedImport [s]
-    | ({Location.txt = "genType.import"}, PStr [{pstr_desc = Pstr_eval ({pexp_desc = Pexp_constant (Pconst_string (s, _))}, _)}])::_ ->
-      JsModuleImport s
-    | ({Location.txt = "bs.scope"}, PStr [{pstr_desc = Pstr_eval ({pexp_desc = Pexp_tuple exprs}, _)}])::_ ->
-      let scopes = List.fold_left (fun acc curr ->
-        match curr.Parsetree.pexp_desc with
-        | Pexp_constant (Pconst_string (s, _)) -> s::acc
-        | _ -> acc
-      ) [] exprs
-      in
-      JsScopedImport (List.rev scopes)
-    | _::attrs ->
-     loop attrs
+    | [] -> JsNamedImport ""
+    | ({Asttypes.txt = "bs.module" | "module"}, PStr structure)::_ ->
+      begin match structure with
+      | [] ->
+        let namespace = match valueDescription.pval_prim with
+        | moduleName::_ -> moduleName
+        | _ -> ""
+        in
+        JsNamespacedImport namespace
+      | [{pstr_desc = Pstr_eval ({pexp_desc = Pexp_constant (Pconst_string (moduleName, _)) }, _)}] ->
+        begin match valueDescription.pval_prim with
+        | prim::_ when prim = "default" -> JsDefaultImport moduleName
+        | _ -> JsNamedImport moduleName
+        end
+      | _ -> JsNamedImport ""
+      end
+    | _::rest ->
+      findModuleAttribute rest
   in
-  loop valueDescription.pval_attributes
+  findModuleAttribute valueDescription.pval_attributes
 
 let isUnderscoreApplySugar expr =
   match expr.pexp_desc with
@@ -595,3 +600,10 @@ let isUnderscoreApplySugar expr =
       {pexp_desc = Pexp_apply _}
     ) -> true
   | _ -> false
+
+let hasModuleExternalAttribute (attrs : Parsetree.attributes) =
+  List.exists (fun attr -> match attr with
+  | ({Asttypes.txt = "bs.module" | "module"}, _) -> true
+  | _ -> false
+  ) attrs
+

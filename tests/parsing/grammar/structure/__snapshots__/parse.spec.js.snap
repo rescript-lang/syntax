@@ -60,34 +60,8 @@ exports[`itemExtension.js 1`] = `
 
 exports[`jsFfiSugar.js 1`] = `
 "include
-  struct
-    external setTimeout : (unit -> unit) -> unit -> float = \\"setTimeout\\"
-    [@@bs.val ]
-  end[@@ns.jsFfi ]
-include
-  struct
-    external timeout : (unit -> unit) -> unit -> float = \\"setTimeout\\"
-    [@@bs.val ]
-  end[@@ns.jsFfi ]
-include
-  struct
-    external setTimeout : (unit -> unit) -> unit -> float = \\"setTimeout\\"
-    [@@bs.val ]
-    external clearTimeout : float -> unit = \\"clearTimeout\\"[@@bs.val ]
-  end[@@ns.jsFfi ]
-include
-  struct
-    external random : unit -> float = \\"random\\"[@@bs.val ][@@bs.scope \\"Math\\"]
-  end[@@ns.jsFfi ]
-include
-  struct
-    external href : string = \\"href\\"[@@bs.val ][@@bs.scope
-                                                (\\"window\\", \\"location\\")]
-  end[@@ns.jsFfi ]
-include
-  struct
-    external dirname : string -> string = \\"dirname\\"[@@genType.import \\"path\\"]
-  end[@@ns.jsFfi ]"
+  struct external dirname : string -> string = \\"dirname\\"[@@module \\"path\\"] end
+[@@ns.jsFfi ]"
 `;
 
 exports[`letBinding.js 1`] = `

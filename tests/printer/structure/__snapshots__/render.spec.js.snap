@@ -115,8 +115,7 @@ include WebGl
 include (
   /* Use varargs to avoid the ReactJS warning for duplicate keys in children */
   {
-    @bs.val @bs.module(\\"react\\")
-    external createElementInternalHack: 'a = \\"createElement\\"
+    import {@bs.val createElement as createElementInternalHack: 'a} from \\"react\\"
     @bs.send
     external apply: (
       'theFunction,

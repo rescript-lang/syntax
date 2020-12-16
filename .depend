@@ -14,7 +14,7 @@ src/res_comment.cmi :
 src/res_comments_table.cmx : src/res_parsetree_viewer.cmx src/res_doc.cmx \
     src/res_comment.cmx
 src/res_core.cmx : src/res_token.cmx src/res_scanner.cmx src/res_printer.cmx \
-    src/res_parser.cmx src/res_js_ffi.cmx src/res_grammar.cmx src/res_doc.cmx \
+    src/res_parser.cmx src/res_grammar.cmx src/res_doc.cmx \
     src/res_diagnostics.cmx src/res_comments_table.cmx \
     src/res_character_codes.cmx src/res_core.cmi
 src/res_core.cmi : src/res_parser.cmi
@@ -41,7 +41,6 @@ src/res_driver_reason_binary.cmi : src/res_token.cmx src/res_driver.cmi
 src/res_grammar.cmx : src/res_token.cmx
 src/res_io.cmx : src/res_io.cmi
 src/res_io.cmi :
-src/res_js_ffi.cmx :
 src/res_minibuffer.cmx : src/res_minibuffer.cmi
 src/res_minibuffer.cmi :
 src/res_multi_printer.cmx : src/res_printer.cmx src/res_io.cmx \

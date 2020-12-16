@@ -5,7 +5,7 @@ module Diagnostics = Res_diagnostics
 module CommentTable = Res_comments_table
 module ResPrinter =  Res_printer
 module Scanner = Res_scanner
-module JsFfi = Res_js_ffi
+(* module JsFfi = Res_js_ffi *)
 module Parser = Res_parser
 
 let mkLoc startLoc endLoc = Location.{
@@ -132,6 +132,18 @@ type labelledParameter =
 type recordPatternItem =
   | PatUnderscore
   | PatField of (Ast_helper.lid * Parsetree.pattern)
+
+type jsImportClauseDescription = {
+  attrs: Parsetree.attributes;
+  name: string Location.loc;
+  alias: string;
+  typ: Parsetree.core_type;
+}
+
+type jsImportClause =
+  | DefaultImport of jsImportClauseDescription
+  | NameSpaceImport of jsImportClauseDescription
+  | NamedImport of jsImportClauseDescription
 
 type context =
   | OrdinaryExpr
@@ -604,31 +616,31 @@ let parseModuleLongIdent ~lowercase p =
   moduleIdent
 
 (* `window.location` or `Math` or `Foo.Bar` *)
-let parseIdentPath p =
-  let rec loop p acc =
-    match p.Parser.token with
-    | Uident ident | Lident ident ->
-      Parser.next p;
-      let lident = (Longident.Ldot (acc, ident)) in
-      begin match p.Parser.token with
-      | Dot ->
-        Parser.next p;
-        loop p lident
-      | _ -> lident
-      end
-    | _t -> acc
-  in
-  match p.Parser.token with
-  | Lident ident | Uident ident ->
-    Parser.next p;
-    begin match p.Parser.token with
-    | Dot ->
-      Parser.next p;
-      loop p (Longident.Lident ident)
-    | _ -> Longident.Lident ident
-    end
-  | _ ->
-    Longident.Lident "_"
+(* let parseIdentPath p = *)
+  (* let rec loop p acc = *)
+    (* match p.Parser.token with *)
+    (* | Uident ident | Lident ident -> *)
+      (* Parser.next p; *)
+      (* let lident = (Longident.Ldot (acc, ident)) in *)
+      (* begin match p.Parser.token with *)
+      (* | Dot -> *)
+        (* Parser.next p; *)
+        (* loop p lident *)
+      (* | _ -> lident *)
+      (* end *)
+    (* | _t -> acc *)
+  (* in *)
+  (* match p.Parser.token with *)
+  (* | Lident ident | Uident ident -> *)
+    (* Parser.next p; *)
+    (* begin match p.Parser.token with *)
+    (* | Dot -> *)
+      (* Parser.next p; *)
+      (* loop p (Longident.Lident ident) *)
+    (* | _ -> Longident.Lident ident *)
+    (* end *)
+  (* | _ -> *)
+    (* Longident.Lident "_" *)
 
 let verifyJsxOpeningClosingName p nameExpr =
   let closing = match p.Parser.token with
@@ -5145,10 +5157,9 @@ and parseStructureItemRegion p =
     let loc = mkLoc startPos p.prevEndPos in
     Some (Ast_helper.Str.primitive ~loc externalDef)
   | Import ->
-    let importDescr = parseJsImport ~startPos ~attrs p in
+    let structureItem = parseJsImportDeclaration ~startPos ~attrs p in
     parseNewlineOrSemicolonStructure p;
     let loc = mkLoc startPos p.prevEndPos in
-    let structureItem = JsFfi.toParsetree importDescr in
     Some {structureItem with pstr_loc = loc}
   | Exception ->
     let exceptionDef = parseExceptionDef ~attrs p in
@@ -5202,20 +5213,181 @@ and parseStructureItemRegion p =
       None
     end
 
-and parseJsImport ~startPos ~attrs p =
+(* import ImportClause FromClause *)
+and parseJsImportDeclaration ~startPos ~attrs p =
   Parser.expect Token.Import p;
-  let importSpec = match p.Parser.token with
-  | Token.Lident _ | Token.At ->
-    let decl = match parseJsFfiDeclaration p with
-    | Some decl -> decl
-    | None -> assert false
-    in
-    JsFfi.Default decl
-  | _ -> JsFfi.Spec(parseJsFfiDeclarations p)
-  in
-  let scope = parseJsFfiScope p in
+  let importJsClause = parseJsImportClause p in
+  let fromClause = parseFromClause p in
   let loc = mkLoc startPos p.prevEndPos in
-  JsFfi.importDescr ~attrs ~importSpec ~scope ~loc
+  let attrs = (Location.mknoloc "ns.jsFfi", Parsetree.PStr [])::attrs in
+  importJsClause
+  |> List.map (fun jsImport ->
+      let valueDescription = match jsImport with
+      (* import schoolName: string from '/modules/school.js' *)
+      | DefaultImport {attrs; name; alias; typ} ->
+        (* module("/modules/school.js") external schoolName: string = "default" *)
+        Ast_helper.Val.mk ~loc:name.loc
+          ~attrs:(fromClause::attrs) ~prim:[alias] name typ
+
+      (* import * as leftPad: (string, int) => string from "leftPad" *)
+      | NameSpaceImport {attrs; name; typ} ->
+        let ({Asttypes.txt = jsModuleName}, _ ) = fromClause in
+        let moduleAttribute = (Location.mknoloc "module", Parsetree.PStr []) in
+        (* @module external leftPad: (string, int) => string = "leftPad" *)
+        Ast_helper.Val.mk ~loc:name.loc
+          ~attrs:(moduleAttribute::attrs) ~prim:[jsModuleName] name typ
+
+      (* import {dirname: string => string} from "path" *)
+      | NamedImport {attrs; name; alias; typ} ->
+        (* module("path") external dirname: (string, string) => string = "dirname" *)
+        Ast_helper.Val.mk ~loc:name.loc
+          ~attrs:(fromClause::attrs) ~prim:[alias] name typ
+      in
+      (* TODO: nicer loc on primitive? *)
+      Ast_helper.Str.primitive ~loc:valueDescription.pval_loc  valueDescription
+  )
+  |> Ast_helper.Mod.structure ~loc
+  |> Ast_helper.Incl.mk ~attrs ~loc
+  |> Ast_helper.Str.include_ ~loc
+
+(*
+ * ImportClause ::=
+ *   ImportedDefaultBinding
+ *   NameSpaceImport
+ *   NamedImports
+ *   ImportedDefaultBinding , NameSpaceImport
+ *   ImportedDefaultBinding , NamedImports
+ *)
+and parseJsImportClause p =
+  let startPos = p.Parser.startPos in
+  match p.token with
+  (* ImportedDefaultBinding *)
+  | Token.Lident ident | String ident ->
+    let identLoc = mkLoc startPos p.endPos in
+    Parser.next p;
+    Parser.expect Colon p;
+    let typ = parseTypExpr p in
+    let default = DefaultImport {
+      attrs = [];
+      name = Location.mkloc ident identLoc;
+      alias = "default";
+      typ
+    } in
+    begin match p.token with
+    | Comma ->
+      Parser.next p;
+      begin match p.token with
+      | Lbrace ->
+        default::(parseJsNamedImports p)
+      | Asterisk ->
+        [default; parseNameSpaceImport p]
+      | _ -> [default]
+      end
+    | _ ->
+      [default]
+    end
+  | Asterisk ->
+    [parseNameSpaceImport p]
+  (* NamedImports *)
+  | Lbrace ->
+    parseJsNamedImports p
+  | _ ->
+    assert false
+
+(*
+ * NameSpaceImport :
+ *   * as ImportedBinding
+ *)
+and parseNameSpaceImport p =
+  let startPos = p.Parser.startPos in
+  Parser.expect Asterisk p;
+  Parser.expect As p;
+  match p.Parser.token with
+  | Token.Lident ident | String ident ->
+    let identLoc = mkLoc startPos p.endPos in
+    Parser.next p;
+    Parser.expect Colon p;
+    let typ = parseTypExpr p in
+    NameSpaceImport {
+      attrs = [];
+      name = Location.mkloc ident identLoc;
+      alias = "";
+      typ
+    }
+  | _ ->
+    assert false
+
+(*
+ * NamedImports :
+ *   { }
+ *   { ImportsListItem }
+ *   { ImportsListItems , }
+ *)
+and parseJsNamedImports p =
+  Parser.expect Lbrace p;
+  let namedImports = parseCommaDelimitedRegion
+    ~grammar:Grammar.JsNamedImports
+    ~closing:Rbrace
+    ~f:parseJsImportsListItemRegion
+    p
+  in
+  Parser.expect Rbrace p;
+  namedImports
+
+(*
+ * ImportsListItem :
+ *   ImportSpecifier
+ *   ImportsList , ImportSpecifier
+ *
+ * ImportSpecifier :
+ *   ImportedBinding : typexpr
+ *   IdentifierName as ImportedBinding : typexpr
+ *)
+and parseJsImportsListItemRegion p =
+  let startPos = p.Parser.startPos in
+  let attrs = parseAttributes p in
+  match p.token with
+  | Token.Lident ident | String ident ->
+    let identLoc = mkLoc startPos p.endPos in
+    Parser.next p;
+    let name = match p.Parser.token with
+    | As ->
+      Parser.next p;
+      let (ident, loc) = parseLident p in
+      Location.mkloc ident loc
+    | _ ->
+      Location.mkloc ident identLoc
+    in
+    Parser.expect Colon p;
+    let typ = parseTypExpr p in
+    (* TODO: decent type *)
+    Some (NamedImport {attrs; name; alias = ident; typ})
+  | _ ->
+    None
+
+(*
+ * FromClause ::=
+ *   from ModuleSpecifier
+ *)
+and parseFromClause p =
+  let startPos = p.Parser.startPos in
+  Parser.expect (Lident "from") p; (* TODO: token *)
+  (* @module("/modules/school.js") *)
+  match p.token with
+  | String jsModuleSpecifier ->
+    let loc = mkLoc startPos p.endPos in
+    Parser.next p;
+    (
+      Location.mkloc "module" loc,
+      Parsetree.PStr [
+        Ast_helper.Str.eval ~loc (
+          Ast_helper.Exp.constant ~loc (Parsetree.Pconst_string (jsModuleSpecifier, None))
+        )
+      ]
+    )
+  | _ ->
+    (* TODO: error *)
+    (Location.mknoloc "module" , Parsetree.PStr [])
 
 and parseJsExport ~attrs p =
   let exportStart = p.Parser.startPos in
@@ -5256,49 +5428,49 @@ and parseSignJsExport ~attrs p =
     let loc = mkLoc exportStart p.prevEndPos in
     Ast_helper.Sig.value valueDesc ~loc
 
-and parseJsFfiScope p =
-  match p.Parser.token with
-  | Token.Lident "from" ->
-    Parser.next p;
-    begin match p.token with
-    | String s -> Parser.next p; JsFfi.Module s
-    | Uident _ | Lident _ ->
-      let value = parseIdentPath p in
-      JsFfi.Scope value
-    | _ -> JsFfi.Global
-    end
-  | _ -> JsFfi.Global
+(* and parseJsFfiScope p = *)
+  (* match p.Parser.token with *)
+  (* | Token.Lident "from" -> *)
+    (* Parser.next p; *)
+    (* begin match p.token with *)
+    (* | String s -> Parser.next p; JsFfi.Module s *)
+    (* | Uident _ | Lident _ -> *)
+      (* let value = parseIdentPath p in *)
+      (* JsFfi.Scope value *)
+    (* | _ -> JsFfi.Global *)
+    (* end *)
+  (* | _ -> JsFfi.Global *)
 
-and parseJsFfiDeclarations p =
-  Parser.expect Token.Lbrace p;
-  let decls = parseCommaDelimitedRegion
-    ~grammar:Grammar.JsFfiImport
-    ~closing:Rbrace
-    ~f:parseJsFfiDeclaration
-    p
-  in
-  Parser.expect Rbrace p;
-  decls
+(* and parseJsFfiDeclarations p = *)
+  (* Parser.expect Token.Lbrace p; *)
+  (* let decls = parseCommaDelimitedRegion *)
+    (* ~grammar:Grammar.JsFfiImport *)
+    (* ~closing:Rbrace *)
+    (* ~f:parseJsFfiDeclaration *)
+    (* p *)
+  (* in *)
+  (* Parser.expect Rbrace p; *)
+  (* decls *)
 
-and parseJsFfiDeclaration p =
-  let startPos = p.Parser.startPos in
-  let attrs = parseAttributes p in
-  match p.Parser.token with
-  | Lident _ ->
-    let (ident, _) = parseLident p in
-    let alias = match p.token with
-    | As ->
-      Parser.next p;
-      let (ident, _) = parseLident p in
-      ident
-    | _ ->
-      ident
-    in
-    Parser.expect Token.Colon p;
-    let typ = parseTypExpr p in
-    let loc = mkLoc startPos p.prevEndPos in
-    Some (JsFfi.decl ~loc ~alias ~attrs ~name:ident ~typ)
-  | _ -> None
+(* and parseJsFfiDeclaration p = *)
+  (* let startPos = p.Parser.startPos in *)
+  (* let attrs = parseAttributes p in *)
+  (* match p.Parser.token with *)
+  (* | Lident _ -> *)
+    (* let (ident, _) = parseLident p in *)
+    (* let alias = match p.token with *)
+    (* | As -> *)
+      (* Parser.next p; *)
+      (* let (ident, _) = parseLident p in *)
+      (* ident *)
+    (* | _ -> *)
+      (* ident *)
+    (* in *)
+    (* Parser.expect Token.Colon p; *)
+    (* let typ = parseTypExpr p in *)
+    (* let loc = mkLoc startPos p.prevEndPos in *)
+    (* Some (JsFfi.decl ~loc ~alias ~attrs ~name:ident ~typ) *)
+  (* | _ -> None *)
 
 (* include-statement ::= include module-expr *)
 and parseIncludeStatement ~attrs p =

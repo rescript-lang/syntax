@@ -56,8 +56,8 @@ type t =
   | Primitive
   | AtomicTypExpr
   | ListExpr
-  | JsFfiImport
   | Pattern
+  | JsNamedImports
 
 let toString = function
   | OpenDescription -> "an open description"
@@ -114,10 +114,10 @@ let toString = function
   | AtomicTypExpr -> "a type"
   | ListExpr -> "an ocaml list expr"
   | PackageConstraint -> "a package constraint"
-  | JsFfiImport -> "js ffi import"
   | JsxChild -> "jsx child"
   | Pattern -> "pattern"
   | ExprFor -> "a for expression"
+  | JsNamedImports -> "js named imports"
 
 let isSignatureItemStart = function
   | Token.At
@@ -293,10 +293,6 @@ let isAttributeStart = function
   | Token.At -> true
   | _ -> false
 
-let isJsFfiImportStart = function
-  | Token.Lident _ | At -> true
-  | _ -> false
-
 let isJsxChildStart = isAtomicExprStart
 
 let isBlockExprStart = function
@@ -305,6 +301,10 @@ let isBlockExprStart = function
   | Lparen | List | Lbracket | Lbrace | Forwardslash | Assert
   | Lazy | If | For | While | Switch | Open | Module | Exception | Let
   | LessThan | Backtick | Try | Underscore -> true
+  | _ -> false
+
+let isJsImportsListItemStart token = match token with
+  | Token.At | Lident _ | String _ -> true
   | _ -> false
 
 let isListElement grammar token =
@@ -335,7 +335,7 @@ let isListElement grammar token =
   | ConstructorDeclaration -> token = Bar
   | Primitive -> begin match token with Token.String _ -> true | _ -> false end
   | JsxAttribute -> isJsxAttributeStart token
-  | JsFfiImport -> isJsFfiImportStart token
+  | JsNamedImports -> isJsImportsListItemStart token
   | _ -> false
 
 let isListTerminator grammar token =
@@ -353,7 +353,6 @@ let isListTerminator grammar token =
   | TypeParams, Rparen
   | ParameterList, (EqualGreater | Lbrace)
   | JsxAttribute, (Forwardslash | GreaterThan)
-  | JsFfiImport, Rbrace
   | StringFieldDeclarations, Rbrace -> true
 
   | Attribute, token when token <> At -> true
@@ -362,7 +361,7 @@ let isListTerminator grammar token =
   | ConstructorDeclaration, token when token <> Bar -> true
   | Primitive, Semicolon -> true
   | Primitive, token when isStructureItemStart token -> true
-
+  | JsNamedImports, Rbrace -> true
   | _ -> false
 
 let isPartOfList grammar token =

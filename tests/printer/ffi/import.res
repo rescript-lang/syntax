@@ -7,5 +7,3 @@ import {
 } from "path"
 
 import {\"*crazy_string*" as crazyString : float => timestamp } from "firebase/app"
-
-import document: Dom.document

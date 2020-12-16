@@ -24,11 +24,9 @@ exports[`externalWithCustomName.res 1`] = `
     ~key: string=?,
     unit,
   ) => {\\"a\\": int, \\"b\\": string} = \\"\\"
-  @bs.module(\\"Foo\\")
-  external component: React.componentLike<
-    {\\"a\\": int, \\"b\\": string},
-    React.element,
-  > = \\"component\\"
+  import {
+    component: React.componentLike<{\\"a\\": int, \\"b\\": string}, React.element>
+  } from \\"Foo\\"
 }
 
 let t = React.createElement(

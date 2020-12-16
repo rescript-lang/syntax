@@ -21,14 +21,13 @@ and y = 2[@@genType ]"
 exports[`import.js 1`] = `
 "include
   struct
-    external realValue : complexNumber -> float = \\"realValue\\"[@@genType.import
+    external realValue : complexNumber -> float = \\"realValue\\"[@@module
                                                                \\"./MyMath\\"]
-    external maxInt : unit -> int = \\"maxInt\\"[@@genType.import \\"./MyMath\\"]
+    external maxInt : unit -> int = \\"maxInt\\"[@@module \\"./MyMath\\"]
   end[@@ns.jsFfi ]
 include
   struct
-    external realValue : complexNumber -> float = \\"realValue\\"[@@genType.import
-                                                               (\\"./MyMath\\",
-                                                                 \\"default\\")]
+    external realValue : complexNumber -> float = \\"default\\"[@@module
+                                                             \\"./MyMath\\"]
   end[@@ns.jsFfi ]"
 `;

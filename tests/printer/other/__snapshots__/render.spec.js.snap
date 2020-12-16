@@ -300,15 +300,17 @@ module Range = {
     children: React.element,
   }
 
-  @bs.module(\\"react-range\\") @react.component
-  external make: (
-    ~min: int,
-    ~max: int,
-    ~values: array<int>,
-    ~onChange: array<int> => unit,
-    ~renderTrack: renderTrackParams => React.element,
-    ~renderThumb: renderTrackParams => React.element,
-  ) => React.element = \\"Range\\"
+  import {
+    @react.component
+    \\"Range\\" as make: (
+      ~min: int,
+      ~max: int,
+      ~values: array<int>,
+      ~onChange: array<int> => unit,
+      ~renderTrack: renderTrackParams => React.element,
+      ~renderThumb: renderTrackParams => React.element,
+    ) => React.element
+  } from \\"react-range\\"
 }
 
 @react.component
