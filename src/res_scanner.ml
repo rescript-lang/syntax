@@ -196,9 +196,10 @@ let scanNumber scanner =
           ^ literal
           ^ "`?"
         in
+        let pos = position scanner in
         scanner.err
-          ~startPos:(position scanner)
-          ~endPos:(position scanner)
+          ~startPos:pos
+          ~endPos:pos
           (Diagnostics.message msg)
       );
       next scanner;
