@@ -12,6 +12,8 @@ val printExpression : Parsetree.expression -> Res_comments_table.t -> Res_doc.t
 
 val printStructure : Parsetree.structure -> Res_comments_table.t -> Res_doc.t [@@live]
 
+val printSignatureItem : Parsetree.signature_item -> Res_comments_table.t -> Res_doc.t
+
 val printImplementation :
   width:int -> Parsetree.structure -> comments:Res_comment.t list -> string
 val printInterface :

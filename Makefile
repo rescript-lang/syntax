@@ -68,6 +68,9 @@ lib/bench.exe: benchmarks/refmt_main3b.cmx benchmarks/Benchmark.ml $(API_FILES)
 benchmarks/refmt_main3b.cmx: benchmarks/refmt_main3b.ml
 	$(OCAMLOPT) -c -O2 -I +compiler-libs ocamlcommon.cmxa benchmarks/refmt_main3b.ml
 
+lib/resdoc.exe: $(API_FILES) src/resdoc_cli.cmx
+	$(OCAMLOPT) $(OCAMLFLAGS) -O2 -o ./lib/resdoc.exe -bin-annot -I +compiler-libs ocamlcommon.cmxa -I src $(API_FILES) src/resdoc_cli.ml
+
 lib/test.exe: $(TEST_FILES)
 	$(OCAMLOPT) $(OCAMLFLAGS) -O2 -o ./lib/test.exe -bin-annot -I +compiler-libs ocamlcommon.cmxa -I src -I tests $(TEST_FILES)
 
@@ -93,6 +96,7 @@ clean:
 	rm -rf benchmarks/*.o
 	rm -rf lib/bench.exe
 	rm -rf lib/rescript.exe
+	rm -rf lib/resdoc.exe
 	rm -rf lib/test.exe
 	git clean -dfx src
 .PHONY: clean test roundtrip-test termination dce exception reanalyze bootstrap build-native
