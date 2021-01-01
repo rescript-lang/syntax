@@ -33,7 +33,9 @@ type t =
   | Exception
   | Backslash [@live]
   | Forwardslash | ForwardslashDot
-  | Asterisk | AsteriskDot | ExponentiationLikeOperator of string
+  | Asterisk | AsteriskDot
+  | MultiplicationLikeOperator of string
+  | ExponentiationLikeOperator of string
   | Minus | MinusDot
   | Plus | PlusDot | PlusPlus | PlusEqual
   | AdditionLikeOperator of string
@@ -82,7 +84,7 @@ let precedence = function
   | Equal | EqualEqual | EqualEqualEqual | LessThan | GreaterThan
   | BangEqual | BangEqualEqual | LessEqual | GreaterEqual | BarGreater -> 4
   | Plus | PlusDot | Minus | MinusDot | PlusPlus | AdditionLikeOperator _ -> 5
-  | Asterisk | AsteriskDot | Forwardslash | ForwardslashDot -> 6
+  | Asterisk | AsteriskDot | Forwardslash | ForwardslashDot | Percent | PercentPercent | MultiplicationLikeOperator _ -> 6
   | ExponentiationLikeOperator _ -> 7
   | MinusGreater -> 8
   | Dot -> 9
@@ -126,6 +128,7 @@ let toString = function
   | LessThanSlash -> "</"
   | Asterisk -> "*" | AsteriskDot -> "*."
   | ExponentiationLikeOperator operator
+  | MultiplicationLikeOperator operator
   | AdditionLikeOperator operator -> operator
   | Assert -> "assert"
   | Lazy -> "lazy"
@@ -229,6 +232,8 @@ let catch = Lident "catch"
 let isCustomOperator token =
   match token with
   | PlusDot | Plus | Minus | MinusDot | PlusPlus
+  | Asterisk | AsteriskDot | Forwardslash | ForwardslashDot | Percent | PercentPercent
   | AdditionLikeOperator _
-  | ExponentiationLikeOperator _ -> true
+  | ExponentiationLikeOperator _
+  | MultiplicationLikeOperator _ -> true
   | _ -> false

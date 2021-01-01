@@ -352,7 +352,7 @@ let isListTerminator grammar token =
   | (Structure | Signature), Rbrace
   | TypeParams, Rparen
   | ParameterList, (EqualGreater | Lbrace)
-  | JsxAttribute, (Forwardslash | GreaterThan)
+  | JsxAttribute, (Forwardslash | GreaterThan | MultiplicationLikeOperator "/>")
   | JsFfiImport, Rbrace
   | StringFieldDeclarations, Rbrace -> true
 

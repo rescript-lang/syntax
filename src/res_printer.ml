@@ -313,6 +313,9 @@ let printOperatorValue operator =
     Doc.text (
       match operator with
       | "^" -> "++"
+      | "=" -> "=="
+      | "<>" -> "!="
+      | "!=" -> "!=="
       | op -> op
     );
     Doc.rparen;

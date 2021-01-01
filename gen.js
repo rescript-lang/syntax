@@ -3,11 +3,11 @@ let customOperatorChars = [
   "$",
   "%",
   "&",
-  "*",
+  // "*",
   "+",
   "-",
   ".",
-  "/",
+  // "/",
   ":",
   "<",
   "=",
@@ -50,5 +50,6 @@ function generateOperators(prefix) {
   });
 }
 
-generateOperators("+");
-generateOperators("-");
+generateOperators("*");
+generateOperators("/");
+generateOperators("%");

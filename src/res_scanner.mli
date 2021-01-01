@@ -22,6 +22,7 @@ val make: ?line:int -> filename:string -> bytes -> t
 val scan: t -> (Lexing.position * Lexing.position * Res_token.t)
 
 val isBinaryOp: bytes -> int -> int -> bool
+val isLeftBound: bytes -> int -> bool
 
 val setJsxMode: t -> unit
 val setDiamondMode: t -> unit

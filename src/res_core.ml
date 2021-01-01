@@ -1132,8 +1132,21 @@ let rec parsePattern ?(alias=true) ?(or_=true) ?(operator=false) p =
         in
         Parser.expect Rparen p;
         fullPattern
-
       end
+    | Percent when Scanner.isLeftBound p.scanner.src p.startPos.pos_cnum ->
+      let extension = parseExtension p in
+      let loc = mkLoc startPos p.prevEndPos in
+      let pat = Ast_helper.Pat.extension ~loc ~attrs extension in
+      let fullPattern = match p.Parser.token with
+      | Colon ->
+        Parser.next p;
+        let typ = parseTypExpr p in
+        let loc = mkLoc pat.ppat_loc.loc_start typ.Parsetree.ptyp_loc.loc_end in
+        Ast_helper.Pat.constraint_ ~loc pat typ
+      | _ -> pat
+      in
+      Parser.expect Rparen p;
+      fullPattern
     | token when Token.isCustomOperator token ->
       if not operator then
         Parser.err p
@@ -2153,7 +2166,7 @@ and parseBinaryExpr ?(context=OrdinaryExpr) ?a p prec =
        *
        * First case is unary, second is a binary operator.
        * See Scanner.isBinaryOp *)
-      | Minus | MinusDot | LessThan when not (
+      | Minus | MinusDot | LessThan | Percent | PercentPercent when not (
           Scanner.isBinaryOp p.scanner.src p.startPos.pos_cnum p.endPos.pos_cnum
         ) && p.startPos.pos_lnum > p.prevEndPos.pos_lnum -> -1
       | token -> Token.precedence token
@@ -2534,6 +2547,12 @@ and parseJsxOpeningOrSelfClosingElement ~startPos p =
     Parser.expect GreaterThan p;
     let loc = mkLoc childrenStartPos childrenEndPos in
     makeListExpression loc [] None (* no children *)
+  | MultiplicationLikeOperator "/>" ->
+    let childrenStartPos = p.Parser.startPos in
+    Parser.next p;
+    let childrenEndPos = p.Parser.startPos in
+    let loc = mkLoc childrenStartPos childrenEndPos in
+    makeListExpression loc [] None (* no children *)
   | GreaterThan -> (* <foo a=b> bar </foo> *)
     let childrenStartPos = p.Parser.startPos in
     Scanner.setJsxMode p.scanner;
@@ -2600,6 +2619,7 @@ and parseJsxOpeningOrSelfClosingElement ~startPos p =
  *)
 and parseJsx p =
   Parser.leaveBreadcrumb p Grammar.Jsx;
+  Scanner.setJsxMode p.scanner;
   let startPos = p.Parser.startPos in
   Parser.expect LessThan p;
   let jsxExpr = match p.Parser.token with
@@ -2610,6 +2630,7 @@ and parseJsx p =
   | _ ->
     parseJsxName p
   in
+  Scanner.popMode p.scanner Jsx;
   Parser.eatBreadcrumb p;
   {jsxExpr with pexp_attributes = [jsxAttr]}
 
@@ -2653,6 +2674,7 @@ and parseJsxProp p =
     else begin
       match p.Parser.token with
       | Equal ->
+        Scanner.popMode p.scanner Jsx;
         Parser.next p;
         (* no punning *)
         let optional = Parser.optional p Question in
@@ -2663,6 +2685,7 @@ and parseJsxProp p =
         let label =
           if optional then Asttypes.Optional name else Asttypes.Labelled name
         in
+        Scanner.setJsxMode p.scanner;
         Some (label, attrExpr)
       | _ ->
         let attrExpr =
