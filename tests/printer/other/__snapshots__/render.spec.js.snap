@@ -546,6 +546,174 @@ import * as copyToClipboard: string => unit from \\"copy-to-clipboard\\"
 "
 `;
 
+exports[`import.resi 1`] = `
+"// Import a single export from a module
+import {dirname: string => string} from \\"path\\"
+
+// old external
+import {dirname: string => string} from \\"path\\"
+
+// Import multiple exports from a module
+import {
+  delimiter: string,
+  dirname: string => string,
+  relative: (~from: string, ~\\\\\\"to\\": string) => string,
+} from \\"path\\"
+
+// old external
+import {delimiter: string} from \\"path\\"
+import {dirname: (string, string) => string} from \\"path\\"
+import {relative: (~from: string, ~\\\\\\"to\\": string) => string} from \\"path\\"
+
+// Import an export with a more convenient alias
+import {renameSync as rename: (string, string) => string} from \\"fs\\"
+
+import {renameSync as rename: (string, string) => string} from \\"fs\\"
+
+// import an export with an illegal ReScript identifier
+import {\\"Fragment\\" as make: component<{\\"children\\": element}>} from \\"react\\"
+
+// old external
+import {\\"Fragment\\" as make: component<{\\"children\\": element}>} from \\"react\\"
+
+// import an export with additional attributes
+import {@splice join: array<string> => string} from \\"path\\"
+
+// old external
+import {
+  @splice
+  join: array<string> => string,
+} from \\"path\\"
+
+// Rename multiple exports during import
+import {
+  renameSync as rename: (string, string) => string,
+  unlinkSync as unlink: string => unit,
+} from \\"fs\\"
+
+// old external
+import {renameSync as rename: (string, string) => string} from \\"path\\"
+import {unlinkSync as unlink: string => unit} from \\"path\\"
+
+// import an entire module's contents (aka NameSpacedImport)
+import * as leftPad: (string, int) => string from \\"leftPad\\"
+
+// old external
+import * as leftPad: (string, int) => string from \\"leftPad\\"
+
+// Importing default export
+import schoolName: string from \\"/modules/school.js\\"
+// syntactic sugar for
+import schoolName: string from \\"/modules/school.js\\"
+
+// old external
+import schoolName: string from \\"/modules/school.js\\"
+
+// importing default export with named imports
+import schoolName: string, {getGrade: student => int} from \\"/modules/school.js\\"
+
+// old external
+import schoolName: string from \\"/modules/school.js\\"
+import {getGrade: student => int} from \\"/modules/school.js\\"
+
+// importing default export with multiple named imports
+import
+  schoolName: string,
+  {
+    getGrade: student => int,
+    getTeachers: unit => array<teacher>
+  }
+from \\"/modules/school.js\\"
+
+// old external
+import schoolName: string from \\"/modules/school.js\\"
+import {getGrade: student => int} from \\"/modules/school.js\\"
+import {getTeachers: unit => array<teacher>} from \\"/modules/school.js\\"
+
+// import values from JavaScript modules with @as and polyvariants
+import {
+  openSync: (
+    path,
+    @bs.string
+    [
+      | @bs.as(\\"r\\") #Read
+      | @bs.as(\\"r+\\") #Read_write
+      | @bs.as(\\"rs+\\") #Read_write_sync
+      | @bs.as(\\"w\\") #Write
+      | @bs.as(\\"wx\\") #Write_fail_if_exists
+      | @bs.as(\\"w+\\") #Write_read
+      | @bs.as(\\"wx+\\") #Write_read_fail_if_exists
+      | @bs.as(\\"a\\") #Append
+      | @bs.as(\\"ax\\") #Append_fail_if_exists
+      | @bs.as(\\"a+\\") #Append_read
+      | @bs.as(\\"ax+\\") #Append_read_fail_if_exists
+    ],
+  ) => unit,
+} from \\"fs\\"
+
+// old external
+import {
+  openSync: (
+    path,
+    @bs.string
+    [
+      | @bs.as(\\"r\\") #Read
+      | @bs.as(\\"r+\\") #Read_write
+      | @bs.as(\\"rs+\\") #Read_write_sync
+      | @bs.as(\\"w\\") #Write
+      | @bs.as(\\"wx\\") #Write_fail_if_exists
+      | @bs.as(\\"w+\\") #Write_read
+      | @bs.as(\\"wx+\\") #Write_read_fail_if_exists
+      | @bs.as(\\"a\\") #Append
+      | @bs.as(\\"ax\\") #Append_fail_if_exists
+      | @bs.as(\\"a+\\") #Append_read
+      | @bs.as(\\"ax+\\") #Append_read_fail_if_exists
+    ],
+  ) => unit,
+} from \\"fs\\"
+
+// import a react component from a module
+import {
+  @react.component
+  \\"Circle\\" as make: (
+    ~center: Leaflet.point,
+    ~radius: int,
+    ~opacity: float,
+    ~stroke: bool,
+    ~color: string,
+    ~children: React.element=?,
+  ) => React.element,
+} from \\"react-leaflet\\"
+
+module type JsComponent = {
+  import
+    @react.component
+    make: (
+      ~id: string=?,
+      ~onChange: Js.Nullable.t<Js.Date.t> => unit,
+      ~selected: Js.Date.t=?,
+    ) => React.element
+  from \\"./DatePicker\\"
+}
+
+import @attr * as leftPad: (string, int) => string from \\"leftPad\\"
+import @attr * as leftPad: (string, int) => string from \\"leftPad\\"
+
+import
+  @react.component
+  make: (
+    ~id: string=?,
+    ~onChange: Js.Nullable.t<Js.Date.t> => unit,
+    ~selected: Js.Date.t=?,
+  ) => React.element,
+  @attr
+  * as dateLib: 'a
+from \\"./DatePicker\\"
+
+import * as copyToClipboard: string => unit from \\"copy-to-clipboard\\"
+"
+`;
+
 exports[`lor.js 1`] = `
 "let lower = ch => lor(32, ch)
 "

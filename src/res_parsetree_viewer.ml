@@ -559,6 +559,20 @@ let extractValueDescriptionFromModExpr modExpr =
   | Pmod_structure structure -> loop structure []
   | _ -> []
 
+let extractValueDescriptionFromModType modType =
+  let rec loop signature acc =
+    match signature with
+    | [] -> List.rev acc
+    | signatureItem::signature ->
+      begin match signatureItem.Parsetree.psig_desc with
+      | Psig_value vd -> loop signature (vd::acc)
+      | _ -> loop signature acc
+      end
+  in
+  match modType.pmty_desc with
+  | Pmty_signature signature -> loop signature []
+  | _ -> []
+
 type jsModuleFlavour =
   (* import ceo: string from "company" *)
   | JsDefaultImport of string

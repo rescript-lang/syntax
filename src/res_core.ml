@@ -5156,9 +5156,24 @@ and parseStructureItemRegion p =
     let loc = mkLoc startPos p.prevEndPos in
     Some (Ast_helper.Str.primitive ~loc externalDef)
   | Import ->
-    let structureItem = parseJsImportDeclaration ~startPos ~attrs p in
+    let valueDescriptions = parseJsImportDeclaration ~startPos ~attrs p in
     parseNewlineOrSemicolonStructure p;
     let loc = mkLoc startPos p.prevEndPos in
+    let structureItem =
+      let primitives =
+        List.map (fun valueDescription ->
+          Ast_helper.Str.primitive ~loc:valueDescription.Parsetree.pval_loc valueDescription
+        ) valueDescriptions
+      in
+      match primitives with
+      | [oneExternal] -> oneExternal
+      | clause ->
+        let attrs = (Location.mknoloc "ns.jsFfi", Parsetree.PStr [])::attrs in
+        clause
+        |> Ast_helper.Mod.structure ~loc
+        |> Ast_helper.Incl.mk ~attrs ~loc
+        |> Ast_helper.Str.include_ ~loc
+    in
     Some {structureItem with pstr_loc = loc}
   | Exception ->
     let exceptionDef = parseExceptionDef ~attrs p in
@@ -5213,56 +5228,44 @@ and parseStructureItemRegion p =
     end
 
 (* import ImportClause FromClause *)
-and parseJsImportDeclaration ~startPos ~attrs p =
+and parseJsImportDeclaration ~startPos:_startPos ~attrs:_ p =
   Parser.expect Token.Import p;
   let importJsClause = parseJsImportClause p in
   let fromClause = parseFromClause p in
-  let loc = mkLoc startPos p.prevEndPos in
-  (* let attrs = (Location.mknoloc "ns.jsFfi", Parsetree.PStr [])::attrs in *)
-  let clause =
-    List.map (fun jsImport ->
-      let valueDescription = match jsImport with
-      (* import schoolName: string from '/modules/school.js' *)
-      | DefaultImport {attrs; name; alias; typ} ->
-        (* module("/modules/school.js") external schoolName: string = "default" *)
-        Ast_helper.Val.mk ~loc:name.loc
-          ~attrs:(fromClause::attrs) ~prim:[alias] name typ
+  List.map (fun jsImport ->
+    let valueDescription = match jsImport with
+    (* import schoolName: string from '/modules/school.js' *)
+    | DefaultImport {attrs; name; alias; typ} ->
+      (* module("/modules/school.js") external schoolName: string = "default" *)
+      Ast_helper.Val.mk ~loc:name.loc
+        ~attrs:(fromClause::attrs) ~prim:[alias] name typ
 
-      (* import * as leftPad: (string, int) => string from "left-pad" *)
-      | NameSpaceImport {attrs; name; typ} ->
-        let (_, moduleSpecifier) = fromClause in
-        let jsModuleName = match (moduleSpecifier: Parsetree.payload) with
-        (* extract "left-pad"*)
-        | PStr [
-            {Parsetree.pstr_desc = Pstr_eval (
-              {pexp_desc = Pexp_constant (Pconst_string (jsModuleName, None))},
-              _
-            )}
-          ] -> jsModuleName
-        | _ -> ""
-        in
-        let moduleAttribute = (Location.mknoloc "module", Parsetree.PStr []) in
-        (* @module external leftPad: (string, int) => string = "left-pad" *)
-        Ast_helper.Val.mk ~loc:name.loc
-          ~attrs:(moduleAttribute::attrs) ~prim:[jsModuleName] name typ
-
-      (* import {dirname: string => string} from "path" *)
-      | NamedImport {attrs; name; alias; typ} ->
-        (* module("path") external dirname: (string, string) => string = "dirname" *)
-        Ast_helper.Val.mk ~loc:name.loc
-          ~attrs:(fromClause::attrs) ~prim:[alias] name typ
+    (* import * as leftPad: (string, int) => string from "left-pad" *)
+    | NameSpaceImport {attrs; name; typ} ->
+      let (_, moduleSpecifier) = fromClause in
+      let jsModuleName = match (moduleSpecifier: Parsetree.payload) with
+      (* extract "left-pad"*)
+      | PStr [
+          {Parsetree.pstr_desc = Pstr_eval (
+            {pexp_desc = Pexp_constant (Pconst_string (jsModuleName, None))},
+            _
+          )}
+        ] -> jsModuleName
+      | _ -> ""
       in
-      (* TODO: nicer loc on primitive? *)
-      Ast_helper.Str.primitive ~loc:valueDescription.pval_loc  valueDescription
-    ) importJsClause
-  in match clause with
-  | [oneExternal] -> oneExternal
-  | clause ->
-    let attrs = (Location.mknoloc "ns.jsFfi", Parsetree.PStr [])::attrs in
-    clause
-    |> Ast_helper.Mod.structure ~loc
-    |> Ast_helper.Incl.mk ~attrs ~loc
-    |> Ast_helper.Str.include_ ~loc
+      let moduleAttribute = (Location.mknoloc "module", Parsetree.PStr []) in
+      (* @module external leftPad: (string, int) => string = "left-pad" *)
+      Ast_helper.Val.mk ~loc:name.loc
+        ~attrs:(moduleAttribute::attrs) ~prim:[jsModuleName] name typ
+
+    (* import {dirname: string => string} from "path" *)
+    | NamedImport {attrs; name; alias; typ} ->
+      (* module("path") external dirname: (string, string) => string = "dirname" *)
+      Ast_helper.Val.mk ~loc:name.loc
+        ~attrs:(fromClause::attrs) ~prim:[alias] name typ
+    in
+    valueDescription
+  ) importJsClause
 
 (*
  * ImportClause ::=
@@ -6131,8 +6134,27 @@ and parseSignatureItemRegion p =
     let loc = mkLoc startPos p.prevEndPos in
     Some (Ast_helper.Sig.extension ~attrs ~loc extension)
   | Import ->
-    Parser.next p;
-    parseSignatureItemRegion p
+    let valueDescriptions = parseJsImportDeclaration ~startPos ~attrs p in
+    parseNewlineOrSemicolonStructure p;
+    let loc = mkLoc startPos p.prevEndPos in
+    let signatureItem =
+      let primitives =
+        List.map (fun valueDescription ->
+          Ast_helper.Sig.value ~loc:valueDescription.Parsetree.pval_loc valueDescription
+        ) valueDescriptions
+      in
+      match primitives with
+      | [oneExternal] -> oneExternal
+      | clause ->
+        let attrs = (Location.mknoloc "ns.jsFfi", Parsetree.PStr [])::attrs in
+        clause
+        |> Ast_helper.Mty.signature ~loc
+        |> Ast_helper.Incl.mk ~attrs ~loc
+        |> Ast_helper.Sig.include_ ~loc
+    in
+    Some {signatureItem with psig_loc = loc}
+    (* Parser.next p; *)
+    (* parseSignatureItemRegion p *)
   | _ ->
     begin match attrs with
     | (({Asttypes.loc = attrLoc}, _) as attr)::_ ->

@@ -910,11 +910,26 @@ and printOpenDescription (openDescription : Parsetree.open_description) cmtTbl =
   ]
 
 and printIncludeDescription (includeDescription: Parsetree.include_description) cmtTbl =
-  Doc.concat [
-    printAttributes includeDescription.pincl_attributes cmtTbl;
-    Doc.text "include ";
-    printModType includeDescription.pincl_mod cmtTbl;
-  ]
+  let isJsFfiImport = List.exists (fun attr -> match attr with
+    | ({Location.txt = "ns.jsFfi"}, _) -> true
+    | _ -> false
+  ) includeDescription.pincl_attributes
+  in
+  if isJsFfiImport then
+    let attrs = List.filter (fun attr ->
+      match attr with
+      | ({Location.txt = "ns.jsFfi"}, _) -> false
+      | _ -> true
+    ) includeDescription.pincl_attributes
+    in
+    let imports = ParsetreeViewer.extractValueDescriptionFromModType includeDescription.pincl_mod in
+    printJsFfiImportDeclaration ~attrs ~imports cmtTbl
+  else
+    Doc.concat [
+      printAttributes includeDescription.pincl_attributes cmtTbl;
+      Doc.text "include ";
+      printModType includeDescription.pincl_mod cmtTbl;
+    ]
 
 and printIncludeDeclaration (includeDeclaration : Parsetree.include_declaration)  cmtTbl =
   let isJsFfiImport = List.exists (fun attr ->
