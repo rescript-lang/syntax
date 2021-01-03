@@ -58,11 +58,7 @@ exports[`itemExtension.js 1`] = `
 [%%itemExtension ][@@attrOnExtension ]"
 `;
 
-exports[`jsFfiSugar.js 1`] = `
-"include
-  struct external dirname : string -> string = \\"dirname\\"[@@module \\"path\\"] end
-[@@ns.jsFfi ]"
-`;
+exports[`jsFfiSugar.js 1`] = `"external dirname : string -> string = \\"dirname\\"[@@module \\"path\\"]"`;
 
 exports[`letBinding.js 1`] = `
 "let a = 1

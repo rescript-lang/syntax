@@ -25,9 +25,5 @@ exports[`import.js 1`] = `
                                                                \\"./MyMath\\"]
     external maxInt : unit -> int = \\"maxInt\\"[@@module \\"./MyMath\\"]
   end[@@ns.jsFfi ]
-include
-  struct
-    external realValue : complexNumber -> float = \\"default\\"[@@module
-                                                             \\"./MyMath\\"]
-  end[@@ns.jsFfi ]"
+external realValue : complexNumber -> float = \\"default\\"[@@module \\"./MyMath\\"]"
 `;

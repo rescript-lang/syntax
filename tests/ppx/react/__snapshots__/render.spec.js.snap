@@ -25,7 +25,7 @@ exports[`externalWithCustomName.res 1`] = `
     unit,
   ) => {\\"a\\": int, \\"b\\": string} = \\"\\"
   import {
-    component: React.componentLike<{\\"a\\": int, \\"b\\": string}, React.element>
+    component: React.componentLike<{\\"a\\": int, \\"b\\": string}, React.element>,
   } from \\"Foo\\"
 }
 

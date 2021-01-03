@@ -5,7 +5,6 @@ module Diagnostics = Res_diagnostics
 module CommentTable = Res_comments_table
 module ResPrinter =  Res_printer
 module Scanner = Res_scanner
-(* module JsFfi = Res_js_ffi *)
 module Parser = Res_parser
 
 let mkLoc startLoc endLoc = Location.{
@@ -5219,9 +5218,9 @@ and parseJsImportDeclaration ~startPos ~attrs p =
   let importJsClause = parseJsImportClause p in
   let fromClause = parseFromClause p in
   let loc = mkLoc startPos p.prevEndPos in
-  let attrs = (Location.mknoloc "ns.jsFfi", Parsetree.PStr [])::attrs in
-  importJsClause
-  |> List.map (fun jsImport ->
+  (* let attrs = (Location.mknoloc "ns.jsFfi", Parsetree.PStr [])::attrs in *)
+  let clause =
+    List.map (fun jsImport ->
       let valueDescription = match jsImport with
       (* import schoolName: string from '/modules/school.js' *)
       | DefaultImport {attrs; name; alias; typ} ->
@@ -5229,11 +5228,21 @@ and parseJsImportDeclaration ~startPos ~attrs p =
         Ast_helper.Val.mk ~loc:name.loc
           ~attrs:(fromClause::attrs) ~prim:[alias] name typ
 
-      (* import * as leftPad: (string, int) => string from "leftPad" *)
+      (* import * as leftPad: (string, int) => string from "left-pad" *)
       | NameSpaceImport {attrs; name; typ} ->
-        let ({Asttypes.txt = jsModuleName}, _ ) = fromClause in
+        let (_, moduleSpecifier) = fromClause in
+        let jsModuleName = match (moduleSpecifier: Parsetree.payload) with
+        (* extract "left-pad"*)
+        | PStr [
+            {Parsetree.pstr_desc = Pstr_eval (
+              {pexp_desc = Pexp_constant (Pconst_string (jsModuleName, None))},
+              _
+            )}
+          ] -> jsModuleName
+        | _ -> ""
+        in
         let moduleAttribute = (Location.mknoloc "module", Parsetree.PStr []) in
-        (* @module external leftPad: (string, int) => string = "leftPad" *)
+        (* @module external leftPad: (string, int) => string = "left-pad" *)
         Ast_helper.Val.mk ~loc:name.loc
           ~attrs:(moduleAttribute::attrs) ~prim:[jsModuleName] name typ
 
@@ -5245,21 +5254,27 @@ and parseJsImportDeclaration ~startPos ~attrs p =
       in
       (* TODO: nicer loc on primitive? *)
       Ast_helper.Str.primitive ~loc:valueDescription.pval_loc  valueDescription
-  )
-  |> Ast_helper.Mod.structure ~loc
-  |> Ast_helper.Incl.mk ~attrs ~loc
-  |> Ast_helper.Str.include_ ~loc
+    ) importJsClause
+  in match clause with
+  | [oneExternal] -> oneExternal
+  | clause ->
+    let attrs = (Location.mknoloc "ns.jsFfi", Parsetree.PStr [])::attrs in
+    clause
+    |> Ast_helper.Mod.structure ~loc
+    |> Ast_helper.Incl.mk ~attrs ~loc
+    |> Ast_helper.Str.include_ ~loc
 
 (*
  * ImportClause ::=
- *   ImportedDefaultBinding
- *   NameSpaceImport
+ *   attributes? ImportedDefaultBinding
+ *   attributes? NameSpaceImport
  *   NamedImports
- *   ImportedDefaultBinding , NameSpaceImport
- *   ImportedDefaultBinding , NamedImports
+ *   attributes? ImportedDefaultBinding , attributes? NameSpaceImport
+ *   attributes? ImportedDefaultBinding , NamedImports
  *)
 and parseJsImportClause p =
   let startPos = p.Parser.startPos in
+  let attrs = parseAttributes p in
   match p.token with
   (* ImportedDefaultBinding *)
   | Token.Lident ident | String ident ->
@@ -5268,7 +5283,7 @@ and parseJsImportClause p =
     Parser.expect Colon p;
     let typ = parseTypExpr p in
     let default = DefaultImport {
-      attrs = [];
+      attrs = attrs;
       name = Location.mkloc ident identLoc;
       alias = "default";
       typ
@@ -5276,18 +5291,19 @@ and parseJsImportClause p =
     begin match p.token with
     | Comma ->
       Parser.next p;
+      let attrs = parseAttributes p in
       begin match p.token with
       | Lbrace ->
         default::(parseJsNamedImports p)
       | Asterisk ->
-        [default; parseNameSpaceImport p]
+        [default; parseNameSpaceImport ~attrs p]
       | _ -> [default]
       end
     | _ ->
       [default]
     end
   | Asterisk ->
-    [parseNameSpaceImport p]
+    [parseNameSpaceImport ~attrs p]
   (* NamedImports *)
   | Lbrace ->
     parseJsNamedImports p
@@ -5298,7 +5314,7 @@ and parseJsImportClause p =
  * NameSpaceImport :
  *   * as ImportedBinding
  *)
-and parseNameSpaceImport p =
+and parseNameSpaceImport ~attrs p =
   let startPos = p.Parser.startPos in
   Parser.expect Asterisk p;
   Parser.expect As p;
@@ -5309,7 +5325,7 @@ and parseNameSpaceImport p =
     Parser.expect Colon p;
     let typ = parseTypExpr p in
     NameSpaceImport {
-      attrs = [];
+      attrs = attrs;
       name = Location.mkloc ident identLoc;
       alias = "";
       typ
