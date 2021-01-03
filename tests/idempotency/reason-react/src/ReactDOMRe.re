@@ -4,7 +4,7 @@
    that takes in a reactElement, a dom element, and returns unit (nothing) */
 /* It's like `let`, except you're pointing the implementation to the JS side. The compiler will inline these
    calls and add the appropriate `require("react-dom")` in the file calling this `render` */
-[@bs.val] [@bs.module "react-dom"]
+[@bs.module "react-dom"] [@bs.val]
 external render: (React.element, Dom.element) => unit = "render";
 
 [@bs.val]
@@ -41,7 +41,7 @@ let renderToElementWithId = (reactElement, id) =>
   | Some(element) => render(reactElement, element)
   };
 
-[@bs.val] [@bs.module "react-dom"]
+[@bs.module "react-dom"] [@bs.val]
 external hydrate: (React.element, Dom.element) => unit = "hydrate";
 
 let hydrateToElementWithClassName = (reactElement, className) =>
@@ -70,16 +70,16 @@ let hydrateToElementWithId = (reactElement, id) =>
   | Some(element) => hydrate(reactElement, element)
   };
 
-[@bs.val] [@bs.module "react-dom"]
+[@bs.module "react-dom"] [@bs.val]
 external createPortal:
   (React.element, Dom.element) => React.element =
   "createPortal";
 
-[@bs.val] [@bs.module "react-dom"]
+[@bs.module "react-dom"] [@bs.val]
 external unmountComponentAtNode: Dom.element => unit =
   "unmountComponentAtNode";
 
-[@bs.val] [@bs.module "react-dom"]
+[@bs.module "react-dom"] [@bs.val]
 external findDOMNode: ReasonReact.reactRef => Dom.element = "findDOMNode";
 
 external domElementToObj: Dom.element => Js.t({..}) = "%identity";
@@ -1094,7 +1094,7 @@ type domProps = {
   suppressContentEditableWarning: bool,
 };
 
-[@bs.splice] [@bs.module "react"]
+[@bs.module "react"] [@bs.splice]
 external createDOMElementVariadic:
   (string, ~props: domProps=?, array(React.element)) =>
   React.element =
@@ -2102,9 +2102,8 @@ external objToDOMProps: Js.t({..}) => props = "%identity";
 [@deprecated "Please use ReactDOMRe.props instead"]
 type reactDOMProps = props;
 
-[@bs.splice] [@bs.val] [@bs.module "react"]
-external createElement:
-  (string, ~props: props=?, array(React.element)) =>
+[@bs.module "react"] [@bs.splice] [@bs.val]external createElement:
+   (string, ~props: props=?, array(React.element)) =>
   React.element =
   "createElement";
 
@@ -2112,7 +2111,7 @@ external createElement:
 include (
           /* Use varargs to avoid the ReactJS warning for duplicate keys in children */
           {
-            [@bs.val] [@bs.module "react"]
+            [@bs.module "react"] [@bs.val]
             external createElementInternalHack: 'a = "createElement";
             [@bs.send]
             external apply:

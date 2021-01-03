@@ -409,7 +409,10 @@ import {\\"Fragment\\" as make: component<{\\"children\\": element}>} from \\"re
 import {\\"Fragment\\" as make: component<{\\"children\\": element}>} from \\"react\\"
 
 // import an export with additional attributes
-import {@splice join: array<string> => string} from \\"path\\"
+import {
+  @splice
+  join: array<string> => string,
+} from \\"path\\"
 
 // old external
 import {
@@ -528,8 +531,23 @@ module JsComponent = {
   from \\"./DatePicker\\"
 }
 
+// attribute on same line, print attribute on same line
 import @attr * as leftPad: (string, int) => string from \\"leftPad\\"
-import @attr * as leftPad: (string, int) => string from \\"leftPad\\"
+
+// attribute above, print attribute above
+import
+  @attr
+  * as leftPad: (string, int) => string
+from \\"leftPad\\"
+
+// attribute on same line, print attribute on same line
+import @runtime collect: unit => unit from \\"gc\\"
+
+// attribute above, print attribute above
+import
+  @runtime
+  collect: unit => unit
+from \\"gc\\"
 
 import
   @react.component
@@ -545,7 +563,7 @@ from \\"./DatePicker\\"
 import * as copyToClipboard: string => unit from \\"copy-to-clipboard\\"
 
 // handle \\"\\"
-import {create: unit => t} from \\"mat4\\"
+/* @module(\\"mat4\\") external create: unit => t = \\"\\" */
 "
 `;
 
@@ -580,7 +598,10 @@ import {\\"Fragment\\" as make: component<{\\"children\\": element}>} from \\"re
 import {\\"Fragment\\" as make: component<{\\"children\\": element}>} from \\"react\\"
 
 // import an export with additional attributes
-import {@splice join: array<string> => string} from \\"path\\"
+import {
+  @splice
+  join: array<string> => string,
+} from \\"path\\"
 
 // old external
 import {

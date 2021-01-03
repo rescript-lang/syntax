@@ -4803,6 +4803,7 @@ and printBsObjectRow (lbl, expr) cmtTbl =
  *   type t = string` -> attr is on prev line, print the attributes
  *   with a line break between, we respect the users' original layout *)
 and printAttributes ?loc ?(inline=false) (attrs: Parsetree.attributes) cmtTbl =
+
   match ParsetreeViewer.filterParsingAttrs attrs with
   | [] -> Doc.nil
   | attrs ->
@@ -4810,7 +4811,7 @@ and printAttributes ?loc ?(inline=false) (attrs: Parsetree.attributes) cmtTbl =
     | None -> Doc.line
     | Some loc -> begin match List.rev attrs with
       | ({loc = firstLoc}, _)::_ when loc.loc_start.pos_lnum > firstLoc.loc_end.pos_lnum ->
-        Doc.hardLine;
+        Doc.hardLine
       | _ -> Doc.line
       end
     in

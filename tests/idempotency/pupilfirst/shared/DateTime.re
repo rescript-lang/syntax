@@ -1,9 +1,9 @@
 type t = Js.Date.t;
 
-[@bs.val] [@bs.module "date-fns"]
+[@bs.module "date-fns"] [@bs.val]
 external dateFormat: (t, string) => string = "format";
 
-[@bs.val] [@bs.module "date-fns"] external dateParse: string => t = "parse";
+[@bs.module "date-fns"] [@bs.val] external dateParse: string => t = "parse";
 
 let parse = s => s |> dateParse;
 

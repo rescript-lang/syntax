@@ -155,10 +155,23 @@ module JsComponent = {
     ) => React.element from "./DatePicker"
 }
 
-
-
+// attribute on same line, print attribute on same line
 import @attr * as leftPad: (string, int) => string from "leftPad"
-import @attr * as leftPad: (string, int) => string from "leftPad"
+
+// attribute above, print attribute above
+import
+  @attr
+  * as leftPad: (string, int) => string
+from "leftPad"
+
+// attribute on same line, print attribute on same line
+import @runtime collect: unit => unit from "gc"
+
+// attribute above, print attribute above
+import
+  @runtime
+  collect: unit => unit
+from "gc"
 
 import
   @react.component
@@ -173,4 +186,4 @@ from "./DatePicker"
 import * as copyToClipboard: string => unit from "copy-to-clipboard"
 
 // handle ""
-@module("mat4") external create: unit => t = ""
+/* @module("mat4") external create: unit => t = "" */

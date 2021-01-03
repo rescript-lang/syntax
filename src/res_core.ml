@@ -5276,8 +5276,8 @@ and parseJsImportDeclaration ~startPos:_startPos ~attrs:_ p =
  *   attributes? ImportedDefaultBinding , NamedImports
  *)
 and parseJsImportClause p =
-  let startPos = p.Parser.startPos in
   let attrs = parseAttributes p in
+  let startPos = p.Parser.startPos in
   match p.token with
   (* ImportedDefaultBinding *)
   | Token.Lident ident | String ident ->
@@ -5363,8 +5363,8 @@ and parseJsNamedImports p =
  *   IdentifierName as ImportedBinding : typexpr
  *)
 and parseJsImportsListItemRegion p =
-  let startPos = p.Parser.startPos in
   let attrs = parseAttributes p in
+  let startPos = p.Parser.startPos in
   match p.token with
   | Token.Lident ident | String ident ->
     let identLoc = mkLoc startPos p.endPos in

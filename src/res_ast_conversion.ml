@@ -332,6 +332,11 @@ let normalize =
           )}, _) -> false
         | _ ->true
       )
+      |> List.map (fun attr -> match attr with
+        | ({Location.txt = "bs.module"} as loc, payload) ->
+          ({loc with txt = "module"}, payload)
+        | attr -> attr
+      )
       |> default_mapper.attributes mapper
     );
     pat = begin fun mapper p ->

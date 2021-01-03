@@ -35,12 +35,12 @@ external refToJsObj: reactRef => Js.t({..}) = "%identity";
 
    In every other case, you should be using the JSX
    */
-[@bs.splice] [@bs.val] [@bs.module "react"]
+[@bs.module "react"] [@bs.splice] [@bs.val]
 external createElement:
   (reactClass, ~props: Js.t({..})=?, array(reactElement)) => reactElement =
   "createElement";
 
-[@bs.splice] [@bs.module "react"]
+[@bs.module "react"] [@bs.splice] 
 external cloneElement:
   (reactElement, ~props: Js.t({..})=?, array(reactElement)) => reactElement =
   "cloneElement";

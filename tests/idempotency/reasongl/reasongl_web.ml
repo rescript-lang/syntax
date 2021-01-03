@@ -708,33 +708,29 @@ module Gl : RGLInterface.t =
       struct
         type t = float array
         let to_array a = a
-        external create : unit -> t = ""[@@bs.scope "mat4"][@@bs.module
-                                                             "gl-matrix"]
-        external identity : out:t -> unit = ""[@@bs.scope "mat4"][@@bs.module
-                                                                   "gl-matrix"]
+        external create : unit -> t = "create"[@@bs.module "gl-matrix"][@@bs.scope "mat4"]
+        external identity : out:t -> unit = "identity"[@@bs.module "gl-matrix"][@@bs.scope "mat4"]
         external translate :
-          out:t -> matrix:t -> vec:float array -> unit = ""[@@bs.scope
-                                                             "mat4"][@@bs.module
-                                                                    "gl-matrix"]
-        external scale : out:t -> matrix:t -> vec:float array -> unit = ""
-        [@@bs.scope "mat4"][@@bs.module "gl-matrix"]
+          out:t -> matrix:t -> vec:float array -> unit = "translate"[@@bs.module "gl-matrix"][@@bs.scope "mat4"]
+        external scale : out:t -> matrix:t -> vec:float array -> unit = "scale"
+        [@@bs.module "gl-matrix"] [@@bs.scope "mat4"]
         external rotate :
-          out:t -> matrix:t -> rad:float -> vec:float array -> unit = ""
-        [@@bs.scope "mat4"][@@bs.module "gl-matrix"]
+          out:t -> matrix:t -> rad:float -> vec:float array -> unit = "rotate"
+        [@@bs.module "gl-matrix"] [@@bs.scope "mat4"]
         external ortho :
           out:t ->
             left:float ->
               right:float ->
                 bottom:float -> top:float -> near:float -> far:float -> unit
-            = ""[@@bs.scope "mat4"][@@bs.module "gl-matrix"]
+            = "ortho"[@@bs.module "gl-matrix"][@@bs.scope "mat4"]
         external perspective :
           out:t ->
             fovy:float -> aspect:float -> near:float -> far:float -> unit =
-            ""[@@bs.scope "mat4"][@@bs.module "gl-matrix"]
+            "perspective"[@@bs.module "gl-matrix"] [@@bs.scope "mat4"]
         external lookAt :
           out:t ->
             eye:float array -> center:float array -> up:float array -> unit =
-            ""[@@bs.scope "mat4"][@@bs.module "gl-matrix"]
+            "lookA"[@@bs.module "gl-matrix"][@@bs.scope "mat4"]
       end
     external uniform1i :
       context:contextT -> location:uniformT -> value:int -> unit =

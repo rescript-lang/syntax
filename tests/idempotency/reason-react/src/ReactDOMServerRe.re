@@ -1,7 +1,7 @@
-[@bs.val] [@bs.module "react-dom/server"]
+[@bs.module "react-dom/server"] [@bs.val] 
 external renderToString : React.element => string =
   "renderToString";
 
-[@bs.val] [@bs.module "react-dom/server"]
+[@bs.module "react-dom/server"] [@bs.val] 
 external renderToStaticMarkup : React.element => string =
   "renderToStaticMarkup";
