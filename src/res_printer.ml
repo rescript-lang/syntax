@@ -984,7 +984,7 @@ and printJsFfiImport (valueDescription: Parsetree.value_description) cmtTbl =
   | JsNamedImport _ ->
     let (ident, alias) = match valueDescription.pval_prim with
     | primitive::_ ->
-      if primitive <> valueDescription.pval_name.txt then
+      if primitive <> "" && primitive <> valueDescription.pval_name.txt then
         (
           printJsExportedIdentLike primitive,
           Doc.concat [
@@ -993,7 +993,8 @@ and printJsFfiImport (valueDescription: Parsetree.value_description) cmtTbl =
           ]
         )
       else
-        (printIdentLike primitive, Doc.nil)
+        (* handle: @module("mat4") external create: unit => t = "" *)
+        (printIdentLike valueDescription.pval_name.txt, Doc.nil)
     | _ ->
       (printIdentLike valueDescription.pval_name.txt, Doc.nil)
     in
@@ -1070,9 +1071,6 @@ and printJsImportClause vds cmtTbl =
     ]
 
 and printJsFfiImportDeclaration ~attrs ~imports cmtTbl =
-
-(* (includeDeclaration: Parsetree.include_declaration) cmtTbl = *)
-  (* FromClause *)
   let fromClauseDoc = match imports with
   | vd::_ ->
     begin match ParsetreeViewer.classifyJsModuleFlavour vd with

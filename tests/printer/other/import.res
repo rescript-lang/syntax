@@ -171,3 +171,6 @@ import
 from "./DatePicker"
 
 import * as copyToClipboard: string => unit from "copy-to-clipboard"
+
+// handle ""
+@module("mat4") external create: unit => t = ""

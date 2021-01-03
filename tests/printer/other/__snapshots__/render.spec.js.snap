@@ -543,6 +543,9 @@ import
 from \\"./DatePicker\\"
 
 import * as copyToClipboard: string => unit from \\"copy-to-clipboard\\"
+
+// handle \\"\\"
+import {create: unit => t} from \\"mat4\\"
 "
 `;
 
