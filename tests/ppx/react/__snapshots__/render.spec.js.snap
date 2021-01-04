@@ -38,6 +38,17 @@ let t = React.createElement(
 "
 `;
 
+exports[`fragment.res 1`] = `
+"let foo = ReactDOMRe.createElement(
+  ReasonReact.fragment,
+  [
+    ReactDOMRe.createDOMElementVariadic(\\"div\\", []),
+    ReactDOMRe.createDOMElementVariadic(\\"span\\", []),
+  ],
+)
+"
+`;
+
 exports[`innerModule.res 1`] = `
 "module Bar = {
   @obj

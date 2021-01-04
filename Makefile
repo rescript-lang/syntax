@@ -12,6 +12,7 @@ depend:
 
 API_FILES = \
 	src/reactjs_jsx_ppx_v3.cmx\
+	src/reactjs_jsx_ppx_v4.cmx\
 	src/res_io.cmx\
 	src/res_minibuffer.cmx\
 	src/res_doc.cmx\
