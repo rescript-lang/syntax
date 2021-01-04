@@ -7,6 +7,7 @@
   bsconfig.json. Specifically, there's a field called `react-jsx` inside the
   field `reason`, which enables this ppx through some internal call in bsb
 *)
+
 open Ast_helper
 open Ast_mapper
 open Asttypes
@@ -890,6 +891,9 @@ let jsxMapper () =
       let (children, argsWithLabels) = extractChildren ~loc ~removeLastPositionUnit:true callArguments in
       let (key, argsWithLabels) = extractKey ~loc argsWithLabels in
       let componentNameExpr = constantString ~loc id in
+      let componentExpr = Exp.apply ~attrs ~loc
+        (Exp.ident ~loc {loc; txt = Ldot (Lident "ReactDOM", "stringToComponent")})
+        [(nolabel, componentNameExpr)] in
       let childrenExpr = transformChildrenIfListUpper ~loc ~mapper children in
       let recursivelyTransformedArgsForMake = argsWithLabels |> List.map (fun (label, expression) -> ({loc; txt = Lident (getLabel label)}, isOptional label, mapper.expr mapper expression)) in
       let (jsxCall, args) = (match childrenExpr with
@@ -928,9 +932,9 @@ let jsxMapper () =
       (Exp.apply
         ~loc
         ~attrs
-        (Exp.ident ~loc ~attrs:(depIgnore loc) {loc; txt = Ldot (Lident "ReactDOMRe", jsxCall ^ "Keyed")})
+        (Exp.ident ~loc ~attrs:(depIgnore loc) {loc; txt = Ldot (Lident "React", jsxCall ^ "Keyed")})
         ([
-          (nolabel, componentNameExpr);
+          (nolabel, componentExpr);
           (nolabel, props);
           (nolabel, key)
         ]))
@@ -938,9 +942,9 @@ let jsxMapper () =
       (Exp.apply
         ~loc
         ~attrs
-        (Exp.ident ~loc ~attrs:(depIgnore loc) {loc; txt = Ldot (Lident "ReactDOMRe", jsxCall)})
+        (Exp.ident ~loc ~attrs:(depIgnore loc) {loc; txt = Ldot (Lident "React", jsxCall)})
         ([
-          (nolabel, componentNameExpr);
+          (nolabel, componentExpr);
           (nolabel, props)
         ]))
     in
@@ -1452,6 +1456,7 @@ let jsxMapper () =
 let rewrite_implementation (code: Parsetree.structure) : Parsetree.structure =
   let mapper = jsxMapper () in
   mapper.structure mapper code
+
 let rewrite_signature (code : Parsetree.signature) : Parsetree.signature =
   let mapper = jsxMapper () in
   mapper.signature mapper code
