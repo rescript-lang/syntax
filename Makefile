@@ -27,7 +27,6 @@ API_FILES = \
 	src/res_comments_table.cmx\
 	src/res_printer.cmx\
 	src/res_scanner.cmx\
-	src/res_js_ffi.cmx\
 	src/res_parser.cmx\
 	src/res_core.cmx\
 	src/res_driver.cmx \
