@@ -1109,10 +1109,10 @@ and printValueDescription valueDescription cmtTbl =
   if ParsetreeViewer.hasModuleExternalAttribute valueDescription.pval_attributes then
     printJsFfiImportDeclaration ~attrs:[] ~imports:[valueDescription] cmtTbl
   else
-  let (hasGenType, attrs) = ParsetreeViewer.splitGenTypeAttr valueDescription.pval_attributes in
+  let attrs = valueDescription.pval_attributes in
   let attrs = printAttributes ~loc:valueDescription.pval_name.loc attrs cmtTbl in
   let header =
-    if isExternal then "external " else (if hasGenType then "export " else "let ") in
+    if isExternal then "external " else "let " in
   Doc.group (
     Doc.concat [
       attrs;
@@ -1186,16 +1186,13 @@ and printTypeDeclarations ~recFlag typeDeclarations cmtTbl =
  *  | Ptype_open
  *)
 and printTypeDeclaration ~name ~equalSign ~recFlag i (td: Parsetree.type_declaration) cmtTbl =
-  let (hasGenType, attrs) = ParsetreeViewer.splitGenTypeAttr td.ptype_attributes in
+  let attrs = td.ptype_attributes in
   let attrs = printAttributes ~loc:td.ptype_loc attrs cmtTbl in
   let prefix = if i > 0 then
-    Doc.concat [
-      Doc.text "and ";
-      if hasGenType then Doc.text "export " else Doc.nil
-    ]
+    Doc.text "and "
   else
     Doc.concat [
-      Doc.text (if hasGenType then "export type " else "type ");
+      Doc.text "type ";
       recFlag
     ]
   in
