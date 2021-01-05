@@ -859,9 +859,9 @@ let jsxMapper () =
 
     let getDataName maybeDataString =
       let length = String.length maybeDataString in
-      if length > 4 then
-        match String.sub maybeDataString 0 4 with
-        | "data" -> Some {jsString = Some("data-" ^ String.sub maybeDataString 4 (length - 4)); typeString = mkPropConst (Lident "string")}
+      if length > 5 then
+        match String.sub maybeDataString 0 5 with
+        | "data-" -> Some {jsString = None; typeString = mkPropConst (Lident "string")}
         | _ -> None
       else None
     in

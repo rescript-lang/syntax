@@ -43,6 +43,17 @@ let make = {
 "
 `;
 
+exports[`data.res 1`] = `
+"let foo = (@warning(\\"-3\\") React.jsx)(
+  ReactDOM.stringToComponent(\\"div\\"),
+  {
+    let \\\\\\"data-foo\\" = \\"payload\\"
+    {\\"data-foo\\": \\\\\\"data-foo\\": string}
+  },
+)
+"
+`;
+
 exports[`externalWithCustomName.res 1`] = `
 "module Foo = {
   @obj

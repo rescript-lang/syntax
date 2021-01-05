@@ -1,0 +1,1 @@
+let foo = <div \"data-foo"="payload" />
