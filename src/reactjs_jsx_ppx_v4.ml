@@ -27,29 +27,32 @@ let optional str = Optional str
 
 
 let mkPropConst ident = Typ.constr {loc = Location.none; txt = ident} []
+let mkSingleVariant rf = Rtag ({loc = Location.none; txt = rf}, [], true, [])
+let mkPropVariant row_fields = Typ.variant (List.map mkSingleVariant row_fields) Closed None
+
 let allowedProps = [
 ("children", {jsString = None; typeString = mkPropConst (Ldot (Lident "React", "element"))});
 ("key", {jsString = None; typeString = mkPropConst (Lident "string")});
-("ref", {jsString = None; typeString = mkPropConst (Ldot (Lident "ReactDOMRe", "domRef"))});
-("ariaCurrent", {jsString = Some("aria-current"); typeString = mkPropConst (Lident "page|step|location|date|time|true|false")});
+("ref", {jsString = None; typeString = mkPropConst (Ldot (Lident "ReactDOM", "domRef"))});
+("ariaCurrent", {jsString = Some("aria-current"); typeString = mkPropVariant ["page"; "step"; "location"; "date"; "time"; "true"; "false"]});
 ("ariaDetails", {jsString = Some("aria-details"); typeString = mkPropConst (Lident "string")});
 ("ariaDisabled", {jsString = Some("aria-disabled"); typeString = mkPropConst (Lident "bool")});
 ("ariaHidden", {jsString = Some("aria-hidden"); typeString = mkPropConst (Lident "bool")});
-("ariaInvalid", {jsString = Some("aria-invalid"); typeString = mkPropConst (Lident "grammar|false|spelling|true")});
+("ariaInvalid", {jsString = Some("aria-invalid"); typeString = mkPropVariant ["grammar"; "false"; "spelling"; "true"]});
 ("ariaKeyshortcuts", {jsString = Some("aria-keyshortcuts"); typeString = mkPropConst (Lident "string")});
 ("ariaLabel", {jsString = Some("aria-label"); typeString = mkPropConst (Lident "string")});
 ("ariaRoledescription", {jsString = Some("aria-roledescription"); typeString = mkPropConst (Lident "string")});
-("ariaAutocomplete", {jsString = Some("aria-autocomplete"); typeString = mkPropConst (Lident "inline|list|both|none")});
-("ariaChecked", {jsString = Some("aria-checked"); typeString = mkPropConst (Lident "true|false|mixed")});
+("ariaAutocomplete", {jsString = Some("aria-autocomplete"); typeString = mkPropVariant ["inline"; "list"; "both"; "none"]});
+("ariaChecked", {jsString = Some("aria-checked"); typeString = mkPropVariant ["true"; "false" ;"mixed"]});
 ("ariaExpanded", {jsString = Some("aria-expanded"); typeString = mkPropConst (Lident "bool")});
-("ariaHaspopup", {jsString = Some("aria-haspopup"); typeString = mkPropConst (Lident "false|true|menu|listbox|tree|grid|dialog")});
+("ariaHaspopup", {jsString = Some("aria-haspopup"); typeString = mkPropVariant ["false"; "true"; "menu"; "listbox"; "tree"; "grid"; "dialog"]});
 ("ariaLevel", {jsString = Some("aria-level"); typeString = mkPropConst (Lident "int")});
 ("ariaModal", {jsString = Some("aria-modal"); typeString = mkPropConst (Lident "bool")});
 ("ariaMultiline", {jsString = Some("aria-multiline"); typeString = mkPropConst (Lident "bool")});
 ("ariaMultiselectable", {jsString = Some("aria-multiselectable"); typeString = mkPropConst (Lident "bool")});
-("ariaOrientation", {jsString = Some("aria-orientation"); typeString = mkPropConst (Lident "horizontal|vertical|undefined")});
+("ariaOrientation", {jsString = Some("aria-orientation"); typeString = mkPropVariant ["horizontal"; "vertical"; "undefined"]});
 ("ariaPlaceholder", {jsString = Some("aria-placeholder"); typeString = mkPropConst (Lident "string")});
-("ariaPressed", {jsString = Some("aria-pressed"); typeString = mkPropConst (Lident "true|false|mixed")});
+("ariaPressed", {jsString = Some("aria-pressed"); typeString = mkPropVariant ["true"; "false" ;"mixed"]});
 ("ariaReadonly", {jsString = Some("aria-readonly"); typeString = mkPropConst (Lident "bool")});
 ("ariaRequired", {jsString = Some("aria-required"); typeString = mkPropConst (Lident "bool")});
 ("ariaSelected", {jsString = Some("aria-selected"); typeString = mkPropConst (Lident "bool")});
@@ -60,9 +63,9 @@ let allowedProps = [
 ("ariaValuetext", {jsString = Some("aria-valuetext"); typeString = mkPropConst (Lident "string")});
 ("ariaAtomic", {jsString = Some("aria-atomic"); typeString = mkPropConst (Lident "bool")});
 ("ariaBusy", {jsString = Some("aria-busy"); typeString = mkPropConst (Lident "bool")});
-("ariaLive", {jsString = Some("aria-live"); typeString = mkPropConst (Lident "off|polite|assertive|rude")});
+("ariaLive", {jsString = Some("aria-live"); typeString = mkPropVariant ["off"; "polite"; "assertive"; "rude"]});
 ("ariaRelevant", {jsString = Some("aria-relevant"); typeString = mkPropConst (Lident "string")});
-("ariaDropeffect", {jsString = Some("aria-dropeffect"); typeString = mkPropConst (Lident "copy|move|link|execute|popup|none")});
+("ariaDropeffect", {jsString = Some("aria-dropeffect"); typeString = mkPropVariant ["copy"; "move"; "link"; "execute"; "popup"; "none"]});
 ("ariaGrabbed", {jsString = Some("aria-grabbed"); typeString = mkPropConst (Lident "bool")});
 ("ariaActivedescendant", {jsString = Some("aria-activedescendant"); typeString = mkPropConst (Lident "string")});
 ("ariaColcount", {jsString = Some("aria-colcount"); typeString = mkPropConst (Lident "int")});
@@ -91,7 +94,7 @@ let allowedProps = [
 ("id", {jsString = None; typeString = mkPropConst (Lident "string")});
 ("lang", {jsString = None; typeString = mkPropConst (Lident "string")});
 ("role", {jsString = None; typeString = mkPropConst (Lident "string")});
-("style", {jsString = None; typeString = mkPropConst (Ldot (Lident "ReactDOMRe", "style"))});
+("style", {jsString = None; typeString = mkPropConst (Ldot (Lident "ReactDOMStyle", "t"))});
 ("spellCheck", {jsString = None; typeString = mkPropConst (Lident "bool")});
 ("tabIndex", {jsString = None; typeString = mkPropConst (Lident "int")});
 ("title", {jsString = None; typeString = mkPropConst (Lident "string")});

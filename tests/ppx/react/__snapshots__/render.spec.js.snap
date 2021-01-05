@@ -1,5 +1,26 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`aria.res 1`] = `
+"let foo = (@warning(\\"-3\\") React.jsx)(
+  ReactDOM.stringToComponent(\\"div\\"),
+  {
+    let ariaCurrent = #page
+    {
+      \\"aria-current\\": ariaCurrent: [
+        | #page
+        | #step
+        | #location
+        | #date
+        | #time
+        | #\\\\\\"true\\"
+        | #\\\\\\"false\\"
+      ],
+    }
+  },
+)
+"
+`;
+
 exports[`commentAtTop.res 1`] = `
 "@obj external makeProps: (~msg: 'msg, unit) => {\\"msg\\": 'msg} = \\"\\" // test React JSX file
 
