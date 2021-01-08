@@ -342,7 +342,7 @@ let classifyIdentContent ?(allowUident=false) txt =
       let c = String.unsafe_get txt i in
       if i == 0 && not (
         (allowUident && (c >= 'A' && c <= 'Z')) ||
-        (c >= 'a' && c <= 'z') || c = '_' || (c >= '0' && c <= '9')) then
+        (c >= 'a' && c <= 'z') || c = '_' ) then
         ExoticIdent
       else if not (
            (c >= 'a' && c <= 'z')
