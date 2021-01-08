@@ -178,11 +178,11 @@ module type Conjunctive = {
 };
 
 // exotic idents in poly-vars
-type t20 = [#\"type"]
-type t21 = [#\"va r ia nt"]
-type t22 = [#\"Variant ⛰"]
+type t20 = [#"type"]
+type t21 = [#"va r ia nt"]
+type t22 = [#"Variant ⛰"]
 type \"let" = int
-type \"type" = [ #\"Point🗿"(\"let", float) ]
+type \"type" = [ #"Point🗿"(\"let", float) ]
 
 type exoticUser = {
   \"let": string,

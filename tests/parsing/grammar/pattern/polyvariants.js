@@ -102,5 +102,6 @@ let cmp = (selectedChoice, value) =>
 switch polyVar {
 | #"ease-in" => ()
 | #"ease-out⛰" => ()
+| #"ease+++"(#"1Blue", #"r+") => ()
 | _ => ()
 }

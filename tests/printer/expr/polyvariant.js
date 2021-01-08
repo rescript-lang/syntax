@@ -114,6 +114,8 @@ let b = #"1a"
 let c = #a2
 let d = #abcd
 
+#"BigBlue"(#"Shade-of-blue+++", #"Shade-of-blue---")
+
 external openSync: (
   path,
   @bs.string [

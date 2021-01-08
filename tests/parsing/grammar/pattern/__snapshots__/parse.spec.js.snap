@@ -529,7 +529,11 @@ let cmp selectedChoice value =
   | (lazy #a) -> true
   | exception #a -> true
   | _ -> false
-;;match polyVar with | \`ease-in -> () | \`ease-out⛰ -> () | _ -> ()"
+;;match polyVar with
+  | \`ease-in -> ()
+  | \`ease-out⛰ -> ()
+  | \`ease+++ (\`1Blue, \`r+) -> ()
+  | _ -> ()"
 `;
 
 exports[`record.js 1`] = `
