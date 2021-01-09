@@ -1246,7 +1246,7 @@ module Form = %form(
     name: string,
     email: string,
     message: string,
-    @bs.as(\\"form-name\\")
+    @as(\\"form-name\\")
     formName: string,
   }
   type output = input

@@ -4730,10 +4730,34 @@ and printPayload (payload : Parsetree.payload) cmtTbl =
     ]
 
 and printAttribute ((id, payload) : Parsetree.attribute) cmtTbl =
+  let contents = match id.txt with
+  | "bs.val" -> "val"
+  | "bs.module" -> "module"
+  | "bs.scope" -> "scope"
+  | "bs.splice" | "bs.variadic" -> "variadic"
+  | "bs.set" -> "set"
+  | "bs.set_index" -> "set_index"
+  | "bs.get" -> "get"
+  | "bs.get_index" -> "get_index"
+  | "bs.new" -> "new"
+  | "bs.obj" -> "obj"
+  | "bs.return" -> "return"
+  | "bs.uncurry" -> "uncurry"
+  | "bs.this" -> "this"
+  | "bs.meth" -> "meth"
+  | "bs.deriving" -> "deriving"
+  | "bs.string" -> "string"
+  | "bs.int" -> "int"
+  | "bs.ignore" -> "ignore"
+  | "bs.unwrap" -> "unwrap"
+  | "bs.as" -> "as"
+  | "bs.optional" -> "optional"
+  | txt -> txt
+  in
   Doc.group (
     Doc.concat [
       Doc.text "@";
-      Doc.text id.txt;
+      Doc.text contents;
       printPayload payload cmtTbl
     ]
   )
