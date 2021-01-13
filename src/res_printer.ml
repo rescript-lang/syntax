@@ -2709,7 +2709,7 @@ and printExpression (e : Parsetree.expression) cmtTbl =
   | Pexp_extension extension ->
     begin match extension with
     | (
-        {txt = "bs.obj"},
+        {txt = "bs.obj" | "obj"},
         PStr [{
           pstr_loc = loc;
           pstr_desc = Pstr_eval({pexp_desc = Pexp_record (rows, _)}, [])
