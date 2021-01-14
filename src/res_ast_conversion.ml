@@ -321,6 +321,17 @@ let stringLiteralMapper stringData =
 let normalize =
   let open Ast_mapper in
   { default_mapper with
+    extension = (fun mapper ext ->
+      match ext with
+      | (id, payload) ->
+        let contents = match id.txt with
+        | "bs.raw" -> "raw"
+        | "bs.obj" -> "obj"
+        | txt -> txt
+        in
+        ({id with txt = contents}, default_mapper.payload mapper payload)
+
+    );
     attribute = (fun mapper attr ->
       match attr with
       | (id, payload) ->

@@ -1973,11 +1973,16 @@ and printPackageConstraint i cmtTbl (longidentLoc, typ) =
   ]
 
 and printExtension ~atModuleLvl (stringLoc, payload) cmtTbl =
+  let txt = match stringLoc.Location.txt with
+  | "bs.raw" -> "raw"
+  | "bs.obj" -> "obj"
+  | txt -> txt
+  in
   let extName =
     let doc = Doc.concat [
       Doc.text "%";
       if atModuleLvl then Doc.text "%" else Doc.nil;
-      Doc.text stringLoc.Location.txt;
+      Doc.text txt
     ] in
     printComments doc cmtTbl stringLoc.Location.loc
   in
