@@ -12,8 +12,8 @@ exports[`aria.res 1`] = `
         | #location
         | #date
         | #time
-        | #\\\\\\"true\\"
-        | #\\\\\\"false\\"
+        | #\\"true\\"
+        | #\\"false\\"
       ],
     }
   },
@@ -52,6 +52,26 @@ exports[`data.res 1`] = `
   },
 )
 "
+`;
+
+exports[`error_badComponent.res 1`] = `
+"=====Result==========================================
+
+=====Errors=============================================
+File \\"Error_badComponent\\", line 1:
+Error: React: react.component calls can only decorate function definitions or component wrappers (forwardRef, memo).
+
+========================================================"
+`;
+
+exports[`error_tooManyReactComponent.res 1`] = `
+"=====Result==========================================
+
+=====Errors=============================================
+File \\"/Users/rickyvetter/code/syntax/tests/ppx/react/error_tooManyReactComponent.res\\", line 1, characters 0-105:
+Error: React: only one react.component call can exist on a component at one time
+
+========================================================"
 `;
 
 exports[`externalWithCustomName.res 1`] = `

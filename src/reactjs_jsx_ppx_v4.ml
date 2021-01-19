@@ -1,13 +1,3 @@
-(*
-  This is the file that handles turning Reason JSX' agnostic function call into
-  a ReasonReact-specific function call. Aka, this is a macro, using OCaml's ppx
-  facilities; https://whitequark.org/blog/2014/04/16/a-guide-to-extension-
-  points-in-ocaml/
-  You wouldn't use this file directly; it's used by BuckleScript's
-  bsconfig.json. Specifically, there's a field called `react-jsx` inside the
-  field `reason`, which enables this ppx through some internal call in bsb
-*)
-
 open Ast_helper
 open Ast_mapper
 open Asttypes
@@ -874,7 +864,7 @@ let jsxMapper () =
         | propType -> propType
         in
         match propType with
-        | None -> Location.raise_errorf ~loc:loc "ReasonReact: %s not recognized as a prop" name
+        | None -> Location.raise_errorf ~loc:loc "React: %s not recognized as a prop" name
         | Some propType ->
         let jsName = match propType.jsString with
         | Some name -> name
@@ -972,7 +962,7 @@ let jsxMapper () =
              | Ptyp_constr({txt}, _innerTypeArgs) -> String.concat "." (Longident.flatten txt) ^ "(...)"
              | _ -> "...")
              in
-             Location.raise_errorf ~loc:pattern.ppat_loc "ReasonReact: optional argument annotations must have explicit `option`. Did you mean `option(%s)=?`?" currentType)
+             Location.raise_errorf ~loc:pattern.ppat_loc "React: optional argument annotations must have explicit `option`. Did you mean `option(%s)=?`?" currentType)
       | _ -> ()) in
       let alias = (match pattern with
       | {ppat_desc = Ppat_alias (_, {txt}) | Ppat_var {txt}} -> txt
@@ -1076,7 +1066,7 @@ let jsxMapper () =
       }
     } in
     externalPropsDecl :: newStructure :: returnStructures
-    | _ -> raise (Invalid_argument "Only one react.component call can exist on a component at one time"))
+    | _ -> Location.raise_errorf ~loc:pstr_loc "React: only one react.component call can exist on a component at one time")
   (* let component = ... *)
   | {
       pstr_loc;
@@ -1114,7 +1104,7 @@ let jsxMapper () =
               pexp_desc = Pexp_sequence (_wrapperExpression, innerFunctionExpression)
             } ->
               spelunkForFunExpression innerFunctionExpression
-          | _ -> raise (Invalid_argument "react.component calls can only be on function definitions or component wrappers (forwardRef, memo).")
+          | _ -> Location.raise_errorf ~loc:binding.pvb_loc "React: react.component calls can only decorate function definitions or component wrappers (forwardRef, memo)."
           ) in
           spelunkForFunExpression expression
         in

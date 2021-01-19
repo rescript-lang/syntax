@@ -278,6 +278,9 @@ module CliArgProcessor = struct
       prerr_string txt;
       prerr_newline();
       exit 1
+    | Location.Error _ as err ->
+      Location.report_exception Format.err_formatter err;
+      exit 1
     | _ -> exit 1
   [@@raises Invalid_argument, exit]
 end

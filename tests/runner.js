@@ -202,7 +202,7 @@ let makeReproducibleFilename = (txt) => {
   })
 };
 
-global.runPrinter = (dirname, ppx = "") => {
+global.runPrinter = (dirname, ppx = "", showError = false) => {
   fs.readdirSync(dirname).forEach((base) => {
     let filename = path.join(dirname, base);
 
@@ -212,7 +212,7 @@ global.runPrinter = (dirname, ppx = "") => {
 
     test(base, () => {
       let {result, errorOutput, status} = printFile(filename, ppx);
-      if (status > 0) {
+      if (!showError && status > 0) {
         let msg = `Test from file: ${filename} failed with error output:
 
 ------------ BEGIN ------------
@@ -222,7 +222,18 @@ ${errorOutput}
 Make sure the test input is syntactically valid.`;
         fail(msg);
       } else {
-        expect(result).toMatchSnapshot();
+        let output = "";
+        if (showError && status > 0) {
+          output += `=====Result==========================================\n`;
+          output += `${result}\n`;
+          output += `=====Errors=============================================\n`;
+          output += `${makeReproducibleFilename(errorOutput.toString())}\n`;
+          output += `========================================================`;
+        } else {
+          output = result;
+        }
+
+        expect(output).toMatchSnapshot();
       }
 
       // Only run roundtrip tests in ppx-free tests.
@@ -239,7 +250,7 @@ Make sure the test input is syntactically valid.`;
   });
 };
 
-global.runParser = (dirname, recover = false, showError = false, env) => {
+global.runParser = (dirname, recover = false, showError = false, env, ppx = "") => {
   fs.readdirSync(dirname).forEach((base) => {
     let filename = path.join(dirname, base);
     if (!fs.lstatSync(filename).isFile() || base === "parse.spec.js") {

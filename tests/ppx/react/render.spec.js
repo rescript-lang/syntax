@@ -1,1 +1,1 @@
-runPrinter(__dirname, "jsx")
+runPrinter(__dirname, "jsx", true)
