@@ -6,6 +6,7 @@ node_modules
 *.cm*
 *.o
 lib/bs
+lib/resdoc.exe
 lib/rescript.exe
 lib/refmt.exe
 lib/test.exe
