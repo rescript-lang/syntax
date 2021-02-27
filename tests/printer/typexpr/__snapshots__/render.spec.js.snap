@@ -409,6 +409,14 @@ let devices: @attr Hastbl.t<string, module(DEVICE)> = xyz
 "
 `;
 
+exports[`objectTypeSpreading.res 1`] = `
+"type a = {\\"x\\": int}
+type u = {...a, \\"u\\": int}
+type v = {\\"v\\": int, ...a}
+type w = {\\"j\\": int, ...a, \\"k\\": int, ...v}
+"
+`;
+
 exports[`polyTyp.res 1`] = `
 "external getLogger: unit => {
   \\"log\\": 'a => unit,

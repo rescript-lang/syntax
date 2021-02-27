@@ -4130,6 +4130,10 @@ and parseStringFieldDeclaration p =
     Parser.expect ~grammar:Grammar.TypeExpression Colon p;
     let typ = parsePolyTypeExpr p in
     Some(Parsetree.Otag (fieldName, attrs, typ))
+  | DotDotDot ->
+    Parser.next p;
+    let typ = parseTypExpr p in
+    Some(Parsetree.Oinherit typ)
   | Lident name ->
     let nameLoc = mkLoc p.startPos p.endPos in
     Parser.err p (Diagnostics.message "An inline record type declaration is only allowed in a variant constructor's declaration");
@@ -4630,6 +4634,27 @@ and parseRecordOrBsObjectDecl p =
     let typ =
       Ast_helper.Typ.object_ ~loc ~attrs:[] fields closedFlag
       |> parseTypeAlias p
+    in
+    let typ = parseArrowTypeRest ~es6Arrow:true ~startPos typ p in
+    (Some typ, Asttypes.Public, Parsetree.Ptype_abstract)
+   | DotDotDot ->
+    (* start of object type spreading, e.g. `type u = {...a, "u": int}` *)
+    Parser.next p;
+    let typ = parseTypExpr p in
+    Parser.expect Comma p;
+    let fields =
+      (Parsetree.Oinherit typ)::(
+        parseCommaDelimitedRegion
+          ~grammar:Grammar.StringFieldDeclarations
+          ~closing:Rbrace
+          ~f:parseStringFieldDeclaration
+          p
+      )
+    in
+    Parser.expect Rbrace p;
+    let loc = mkLoc startPos p.prevEndPos in
+    let typ =
+      Ast_helper.Typ.object_ ~loc fields Asttypes.Closed |> parseTypeAlias p
     in
     let typ = parseArrowTypeRest ~es6Arrow:true ~startPos typ p in
     (Some typ, Asttypes.Public, Parsetree.Ptype_abstract)

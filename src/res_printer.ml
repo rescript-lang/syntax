@@ -1761,7 +1761,11 @@ and printObjectField (field : Parsetree.object_field) cmtTbl =
     ] in
     let cmtLoc = {labelLoc.loc with loc_end = typ.ptyp_loc.loc_end} in
     printComments doc cmtTbl cmtLoc
-  | _ -> Doc.nil
+  | Oinherit typexpr ->
+    Doc.concat [
+      Doc.dotdotdot;
+      printTypExpr typexpr cmtTbl
+    ]
 
 (* es6 arrow type arg
  * type t = (~foo: string, ~bar: float=?, unit) => unit
