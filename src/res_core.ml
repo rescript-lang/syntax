@@ -3766,7 +3766,7 @@ and parseAtomicTypExpr ~attrs p =
     let loc = mkLoc startPos p.prevEndPos in
     Ast_helper.Typ.extension ~attrs ~loc extension
   | Lbrace ->
-    parseRecordOrBsObjectType ~attrs p
+    parseRecordOrObjectType ~attrs p
   | token ->
     Parser.err p (Diagnostics.unexpected token p.breadcrumbs);
     begin match skipTokensAndMaybeRetry p ~isStartOfGrammar:Grammar.isAtomicTypExprStart with
@@ -3825,7 +3825,7 @@ and parsePackageConstraint p =
     Some (typeConstr, typ)
   | _ -> None
 
-and parseRecordOrBsObjectType ~attrs p =
+and parseRecordOrObjectType ~attrs p =
   (* for inline record in constructor *)
   let startPos = p.Parser.startPos in
   Parser.expect Lbrace p;
@@ -4641,7 +4641,7 @@ and parseTypeEquationOrConstrDecl p =
     (* TODO: is this a good idea? *)
     (None, Asttypes.Public, Parsetree.Ptype_abstract)
 
-and parseRecordOrBsObjectDecl p =
+and parseRecordOrObjectDecl p =
   let startPos = p.Parser.startPos in
   Parser.expect Lbrace p;
   match p.Parser.token with
@@ -4777,7 +4777,7 @@ and parsePrivateEqOrRepr p =
   Parser.expect Private p;
   match p.Parser.token with
   | Lbrace ->
-    let (manifest, _ ,kind) = parseRecordOrBsObjectDecl p in
+    let (manifest, _ ,kind) = parseRecordOrObjectDecl p in
     (manifest, Asttypes.Private, kind)
   | Uident _ ->
     let (manifest, _, kind) = parseTypeEquationOrConstrDecl p in
@@ -4979,7 +4979,7 @@ and parseTypeEquationAndRepresentation p =
     | Uident _ ->
       parseTypeEquationOrConstrDecl p
     | Lbrace ->
-      parseRecordOrBsObjectDecl p
+      parseRecordOrObjectDecl p
     | Private ->
       parsePrivateEqOrRepr p
     | Bar | DotDot ->
