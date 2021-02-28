@@ -112,6 +112,15 @@ Solution: directly use `concat`."
 
   let stringInterpolationInPattern =
     "String interpolation is not supported in pattern matching."
+
+  let spreadInRecordDeclaration =
+    "A record type declaration doesn't support the ... spread. Only an object (with quoted field names) does."
+
+  let objectQuotedFieldName name =
+    "An object type declaration needs quoted field names. Did you mean \"" ^ name ^ "\"?"
+
+  let forbiddenInlineRecordDeclaration =
+    "An inline record type declaration is only allowed in a variant constructor's declaration"
 end
 
 
@@ -3834,6 +3843,11 @@ and parseRecordOrObjectType ~attrs p =
   | Dot -> Parser.next p; Asttypes.Closed
   | _ -> Asttypes.Closed
   in
+  let () = match p.token with
+  | Lident _ ->
+    Parser.err p (Diagnostics.message ErrorMessages.forbiddenInlineRecordDeclaration)
+  | _ -> ()
+  in
   let fields =
     parseCommaDelimitedRegion
       ~grammar:Grammar.StringFieldDeclarations
@@ -4136,7 +4150,7 @@ and parseStringFieldDeclaration p =
     Some(Parsetree.Oinherit typ)
   | Lident name ->
     let nameLoc = mkLoc p.startPos p.endPos in
-    Parser.err p (Diagnostics.message "An inline record type declaration is only allowed in a variant constructor's declaration");
+    Parser.err p (Diagnostics.message (ErrorMessages.objectQuotedFieldName name));
     Parser.next p;
     let fieldName = Location.mkloc name nameLoc in
     Parser.expect ~grammar:Grammar.TypeExpression Colon p;
@@ -4261,10 +4275,18 @@ and parseConstrDeclArgs p =
         Parser.expect Rparen p;
         Parsetree.Pcstr_tuple (typ::moreArgs)
       | DotDotDot ->
+        let dotdotdotStart = p.startPos in
+        let dotdotdotEnd = p.endPos in
         (* start of object type spreading, e.g. `User({...a, "u": int})` *)
         Parser.next p;
         let typ = parseTypExpr p in
         Parser.expect Comma p;
+        let () = match p.token with
+        | Lident _ ->
+          Parser.err ~startPos:dotdotdotStart ~endPos:dotdotdotEnd p
+            (Diagnostics.message ErrorMessages.spreadInRecordDeclaration)
+        | _ -> ()
+        in
         let fields =
           (Parsetree.Oinherit typ)::(
             parseCommaDelimitedRegion
@@ -4667,10 +4689,18 @@ and parseRecordOrObjectDecl p =
     let typ = parseArrowTypeRest ~es6Arrow:true ~startPos typ p in
     (Some typ, Asttypes.Public, Parsetree.Ptype_abstract)
    | DotDotDot ->
+    let dotdotdotStart = p.startPos in
+    let dotdotdotEnd = p.endPos in
     (* start of object type spreading, e.g. `type u = {...a, "u": int}` *)
     Parser.next p;
     let typ = parseTypExpr p in
     Parser.expect Comma p;
+    let () = match p.token with
+    | Lident _ ->
+      Parser.err ~startPos:dotdotdotStart ~endPos:dotdotdotEnd p
+        (Diagnostics.message ErrorMessages.spreadInRecordDeclaration)
+    | _ -> ()
+    in
     let fields =
       (Parsetree.Oinherit typ)::(
         parseCommaDelimitedRegion
