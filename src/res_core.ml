@@ -4260,6 +4260,35 @@ and parseConstrDeclArgs p =
         in
         Parser.expect Rparen p;
         Parsetree.Pcstr_tuple (typ::moreArgs)
+      | DotDotDot ->
+        (* start of object type spreading, e.g. `User({...a, "u": int})` *)
+        Parser.next p;
+        let typ = parseTypExpr p in
+        Parser.expect Comma p;
+        let fields =
+          (Parsetree.Oinherit typ)::(
+            parseCommaDelimitedRegion
+              ~grammar:Grammar.StringFieldDeclarations
+              ~closing:Rbrace
+              ~f:parseStringFieldDeclaration
+              p
+          )
+        in
+        Parser.expect Rbrace p;
+        let loc = mkLoc startPos p.prevEndPos in
+        let typ =
+          Ast_helper.Typ.object_ ~loc fields Asttypes.Closed |> parseTypeAlias p
+        in
+        let typ = parseArrowTypeRest ~es6Arrow:true ~startPos typ p in
+        Parser.optional p Comma |> ignore;
+        let moreArgs =
+          parseCommaDelimitedRegion
+            ~grammar:Grammar.TypExprList
+            ~closing:Rparen
+            ~f:parseTypExprRegion p
+        in
+        Parser.expect Rparen p;
+        Parsetree.Pcstr_tuple (typ::moreArgs)
       | _ ->
         let attrs = parseAttributes p in
         begin match p.Parser.token with
