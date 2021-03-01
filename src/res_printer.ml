@@ -2494,6 +2494,7 @@ and printExpression (e : Parsetree.expression) cmtTbl =
   | Parsetree.Pexp_constant c -> printConstant c
   | Pexp_construct _ when ParsetreeViewer.hasJsxAttribute e.pexp_attributes ->
     printJsxFragment e cmtTbl
+  | Pexp_construct ({txt = Longident.Lident "()"; loc}, _) when loc.loc_ghost -> Doc.nil
   | Pexp_construct ({txt = Longident.Lident "()"}, _) -> Doc.text "()"
   | Pexp_construct ({txt = Longident.Lident "[]"}, _) ->
     Doc.concat [

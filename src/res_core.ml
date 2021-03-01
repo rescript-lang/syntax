@@ -14,6 +14,12 @@ let mkLoc startLoc endLoc = Location.{
   loc_ghost = false;
 }
 
+let makeGhostLoc startLoc endLoc : Location.t = {
+  loc_start = startLoc;
+  loc_end = endLoc;
+  loc_ghost = true;
+}
+
 module Recover = struct
   let defaultExpr () =
     let id = Location.mknoloc "rescript.exprhole" in
@@ -2663,9 +2669,8 @@ and parseBracedOrRecordExpr  p =
   Parser.expect Lbrace p;
   match p.Parser.token with
   | Rbrace ->
-    Parser.err p (Diagnostics.unexpected Rbrace p.breadcrumbs);
     Parser.next p;
-    let loc = mkLoc startPos p.prevEndPos in
+    let loc = makeGhostLoc startPos p.prevEndPos in
     let braces = makeBracesAttr loc in
     Ast_helper.Exp.construct ~attrs:[braces] ~loc
       (Location.mkloc (Longident.Lident "()") loc) None
@@ -3052,17 +3057,33 @@ and parseIfCondition p =
   Parser.eatBreadcrumb p;
   conditionExpr
 
-and parseThenBranch p =
+and parseThenBranch (p: Parser.t) =
+  let lbraceStart = p.startPos in
   Parser.leaveBreadcrumb p IfBranch;
   Parser.expect Lbrace p;
-  let thenExpr = parseExprBlock p in
+  let thenExpr = match p.token with
+  | Rbrace ->
+    let loc = makeGhostLoc lbraceStart p.endPos in
+    Ast_helper.Exp.construct ~loc
+      (Location.mkloc (Longident.Lident "()") loc) None
+  | _ ->
+    parseExprBlock p
+  in
   Parser.expect Rbrace p;
   Parser.eatBreadcrumb p;
   thenExpr
 
-and parseElseBranch p =
+and parseElseBranch (p: Parser.t) =
+  let lbraceStart = p.startPos in
   Parser.expect Lbrace p;
-  let blockExpr = parseExprBlock p in
+  let blockExpr = match p.token with
+  | Rbrace ->
+    let loc = makeGhostLoc lbraceStart p.endPos in
+    Ast_helper.Exp.construct ~loc
+      (Location.mkloc (Longident.Lident "()") loc) None
+  | _ ->
+    parseExprBlock p
+  in
   Parser.expect Rbrace p;
   blockExpr;
 
@@ -3157,8 +3178,16 @@ and parseForRest hasOpeningParen pattern startPos p =
   Parser.next p;
   let e2 = parseExpr ~context:WhenExpr p in
   if hasOpeningParen then Parser.expect Rparen p;
+  let lbraceStart = p.startPos in
   Parser.expect Lbrace p;
-  let bodyExpr = parseExprBlock p in
+  let bodyExpr = match p.token with
+  | Rbrace ->
+    let loc = makeGhostLoc lbraceStart p.endPos in
+    Ast_helper.Exp.construct ~loc
+      (Location.mkloc (Longident.Lident "()") loc) None
+  | _ ->
+    parseExprBlock p
+  in
   Parser.expect Rbrace p;
   let loc = mkLoc startPos p.prevEndPos in
   Ast_helper.Exp.for_ ~loc pattern e1 e2 direction bodyExpr
@@ -3212,8 +3241,16 @@ and parseWhileExpression p =
   let startPos = p.Parser.startPos in
   Parser.expect While p;
   let expr1 = parseExpr ~context:WhenExpr p in
+  let lbraceStart = p.startPos in
   Parser.expect Lbrace p;
-  let expr2 = parseExprBlock p in
+  let expr2 = match p.token with
+  | Rbrace ->
+    let loc = makeGhostLoc lbraceStart p.endPos in
+    Ast_helper.Exp.construct ~loc
+      (Location.mkloc (Longident.Lident "()") loc) None
+  | _ ->
+    parseExprBlock p
+  in
   Parser.expect Rbrace p;
   let loc = mkLoc startPos p.prevEndPos in
   Ast_helper.Exp.while_ ~loc expr1 expr2
