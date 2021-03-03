@@ -123,6 +123,7 @@ module Json = struct
     | Null  -> "null"
 end
 
+
 (* all documentation data for a module interface *)
 module DocItem = struct
   type doc_constructor = { name: string; docstring: string }
@@ -143,7 +144,11 @@ module DocItem = struct
         docstring: string;
       }
     | Doc_text of string
-    | Doc_module of t list
+    | Doc_module of {
+        name: string;
+        docstring: string;
+        items: t list;
+      }
 
   let rec toJson t =
     let open Json in
@@ -171,9 +176,11 @@ module DocItem = struct
         ("kind", String "Doc_text");
         ("docstring", String docstring)
       ]
-    | Doc_module items ->
+    | Doc_module {items; docstring; name} ->
       Object [
         ("kind", String "Doc_module");
+        ("docstring", String docstring);
+        ("name", String name);
         ("items", Array (List.map (fun item -> toJson item) items))
       ]
 end
@@ -203,7 +210,13 @@ let drop_doc_attributes (sigItem: Parsetree.signature_item) : Parsetree.signatur
     in
     let desc = Psig_type (loc, newDecls) in
     { sigItem with psig_desc = desc }
+
+  | Psig_module desc ->
+    let filteredAttrs = List.filter filterDocAttrs desc.pmd_attributes in
+    let newDesc = { desc with pmd_attributes = filteredAttrs } in
+    { sigItem with psig_desc = Psig_module newDesc }
   | _ -> sigItem
+
 
 let getOCamlDocString (loc: Parsetree.attribute) =
   let (id, payload) = loc in
@@ -214,6 +227,21 @@ let getOCamlDocString (loc: Parsetree.attribute) =
     Some docstring
   | _ -> None
 
+(* returns (signature, docstring) *)
+let extractSignatureAndDocstring signatureItem (attrs: Parsetree.attributes) =
+  let open Parsetree in
+  let rec findFirstItem (attrs: Parsetree.attributes) =
+    match attrs with
+    | [] -> None
+    | ({Location.txt = "ocaml.doc"}, PStr [{pstr_desc = Pstr_eval ({pexp_desc = Pexp_constant (Pconst_string(a,_));_},_); _}]):: _ ->
+      let signature =
+        Res_printer.printSignatureItem (drop_doc_attributes signatureItem) cmtTable |> Res_doc.toString ~width:80
+      in
+      let docstring = sprintf "@[<v>@ @[%s@]@]@." a in
+      Some (signature, docstring)
+    | _::attrs -> findFirstItem attrs
+  in
+  findFirstItem attrs
 
 module Signature = struct
   let fromSignatureItem item =
@@ -278,12 +306,18 @@ let extract_doc (acc: DocItem.t list) (signatureItem: Parsetree.signature_item) 
             (match docstrings with
              | [docstring] ->
                let signature = Signature.fromSignatureItem signatureItem in
-               acc @ [Doc_type {signature= signature; name=""; docstring=docstring} ]
+               acc @ [Doc_type {signature= signature; name=decl.ptype_name.txt; docstring=docstring} ]
              | _ -> acc)
           | _ -> acc
         ) tdecls []
     in
     acc @ items
+  | Psig_module { pmd_attributes; pmd_name } ->
+    (match extractSignatureAndDocstring signatureItem pmd_attributes with
+    | Some (_signature, docstring) -> 
+      let item = DocItem.Doc_module {name=pmd_name.txt; items=[]; docstring; } in
+      acc @ [item]
+    | None -> acc)
   | _ -> acc
 
 
