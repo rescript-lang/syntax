@@ -28,3 +28,10 @@ let mapList f l =
         loop rest (i + 1)
     in
     loop rest 1
+
+let appendToList arr lst =
+  let rec loop i acc =
+    if i < 0 then acc
+    else loop (i - 1) ((Array.unsafe_get arr i)::acc)
+  in
+  loop (Array.length arr - 1) lst

@@ -36,7 +36,7 @@ end = struct
           Doc.indent (
             Doc.concat [|
               Doc.line;
-              Doc.join ~sep:Doc.line (tail |> Array.of_list |> Array.map toDoc);
+              Doc.join ~sep:Doc.line (tail |> Res_array.mapList toDoc);
             |]
           );
           Doc.rparen;

@@ -43,7 +43,7 @@ let log t =
             Doc.line;
             Doc.join
               ~sep:Doc.comma
-              (v |> Array.of_list |> Array.map (fun c -> Doc.text (Comment.txt c)))
+              (v |> Res_array.mapList (fun c -> Doc.text (Comment.txt c)))
           |]
         );
         Doc.line;
@@ -72,7 +72,7 @@ let log t =
             Doc.line;
             Doc.join
               ~sep:(Doc.concat [|Doc.comma; Doc.line|])
-              (v |> Array.of_list |> Array.map (fun c -> Doc.text (Comment.txt c)))
+              (v |> Res_array.mapList (fun c -> Doc.text (Comment.txt c)))
           |]
         );
         Doc.line;

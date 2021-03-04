@@ -1677,13 +1677,10 @@ and printTypExpr (typExpr : Parsetree.core_type) cmtTbl =
     | Some([]) ->
       Doc.nil
     | Some(labels) ->
-      let a = (Array.make [@doesNotRaise]) (List.length labels) Doc.nil in
-      labels |> List.iteri (fun i label ->
-        Array.unsafe_set a i (
-          Doc.concat [|Doc.line; Doc.text "#" ; printPolyVarIdent label|]
-        )
-      );
-      Doc.concat a
+      let result = labels |> Res_array.mapList (fun label ->
+        Doc.concat [|Doc.line; Doc.text "#" ; printPolyVarIdent label|]
+      ) in
+      Doc.concat result
     in
     let closingSymbol = match labelsOpt with
     | None | Some [] -> Doc.nil
@@ -2314,18 +2311,16 @@ and printPattern (p : Parsetree.pattern) cmtTbl =
   | Ppat_or _ ->
     (* Blue | Red | Green -> [Blue; Red; Green] *)
     let orChain = ParsetreeViewer.collectOrPatternChain p in
-    let docs = (Array.make [@doesNotRaise]) (List.length orChain) Doc.nil in
-    orChain |> List.iteri (fun i pat ->
+    let docs = orChain |> Res_array.mapListi (fun i pat ->
       let patternDoc = printPattern pat cmtTbl in
-      let result = Doc.concat [|
+      Doc.concat [|
         if i == 0 then Doc.nil else Doc.concat [|Doc.line; Doc.text "| "|];
         match pat.ppat_desc with
         (* (Blue | Red) | (Green | Black) | White *)
         | Ppat_or _ -> addParens patternDoc
         | _ -> patternDoc
-      |] in
-      Array.unsafe_set docs i result
-    );
+      |]
+    ) in
     let isSpreadOverMultipleLines = match (orChain, List.rev orChain) with
     | first::_, last::_ ->
       first.ppat_loc.loc_start.pos_lnum < last.ppat_loc.loc_end.pos_lnum
