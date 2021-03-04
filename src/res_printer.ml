@@ -232,28 +232,30 @@ let printLeadingComment ?nextComment comment =
   |]
 
 let printCommentsInside cmtTbl loc =
-  let rec loop acc comments =
+  let rec loop acc comments i =
     match comments with
     | [] -> Doc.nil
     | [comment] ->
       let cmtDoc = printLeadingComment comment in
-      let doc = Doc.group (
+      Array.unsafe_set acc i cmtDoc;
+      Doc.group (
         Doc.concat [|
-          Doc.concat (List.rev (cmtDoc::acc) |> Array.of_list);
+          Doc.concat acc;
         |]
       )
-      in
-      doc
     | comment::((nextComment::_comments) as rest) ->
       let cmtDoc = printLeadingComment ~nextComment comment in
-      loop (cmtDoc::acc) rest
+      Array.unsafe_set acc i cmtDoc;
+      loop acc rest (i + 1)
   in
   match Hashtbl.find cmtTbl.CommentTable.inside loc with
   | exception Not_found -> Doc.nil
+  | [] -> Doc.nil
   | comments ->
     Hashtbl.remove cmtTbl.inside loc;
+    let acc = (Array.make [@doesNotRaise]) (List.length comments) Doc.nil in
     Doc.group (
-      loop [] comments
+      loop acc comments 0
     )
 
 let printLeadingComments node tbl loc =
@@ -328,7 +330,7 @@ let printComments doc (tbl: CommentTable.t) loc =
   printTrailingComments docWithLeadingComments tbl.trailing loc
 
 let printList ~getLoc ~nodes ~print ?(forceBreak=false) t =
-  let rec loop (prevLoc: Location.t) acc nodes i =
+  let rec loop i (prevLoc: Location.t) acc nodes =
     match nodes with
     | [] -> (prevLoc, Doc.concat acc)
     | node::nodes ->
@@ -343,9 +345,9 @@ let printList ~getLoc ~nodes ~print ?(forceBreak=false) t =
         Doc.hardLine
       in
       let doc = printComments (print node t) t loc in
-      Array.unsafe_set acc i sep;
-      Array.unsafe_set acc (i + 1) doc;
-      loop loc acc nodes (i + 2)
+      Array.unsafe_set acc (i * 2 - 1) sep;
+      Array.unsafe_set acc (i * 2) doc;
+      loop (i + 1) loc acc nodes
   in
   match nodes with
   | [] -> Doc.nil
@@ -355,7 +357,7 @@ let printList ~getLoc ~nodes ~print ?(forceBreak=false) t =
     (* We're gonna intersperse nodes with a separator. Plus starting with `doc` *)
     let accLength = List.length nodes * 2 + 1 in
     let acc = (Array.make [@doesNotRaise]) accLength doc in
-    let (lastLoc, docs) = loop firstLoc acc nodes 1 in
+    let (lastLoc, docs) = loop 1 firstLoc acc nodes in
     let forceBreak =
       forceBreak ||
       firstLoc.loc_start.pos_lnum != lastLoc.loc_end.pos_lnum
@@ -365,7 +367,7 @@ let printList ~getLoc ~nodes ~print ?(forceBreak=false) t =
 let printListi ~getLoc ~nodes ~print ?(forceBreak=false) t =
   let rec loop i (prevLoc: Location.t) acc nodes =
     match nodes with
-    | [] -> (prevLoc, Doc.concat (List.rev acc |> Array.of_list))
+    | [] -> (prevLoc, Doc.concat acc)
     | node::nodes ->
       let loc = getLoc node in
       let startPos = match getFirstLeadingComment t loc with
@@ -378,14 +380,19 @@ let printListi ~getLoc ~nodes ~print ?(forceBreak=false) t =
         Doc.line
       in
       let doc = printComments (print node t i) t loc in
-      loop (i + 1) loc (doc::sep::acc) nodes
+      Array.unsafe_set acc (i * 2 - 1) sep;
+      Array.unsafe_set acc (i * 2) doc;
+      loop (i + 1) loc acc nodes
   in
   match nodes with
   | [] -> Doc.nil
   | node::nodes ->
     let firstLoc = getLoc node in
     let doc = printComments (print node t 0) t firstLoc in
-    let (lastLoc, docs) = loop 1 firstLoc [doc] nodes in
+    (* We're gonna intersperse nodes with a separator. Plus starting with `doc` *)
+    let accLength = List.length nodes * 2 + 1 in
+    let acc = (Array.make [@doesNotRaise]) accLength doc in
+    let (lastLoc, docs) = loop 1 firstLoc acc nodes in
     let forceBreak =
       forceBreak ||
       firstLoc.loc_start.pos_lnum != lastLoc.loc_end.pos_lnum
@@ -1670,11 +1677,13 @@ and printTypExpr (typExpr : Parsetree.core_type) cmtTbl =
     | Some([]) ->
       Doc.nil
     | Some(labels) ->
-      Doc.concat (
-        List.map (fun label ->
+      let a = (Array.make [@doesNotRaise]) (List.length labels) Doc.nil in
+      labels |> List.iteri (fun i label ->
+        Array.unsafe_set a i (
           Doc.concat [|Doc.line; Doc.text "#" ; printPolyVarIdent label|]
-        ) labels |> Array.of_list
-      )
+        )
+      );
+      Doc.concat a
     in
     let closingSymbol = match labelsOpt with
     | None | Some [] -> Doc.nil
@@ -2305,16 +2314,18 @@ and printPattern (p : Parsetree.pattern) cmtTbl =
   | Ppat_or _ ->
     (* Blue | Red | Green -> [Blue; Red; Green] *)
     let orChain = ParsetreeViewer.collectOrPatternChain p in
-    let docs = List.mapi (fun i pat ->
+    let docs = (Array.make [@doesNotRaise]) (List.length orChain) Doc.nil in
+    orChain |> List.iteri (fun i pat ->
       let patternDoc = printPattern pat cmtTbl in
-      Doc.concat [|
+      let result = Doc.concat [|
         if i == 0 then Doc.nil else Doc.concat [|Doc.line; Doc.text "| "|];
         match pat.ppat_desc with
         (* (Blue | Red) | (Green | Black) | White *)
         | Ppat_or _ -> addParens patternDoc
         | _ -> patternDoc
-      |]
-    ) orChain |> Array.of_list in
+      |] in
+      Array.unsafe_set docs i result
+    );
     let isSpreadOverMultipleLines = match (orChain, List.rev orChain) with
     | first::_, last::_ ->
       first.ppat_loc.loc_start.pos_lnum < last.ppat_loc.loc_end.pos_lnum
@@ -4097,7 +4108,7 @@ and printArgumentsWithCallbackInLastPosition ~uncurried args cmtTbl =
    * Cheng's different comment algorithm will solve this. *)
   let cmtTblCopy = CommentTable.copy cmtTbl in
   let cmtTblCopy2 = CommentTable.copy cmtTbl in
-  let rec loop acc args = match args with
+  let rec loop acc args i = match args with
   | [] -> (Doc.nil, Doc.nil, Doc.nil)
   | [lbl, expr] ->
     let lblDoc = match lbl with
@@ -4122,15 +4133,20 @@ and printArgumentsWithCallbackInLastPosition ~uncurried args cmtTbl =
       printComments doc cmtTblCopy expr.pexp_loc
     in
     (
-      Doc.concat (List.rev acc |> Array.of_list),
+      Doc.concat acc,
       callbackFitsOnOneLine,
       callbackArgumentsFitsOnOneLine
     )
   | arg::args ->
     let argDoc = printArgument arg cmtTbl in
-    loop (Doc.line::Doc.comma::argDoc::acc) args
+    Array.unsafe_set acc i argDoc;
+    Array.unsafe_set acc (i + 1) Doc.comma;
+    Array.unsafe_set acc (i + 2) Doc.line;
+    loop acc args (i + 3)
   in
-  let (printedArgs, callback, callback2) = loop [] args in
+  (* We're gonna intersperse nodes with a line and comma. *)
+  let acc = (Array.make [@doesNotRaise]) (List.length args * 3) Doc.nil in
+  let (printedArgs, callback, callback2) = loop acc args 0 in
 
   (* Thing.map(foo, (arg1, arg2) => MyModuleBlah.toList(argument)) *)
   let fitsOnOneLine = Doc.concat [|
