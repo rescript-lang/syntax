@@ -1931,7 +1931,7 @@ and printValueBinding ~recFlag vb cmtTbl i =
    * Multiple pipes chained together lend themselves more towards the last layout.
    *)
   if ParsetreeViewer.isSinglePipeExpr vb.pvb_expr then
-    Doc.customLayout [
+    Doc.customLayout [|
       Doc.group (
         Doc.concat [|
           attrs;
@@ -1956,7 +1956,7 @@ and printValueBinding ~recFlag vb cmtTbl i =
           )
         |]
       );
-    ]
+    |]
   else
     let shouldIndent =
       match optBraces with
@@ -4097,10 +4097,10 @@ and printArgumentsWithCallbackInFirstPosition ~uncurried args cmtTbl =
   if Doc.willBreak printedArgs then
     breakAllArgs
   else
-    Doc.customLayout [
+    Doc.customLayout [|
       fitsOnOneLine;
       breakAllArgs;
-    ]
+    |]
 
 and printArgumentsWithCallbackInLastPosition ~uncurried args cmtTbl =
   (* Because the same subtree gets printed twice, we need to copy the cmtTbl.
@@ -4196,11 +4196,11 @@ and printArgumentsWithCallbackInLastPosition ~uncurried args cmtTbl =
   if Doc.willBreak printedArgs then
     breakAllArgs
   else
-    Doc.customLayout [
+    Doc.customLayout [|
       fitsOnOneLine;
       arugmentsFitOnOneLine;
       breakAllArgs;
-    ]
+    |]
 
 and printArguments ~uncurried (args : (Asttypes.arg_label * Parsetree.expression) list) cmtTbl =
   match args with

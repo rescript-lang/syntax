@@ -19,7 +19,7 @@ type t =
   | LineSuffix of t
   | LineBreak of lineStyle
   | Group of {shouldBreak: bool; doc: t}
-  | CustomLayout of t list
+  | CustomLayout of t array
   | BreakParent
 
 let nil = Nil
@@ -95,8 +95,8 @@ let propagateForcedBreaks doc =
      * otherwise it takes the last of the list.
      * However we do want to propagate forced breaks in the sublayouts. They
      * might need to be broken. We just don't propagate them any higher here *)
-    let children = match walk (Concat (Array.of_list children)) with
-    | (_, Concat children) -> Array.to_list children
+    let children = match walk (Concat children) with
+    | (_, Concat children) -> children
     | _ -> assert false
     in
     (false, CustomLayout children)
@@ -107,9 +107,11 @@ let propagateForcedBreaks doc =
 (* See documentation in interface file *)
 let rec willBreak doc = match doc with
   | LineBreak (Hard | Literal) | BreakParent | Group {shouldBreak = true} -> true
-  | Group {doc} | Indent doc | CustomLayout (doc::_) -> willBreak doc
+  | Group {doc} | Indent doc -> willBreak doc
   | Concat docs -> Array.exists willBreak docs
   | IfBreaks {yes; no} -> willBreak yes || willBreak no
+  | CustomLayout [||] -> false
+  | CustomLayout docs -> willBreak (Array.unsafe_get docs 0)
   | _ -> false
 
 let join ~sep docs =
@@ -150,11 +152,12 @@ let rec fits w doc = match doc with
   (* | (_ind, _mode, Cursor)::rest -> fits w rest *)
   | (_ind, _mode, LineSuffix _)::rest -> fits w rest
   | (_ind, _mode, BreakParent)::rest -> fits w rest
-  | (ind, mode, CustomLayout (hd::_))::rest ->
-    (* TODO: if we have nested custom layouts, what we should do here? *)
-    fits w ((ind, mode, hd)::rest)
-  | (_ind, _mode, CustomLayout _)::rest ->
+  | (_ind, _mode, CustomLayout [||])::rest ->
     fits w rest
+  | (ind, mode, CustomLayout docs)::rest ->
+    (* TODO: if we have nested custom layouts, what we should do here? *)
+    let hd = Array.unsafe_get docs 0 in
+    fits w ((ind, mode, hd)::rest)
 
 let toString ~width doc =
   let doc = propagateForcedBreaks doc in
@@ -211,16 +214,15 @@ let toString ~width doc =
         else
           process ~pos lineSuffices ((ind, Flat, doc)::rest)
       | CustomLayout docs ->
-        let rec findGroupThatFits groups = match groups with
-        | [] -> Nil
-        | [lastGroup] -> lastGroup
-        | doc::docs ->
-          if (fits (width - pos) ((ind, Flat, doc)::rest)) then
-            doc
+        let rec findGroupThatFits groups i =
+          if i = Array.length groups then Nil
+          else if i = Array.length groups - 1 then Array.unsafe_get groups i
           else
-            findGroupThatFits docs
+            let doc = Array.unsafe_get groups i in
+            if (fits (width - pos) ((ind, Flat, doc)::rest)) then doc
+            else findGroupThatFits groups (i + 1)
         in
-        let doc = findGroupThatFits docs in
+        let doc = findGroupThatFits docs 0 in
         process ~pos lineSuffices ((ind, Flat, doc)::rest)
       end
     | [] ->
@@ -269,7 +271,7 @@ let debug t =
           indent (
             concat [|
               line;
-              join ~sep:(concat [|text ","; line|]) (docs |> Array.of_list |> Array.map toDoc);
+              join ~sep:(concat [|text ","; line|]) (Array.map toDoc docs);
             |]
           );
           line;
