@@ -41,7 +41,9 @@ let log t =
         Doc.indent (
           Doc.concat [|
             Doc.line;
-            Doc.join ~sep:Doc.comma (List.map (fun c -> Doc.text (Comment.txt c)) v)
+            Doc.join
+              ~sep:Doc.comma
+              (v |> Array.of_list |> Array.map (fun c -> Doc.text (Comment.txt c)))
           |]
         );
         Doc.line;
@@ -68,7 +70,9 @@ let log t =
         Doc.indent (
           Doc.concat [|
             Doc.line;
-            Doc.join ~sep:(Doc.concat [|Doc.comma; Doc.line|]) (List.map (fun c -> Doc.text (Comment.txt c)) v)
+            Doc.join
+              ~sep:(Doc.concat [|Doc.comma; Doc.line|])
+              (v |> Array.of_list |> Array.map (fun c -> Doc.text (Comment.txt c)))
           |]
         );
         Doc.line;

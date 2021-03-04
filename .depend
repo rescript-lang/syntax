@@ -1,5 +1,6 @@
 src/reactjs_jsx_ppx_v3.cmx : src/reactjs_jsx_ppx_v3.cmi
 src/reactjs_jsx_ppx_v3.cmi :
+src/res_array.cmx :
 src/res_ast_conversion.cmx : src/res_printer.cmx src/res_ast_conversion.cmi
 src/res_ast_conversion.cmi :
 src/res_ast_debugger.cmx : src/res_driver.cmx src/res_doc.cmx \
@@ -48,7 +49,7 @@ src/res_multi_printer.cmx : src/res_printer.cmx src/res_io.cmx \
     src/res_multi_printer.cmi
 src/res_multi_printer.cmi :
 src/res_outcome_printer.cmx : src/res_token.cmx src/res_doc.cmx \
-    src/res_outcome_printer.cmi
+    src/res_array.cmx src/res_outcome_printer.cmi
 src/res_outcome_printer.cmi :
 src/res_parens.cmx : src/res_parsetree_viewer.cmx src/res_parens.cmi
 src/res_parens.cmi :
@@ -62,7 +63,7 @@ src/res_parsetree_viewer.cmx : src/res_parsetree_viewer.cmi
 src/res_parsetree_viewer.cmi :
 src/res_printer.cmx : src/res_token.cmx src/res_parsetree_viewer.cmx \
     src/res_parens.cmx src/res_doc.cmx src/res_comments_table.cmx \
-    src/res_comment.cmx src/res_printer.cmi
+    src/res_comment.cmx src/res_array.cmx src/res_printer.cmi
 src/res_printer.cmi : src/res_doc.cmi src/res_comments_table.cmx \
     src/res_comment.cmi
 src/res_reporting.cmx : src/res_token.cmx src/res_grammar.cmx

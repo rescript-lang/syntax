@@ -138,7 +138,7 @@ let printPolyVarIdent txt =
      | attrs ->
        Doc.concat [|
          Doc.group (
-           Doc.join ~sep:Doc.line (List.map printOutAttributeDoc attrs)
+           Doc.join ~sep:Doc.line (Res_array.mapList printOutAttributeDoc attrs)
          );
          Doc.line;
        |]
@@ -196,7 +196,7 @@ let printPolyVarIdent txt =
                Doc.concat [|
                  Doc.space;
                  Doc.join ~sep:Doc.space (
-                   List.map (fun lbl -> printIdentLike ~allowUident:true lbl) tags
+                   Res_array.mapList (fun lbl -> printIdentLike ~allowUident:true lbl) tags
                  )
                |]
              )
@@ -272,7 +272,7 @@ let printPolyVarIdent txt =
              Doc.concat [|
                Doc.softLine;
                Doc.join ~sep:(Doc.concat [|Doc.comma; Doc.line|]) (
-                 List.map printOutTypeDoc args
+                 Res_array.mapList printOutTypeDoc args
                )
              |]
            );
@@ -295,7 +295,7 @@ let printPolyVarIdent txt =
              Doc.concat [|
                Doc.softLine;
                Doc.join ~sep:(Doc.concat [|Doc.comma; Doc.line|]) (
-                 List.map printOutTypeDoc tupleArgs
+                 Res_array.mapList printOutTypeDoc tupleArgs
                )
              |]
            );
@@ -308,7 +308,7 @@ let printPolyVarIdent txt =
        Doc.group (
          Doc.concat [|
            Doc.join ~sep:Doc.space (
-             List.map (fun var -> Doc.text ("'" ^ var)) vars
+             Res_array.mapList (fun var -> Doc.text ("'" ^ var)) vars
            );
            Doc.dot;
            Doc.space;
@@ -323,7 +323,7 @@ let printPolyVarIdent txt =
    and printOutArrowType ~uncurried typ =
      let (typArgs, typ) = collectArrowArgs typ [] in
      let args = Doc.join ~sep:(Doc.concat [|Doc.comma; Doc.line|]) (
-       List.map (fun (lbl, typ) ->
+       Res_array.mapList (fun (lbl, typ) ->
          if lbl = "" then
            printOutTypeDoc typ
          else
@@ -374,7 +374,7 @@ let printPolyVarIdent txt =
          * [< | #T([< u2]) & ([< u2]) & ([< u1])]  --> no ampersand
          * [< | #S & ([< u2]) & ([< u2]) & ([< u1])] --> ampersand
          *)
-         List.mapi (fun i (name, ampersand, types) ->
+         Res_array.mapListi (fun i (name, ampersand, types) ->
            let needsParens = match types with
            | [(Outcometree.Otyp_tuple _)] -> false
            | _ -> true
@@ -396,7 +396,7 @@ let printPolyVarIdent txt =
                      Doc.indent (
                        Doc.concat [|
                          Doc.join ~sep:(Doc.concat [|Doc.text " &"; Doc.line|])
-                          (List.map (fun typ ->
+                          (Res_array.mapList (fun typ ->
                             let outTypeDoc = printOutTypeDoc typ in
                             if needsParens then
                               Doc.concat [|Doc.lparen; outTypeDoc; Doc.rparen|]
@@ -426,7 +426,7 @@ let printPolyVarIdent txt =
            Doc.concat [|
              Doc.softLine;
              Doc.join ~sep:(Doc.concat [|Doc.comma; Doc.line|]) (
-               List.map (fun (lbl, outType) -> Doc.group (
+               Res_array.mapList (fun (lbl, outType) -> Doc.group (
                  Doc.concat [|
                    Doc.text ("\"" ^ lbl ^ "\": ");
                    printOutTypeDoc outType;
@@ -448,7 +448,7 @@ let printPolyVarIdent txt =
          Doc.concat [|
            Doc.line;
            Doc.join ~sep:Doc.line (
-             List.mapi (fun i constructor ->
+             Res_array.mapListi (fun i constructor ->
                Doc.concat [|
                  if i > 0 then Doc.text "| " else Doc.ifBreaks (Doc.text "| ") Doc.nil;
                  printOutConstructorDoc constructor;
@@ -492,7 +492,7 @@ let printPolyVarIdent txt =
                Doc.concat [|
                  Doc.softLine;
                  Doc.join ~sep:(Doc.concat [|Doc.comma; Doc.line|]) (
-                   List.map printOutTypeDoc args
+                   Res_array.mapList printOutTypeDoc args
                  )
                |]
              );
@@ -527,7 +527,7 @@ let printPolyVarIdent txt =
          Doc.concat [|
            Doc.softLine;
            Doc.join ~sep:(Doc.concat [|Doc.comma; Doc.line|]) (
-             List.map printRecordDeclRowDoc rows
+             Res_array.mapList printRecordDeclRowDoc rows
            )
          |]
        );
@@ -572,7 +572,7 @@ let printPolyVarIdent txt =
                  Doc.text " =";
                  Doc.line;
                  Doc.group (
-                   Doc.join ~sep:Doc.line (List.map (fun prim -> Doc.text ("\"" ^ prim ^ "\"")) primitives)
+                   Doc.join ~sep:Doc.line (Res_array.mapList (fun prim -> Doc.text ("\"" ^ prim ^ "\"")) primitives)
                  )
                |]
              )
@@ -644,7 +644,7 @@ let printPolyVarIdent txt =
              Doc.concat [|
                Doc.softLine;
                Doc.join ~sep:(Doc.concat [|Doc.comma; Doc.line|]) (
-                 List.map printTypeParameterDoc outTypeDecl.otype_params
+                 Res_array.mapList printTypeParameterDoc outTypeDecl.otype_params
                )
              |]
            );
@@ -683,7 +683,7 @@ let printPolyVarIdent txt =
          Doc.indent (
            Doc.concat [|
              Doc.hardLine;
-             Doc.join ~sep:Doc.line (List.map (fun (typ1, typ2) ->
+             Doc.join ~sep:Doc.line (Res_array.mapList (fun (typ1, typ2) ->
                Doc.group (
                  Doc.concat [|
                    Doc.text "constraint ";
@@ -735,7 +735,7 @@ let printPolyVarIdent txt =
                Doc.concat [|
                  Doc.softLine;
                  Doc.join ~sep:(Doc.concat [|Doc.comma; Doc.line|]) (
-                   List.map (fun (lbl, optModType) -> Doc.group (
+                   Res_array.mapList (fun (lbl, optModType) -> Doc.group (
                      Doc.concat [|
                        Doc.text lbl;
                        match optModType with
@@ -814,7 +814,7 @@ let printPolyVarIdent txt =
      | [doc] -> doc
      | docs ->
        Doc.breakableGroup ~forceBreak:true (
-         Doc.join ~sep:Doc.line docs
+         Doc.join ~sep:Doc.line (docs |> Array.of_list)
        )
 
    and printOutExtensionConstructorDoc (outExt : Outcometree.out_extension_constructor) =
@@ -827,7 +827,7 @@ let printPolyVarIdent txt =
            Doc.indent (
              Doc.concat [|
                Doc.softLine;
-               Doc.join ~sep:(Doc.concat [|Doc.comma; Doc.line|]) (List.map
+               Doc.join ~sep:(Doc.concat [|Doc.comma; Doc.line|]) (Res_array.mapList
                  (fun ty -> Doc.text (if ty = "_" then ty else "'" ^ ty))
                  params
 
@@ -866,10 +866,9 @@ let printPolyVarIdent txt =
            Doc.indent (
              Doc.concat [|
                Doc.softLine;
-               Doc.join ~sep:(Doc.concat [|Doc.comma; Doc.line|]) (List.map
+               Doc.join ~sep:(Doc.concat [|Doc.comma; Doc.line|]) (Res_array.mapList
                  (fun ty -> Doc.text (if ty = "_" then ty else "'" ^ ty))
                  params
-
                )
              |]
            );
@@ -934,7 +933,7 @@ let printPolyVarIdent txt =
              Doc.concat [|
                Doc.softLine;
                Doc.join ~sep:(Doc.concat [|Doc.comma; Doc.line|]) (
-                 List.map printOutValueDoc outValues
+                 Res_array.mapList printOutValueDoc outValues
                )
              |]
            );
@@ -953,7 +952,7 @@ let printPolyVarIdent txt =
              Doc.concat [|
                Doc.softLine;
                Doc.join ~sep:(Doc.concat [|Doc.comma; Doc.line|]) (
-                 List.map printOutValueDoc outValues
+                 Res_array.mapList printOutValueDoc outValues
                )
              |]
            );
@@ -976,7 +975,7 @@ let printPolyVarIdent txt =
              Doc.concat [|
                Doc.softLine;
                Doc.join ~sep:(Doc.concat [|Doc.comma; Doc.line|]) (
-                 List.map printOutValueDoc outValues
+                 Res_array.mapList printOutValueDoc outValues
                )
              |]
            );
@@ -998,7 +997,7 @@ let printPolyVarIdent txt =
              Doc.concat [|
                Doc.softLine;
                Doc.join ~sep:(Doc.concat [|Doc.comma; Doc.line|]) (
-                 List.map (fun (outIdent, outValue) -> Doc.group (
+                 Res_array.mapList (fun (outIdent, outValue) -> Doc.group (
                      Doc.concat [|
                        printOutIdentDoc outIdent;
                        Doc.text ": ";
@@ -1025,7 +1024,7 @@ let printPolyVarIdent txt =
              Doc.concat [|
                Doc.softLine;
                Doc.join ~sep:(Doc.concat [|Doc.comma; Doc.line|]) (
-                 List.map printOutValueDoc outValues
+                 Res_array.mapList printOutValueDoc outValues
                )
              |]
            );
@@ -1097,7 +1096,7 @@ let printPolyVarIdent txt =
         loop signature (doc::acc)
       in
       Doc.breakableGroup ~forceBreak:true (
-        Doc.join ~sep:Doc.line (loop signature [])
+        Doc.join ~sep:Doc.line (loop signature [] |> Array.of_list)
       )
 
    let printOutPhraseDoc (outPhrase : Outcometree.out_phrase) =

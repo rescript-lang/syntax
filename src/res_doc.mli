@@ -17,7 +17,7 @@ val breakableGroup: forceBreak : bool -> t -> t
  * will be checked until one fits. *)
 val customLayout: t list -> t
 val breakParent: t
-val join: sep: t -> t list -> t
+val join: sep: t -> t array -> t
 
 val space: t
 val comma: t

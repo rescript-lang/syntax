@@ -113,13 +113,16 @@ let rec willBreak doc = match doc with
   | _ -> false
 
 let join ~sep docs =
-  let rec loop acc sep docs =
-    match docs with
-    | [] -> List.rev acc
-    | [x] -> List.rev (x::acc)
-    | x::xs -> loop (sep::x::acc) sep xs
-  in
-  Concat((loop [] sep docs) |> Array.of_list)
+  match docs with
+  | [||] -> Nil
+  | docs ->
+    (* We're gonna intersperse nodes with sep. *)
+    let result = (Array.init [@doesNotRaise]) (Array.length docs * 2 - 1) (fun i ->
+      if i mod 2 == 0 then
+        Array.unsafe_get docs (i / 2)
+      else sep
+    ) [@doesNotRaise] in
+    Concat result
 
 let rec fits w doc = match doc with
   | _ when w < 0 -> false
@@ -143,7 +146,7 @@ let rec fits w doc = match doc with
         fits w ((ind, mode, flatDoc)::rest)
   | (ind, mode, Concat docs)::rest ->
     let ops = Array.map (fun doc -> (ind, mode, doc)) docs in
-    fits w (List.append (Array.to_list ops) rest)
+    fits w (Res_array.appendToList ops rest)
   (* | (_ind, _mode, Cursor)::rest -> fits w rest *)
   | (_ind, _mode, LineSuffix _)::rest -> fits w rest
   | (_ind, _mode, BreakParent)::rest -> fits w rest
@@ -170,7 +173,7 @@ let toString ~width doc =
         process ~pos ((ind, mode, doc)::lineSuffices) rest
       | Concat docs ->
         let ops = Array.map (fun doc -> (ind, mode, doc)) docs in
-        process ~pos lineSuffices (List.append (Array.to_list ops) rest)
+        process ~pos lineSuffices (Res_array.appendToList ops rest)
       | Indent doc ->
         process ~pos lineSuffices ((ind + 2, mode, doc)::rest)
       | IfBreaks {yes = breakDoc; no = flatDoc} ->
@@ -253,8 +256,7 @@ let debug t =
           indent (
             concat [|
               line;
-              join ~sep:(concat [|text ","; line|])
-                (Array.to_list (Array.map toDoc docs)) ;
+              join ~sep:(concat [|text ","; line|]) (Array.map toDoc docs);
             |]
           );
           line;
@@ -267,8 +269,7 @@ let debug t =
           indent (
             concat [|
               line;
-              join ~sep:(concat [|text ","; line|])
-                (List.map toDoc docs) ;
+              join ~sep:(concat [|text ","; line|]) (docs |> Array.of_list |> Array.map toDoc);
             |]
           );
           line;

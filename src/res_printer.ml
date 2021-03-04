@@ -403,13 +403,13 @@ let rec printLongidentAux accu = function
 | Longident.Lident s -> (Doc.text s) :: accu
 | Ldot(lid, s) -> printLongidentAux ((Doc.text s) :: accu) lid
 | Lapply(lid1, lid2) ->
-  let d1 = Doc.join ~sep:Doc.dot (printLongidentAux [] lid1) in
-  let d2 = Doc.join ~sep:Doc.dot (printLongidentAux [] lid2) in
+  let d1 = Doc.join ~sep:Doc.dot (printLongidentAux [] lid1 |> Array.of_list) in
+  let d2 = Doc.join ~sep:Doc.dot (printLongidentAux [] lid2 |> Array.of_list) in
   (Doc.concat [|d1; Doc.lparen; d2; Doc.rparen|]) :: accu
 
 let printLongident = function
 | Longident.Lident txt -> Doc.text txt
-| lid -> Doc.join ~sep:Doc.dot (printLongidentAux [] lid)
+| lid -> Doc.join ~sep:Doc.dot (printLongidentAux [] lid |> Array.of_list)
 
 type identifierStyle =
   | ExoticIdent
@@ -459,7 +459,7 @@ let printLident l = match l with
   | Longident.Ldot (path, txt) ->
     let txts = Longident.flatten path in
     Doc.concat [|
-      Doc.join ~sep:Doc.dot (List.map Doc.text txts);
+      Doc.join ~sep:Doc.dot (Res_array.mapList Doc.text txts);
       Doc.dot;
       printIdentLike txt;
     |]
@@ -485,7 +485,7 @@ let printStringLoc sloc cmtTbl =
 
 let printStringContents txt =
   let lines = String.split_on_char '\n' txt in
-  Doc.join ~sep:Doc.literalLine (List.map Doc.text lines)
+  Doc.join ~sep:Doc.literalLine (Res_array.mapList Doc.text lines)
 
 let printConstant c = match c with
   | Parsetree.Pconst_integer (s, suffix) ->
@@ -610,7 +610,7 @@ and printTypeExtension (te : Parsetree.type_extension) cmtTbl =
           privateFlag;
           rows;
           (* Doc.join ~sep:Doc.line ( *)
-            (* List.mapi printExtensionConstructor ecs *)
+            (* Res_array.mapListi printExtensionConstructor ecs *)
           (* ) *)
         |]
       )
@@ -745,7 +745,7 @@ and printModType modType cmtTbl =
             Doc.concat [|
               Doc.softLine;
               Doc.join ~sep:(Doc.concat [|Doc.comma; Doc.line|]) (
-                List.map (fun (attrs, lbl, modType) ->
+                Res_array.mapList (fun (attrs, lbl, modType) ->
                   let cmtLoc = match modType with
                   | None -> lbl.Asttypes.loc
                   | Some modType ->
@@ -831,7 +831,7 @@ and printModType modType cmtTbl =
   printComments doc cmtTbl modType.pmty_loc
 
 and printWithConstraints withConstraints cmtTbl =
-  let rows = List.mapi (fun i withConstraint ->
+  let rows = Res_array.mapListi (fun i withConstraint ->
     Doc.group (
       Doc.concat [|
         if i == 0 then Doc.text "with " else Doc.text "and ";
@@ -1041,7 +1041,7 @@ and printValueDescription valueDescription cmtTbl =
               Doc.concat [|
                 Doc.line;
                 Doc.join ~sep:Doc.line (
-                  List.map(fun s -> Doc.concat [|
+                  Res_array.mapList(fun s -> Doc.concat [|
                     Doc.text "\"";
                     Doc.text s;
                     Doc.text "\"";
@@ -1246,7 +1246,7 @@ and printTypeDefinitionConstraints cstrs =
           Doc.line;
           Doc.group(
             Doc.join ~sep:Doc.line (
-              List.map printTypeDefinitionConstraint cstrs
+              Res_array.mapList printTypeDefinitionConstraint cstrs
             )
           )
         |]
@@ -1276,7 +1276,7 @@ and printTypeParams typeParams cmtTbl =
           Doc.concat [|
             Doc.softLine;
             Doc.join ~sep:(Doc.concat [|Doc.comma; Doc.line|]) (
-              List.map (fun typeParam ->
+              Res_array.mapList (fun typeParam ->
                 let doc = printTypeParam typeParam cmtTbl in
                 printComments doc cmtTbl (fst typeParam).Parsetree.ptyp_loc
               ) typeParams
@@ -1314,7 +1314,7 @@ and printRecordDeclaration (lds: Parsetree.label_declaration list) cmtTbl =
         Doc.concat [|
           Doc.softLine;
           Doc.join ~sep:(Doc.concat [|Doc.comma; Doc.line|])
-            (List.map (fun ld ->
+            (Res_array.mapList (fun ld ->
               let doc = printLabelDeclaration ld cmtTbl in
               printComments doc cmtTbl ld.Parsetree.pld_loc
             ) lds)
@@ -1403,7 +1403,7 @@ and printConstructorArguments ~indent (cdArgs : Parsetree.constructor_arguments)
           Doc.concat [|
           Doc.softLine;
           Doc.join ~sep:(Doc.concat [|Doc.comma; Doc.line|]) (
-            List.map (fun typexpr ->
+            Res_array.mapList (fun typexpr ->
               printTypExpr typexpr cmtTbl
             ) types
           )
@@ -1425,7 +1425,7 @@ and printConstructorArguments ~indent (cdArgs : Parsetree.constructor_arguments)
         Doc.concat [|
           Doc.softLine;
           Doc.join ~sep:(Doc.concat [|Doc.comma; Doc.line|])
-            (List.map (fun ld ->
+            (Res_array.mapList (fun ld ->
               let doc = printLabelDeclaration ld cmtTbl in
               printComments doc cmtTbl ld.Parsetree.pld_loc
             ) lds)
@@ -1521,7 +1521,7 @@ and printTypExpr (typExpr : Parsetree.core_type) cmtTbl =
           Doc.concat [|
             Doc.softLine;
             Doc.join ~sep:(Doc.concat [|Doc.comma; Doc.line|]) (
-              List.map
+              Res_array.mapList
                 (fun typexpr -> printTypExpr typexpr cmtTbl)
                 constrArgs
             )
@@ -1597,7 +1597,7 @@ and printTypExpr (typExpr : Parsetree.core_type) cmtTbl =
             Doc.softLine;
             if isUncurried then Doc.concat [|Doc.dot; Doc.space|] else Doc.nil;
             Doc.join ~sep:(Doc.concat [|Doc.comma; Doc.line|]) (
-              List.map (fun tp ->
+              Res_array.mapList (fun tp ->
                 printTypeParameter tp cmtTbl
               ) args
             )
@@ -1620,7 +1620,7 @@ and printTypExpr (typExpr : Parsetree.core_type) cmtTbl =
     printTypExpr typ cmtTbl
   | Ptyp_poly(stringLocs, typ) ->
     Doc.concat [|
-      Doc.join ~sep:Doc.space (List.map (fun {Location.txt; loc} ->
+      Doc.join ~sep:Doc.space (Res_array.mapList (fun {Location.txt; loc} ->
         let doc = Doc.concat [|Doc.text "'"; Doc.text txt|] in
         printComments doc cmtTbl loc
         ) stringLocs);
@@ -1647,7 +1647,7 @@ and printTypExpr (typExpr : Parsetree.core_type) cmtTbl =
       | Ptyp_tuple _ -> printTypExpr t cmtTbl
       | _ -> Doc.concat [| Doc.lparen; printTypExpr t cmtTbl; Doc.rparen |]
       in
-      let printedTypes = List.map doType types in
+      let printedTypes = Res_array.mapList doType types in
       let cases = Doc.join ~sep:(Doc.concat [|Doc.line; Doc.text "& "|]) printedTypes in
       let cases = if truth then Doc.concat [|Doc.line; Doc.text "& "; cases|] else cases in
       Doc.group (
@@ -1660,10 +1660,10 @@ and printTypExpr (typExpr : Parsetree.core_type) cmtTbl =
     | Rinherit coreType ->
       printTypExpr coreType cmtTbl
     in
-    let docs = List.map printRowField rowFields in
+    let docs = Res_array.mapList printRowField rowFields in
     let cases = Doc.join ~sep:(Doc.concat [|Doc.line; Doc.text "| "|]) docs in
     let cases =
-      if docs = [] then cases
+      if Array.length docs = 0 then cases
       else Doc.concat [|Doc.ifBreaks (Doc.text "| ") Doc.nil; cases|]
     in
     let openingSymbol =
@@ -1741,7 +1741,7 @@ and printObject ~inline fields openFlag cmtTbl =
         Doc.concat [|
           Doc.softLine;
           Doc.join ~sep:(Doc.concat [|Doc.comma; Doc.line|]) (
-            List.map (fun field -> printObjectField field cmtTbl) fields
+            Res_array.mapList (fun field -> printObjectField field cmtTbl) fields
           )
         |]
       );
@@ -1759,7 +1759,7 @@ and printTupleType ~inline (types: Parsetree.core_type list) cmtTbl =
       Doc.concat([|
         Doc.softLine;
         Doc.join ~sep:(Doc.concat [|Doc.comma; Doc.line|]) (
-          List.map (fun typexpr -> printTypExpr typexpr cmtTbl) types
+          Res_array.mapList (fun typexpr -> printTypExpr typexpr cmtTbl) types
         )
       |])
     );
@@ -1853,7 +1853,7 @@ and printValueBinding ~recFlag vb cmtTbl i =
     | [NewTypes {locs = vars}] ->
       Doc.concat [|
         Doc.text "type ";
-        Doc.join ~sep:Doc.space (List.map (fun var -> Doc.text var.Asttypes.txt) vars);
+        Doc.join ~sep:Doc.space (Res_array.mapList (fun var -> Doc.text var.Asttypes.txt) vars);
         Doc.dot;
       |]
     | _ -> Doc.nil
@@ -2027,7 +2027,7 @@ and printPackageConstraints packageConstraints cmtTbl  =
       Doc.concat [|
         Doc.line;
         Doc.join ~sep:Doc.line (
-          List.mapi (fun i pc ->
+          Res_array.mapListi (fun i pc ->
             let (longident, typexpr) = pc in
             let cmtLoc = {longident.Asttypes.loc with
               loc_end = typexpr.Parsetree.ptyp_loc.loc_end
@@ -2079,7 +2079,7 @@ and printPattern (p : Parsetree.pattern) cmtTbl =
           Doc.concat([|
             Doc.softLine;
             Doc.join ~sep:(Doc.concat [|Doc.text ","; Doc.line|])
-              (List.map (fun pat ->
+              (Res_array.mapList (fun pat ->
                 printPattern pat cmtTbl) patterns)
           |])
         );
@@ -2102,7 +2102,7 @@ and printPattern (p : Parsetree.pattern) cmtTbl =
           Doc.concat([|
             Doc.softLine;
             Doc.join ~sep:(Doc.concat [|Doc.text ","; Doc.line|])
-              (List.map (fun pat ->
+              (Res_array.mapList (fun pat ->
                 printPattern pat cmtTbl) patterns)
           |])
         );
@@ -2133,7 +2133,7 @@ and printPattern (p : Parsetree.pattern) cmtTbl =
     let children = Doc.concat([|
       if shouldHug then Doc.nil else Doc.softLine;
       Doc.join ~sep:(Doc.concat [|Doc.text ","; Doc.line|])
-        (List.map (fun pat ->
+        (Res_array.mapList (fun pat ->
           printPattern pat cmtTbl) patterns);
       begin match tail.Parsetree.ppat_desc with
       | Ppat_construct({txt = Longident.Lident "[]"}, _) -> Doc.nil
@@ -2185,7 +2185,7 @@ and printPattern (p : Parsetree.pattern) cmtTbl =
           Doc.concat [|
             Doc.softLine;
             Doc.join ~sep:(Doc.concat [|Doc.comma; Doc.line|]) (
-              List.map (fun pat -> printPattern pat cmtTbl) patterns
+              Res_array.mapList (fun pat -> printPattern pat cmtTbl) patterns
             );
           |]
         );
@@ -2244,7 +2244,7 @@ and printPattern (p : Parsetree.pattern) cmtTbl =
           Doc.concat [|
             Doc.softLine;
             Doc.join ~sep:(Doc.concat [|Doc.comma; Doc.line|]) (
-              List.map (fun pat -> printPattern pat cmtTbl) patterns
+              Res_array.mapList (fun pat -> printPattern pat cmtTbl) patterns
             );
           |]
         );
@@ -2283,7 +2283,7 @@ and printPattern (p : Parsetree.pattern) cmtTbl =
             Doc.concat [|
               Doc.softLine;
               Doc.join ~sep:(Doc.concat [|Doc.text ","; Doc.line|])
-                (List.map (fun row -> printPatternRecordRow row cmtTbl) rows);
+                (Res_array.mapList (fun row -> printPatternRecordRow row cmtTbl) rows);
               begin match openFlag with
               | Open -> Doc.concat [|Doc.text ","; Doc.line; Doc.text "_"|]
               | Closed -> Doc.nil
@@ -2455,7 +2455,7 @@ and printExpressionWithComments expr cmtTbl =
 
 and printIfChain pexp_attributes ifs elseExpr cmtTbl =
   let ifDocs = Doc.join ~sep:Doc.space (
-    List.mapi (fun i (ifExpr, thenExpr) ->
+    Res_array.mapListi (fun i (ifExpr, thenExpr) ->
       let ifTxt = if i > 0 then Doc.text "else if " else  Doc.text "if " in
       match ifExpr with
         | ParsetreeViewer.If ifExpr ->
@@ -2547,7 +2547,7 @@ and printExpression (e : Parsetree.expression) cmtTbl =
           Doc.concat([|
             Doc.softLine;
             Doc.join ~sep:(Doc.concat [|Doc.text ","; Doc.line|])
-              (List.map
+              (Res_array.mapList
                 (fun expr ->
                   let doc = printExpressionWithComments expr cmtTbl in
                   match Parens.expr expr with
@@ -2588,7 +2588,7 @@ and printExpression (e : Parsetree.expression) cmtTbl =
           Doc.concat [|
             Doc.softLine;
             Doc.join ~sep:(Doc.concat [|Doc.comma; Doc.line|]) (
-              List.map
+              Res_array.mapList
                 (fun expr ->
                   let doc = printExpressionWithComments expr cmtTbl in
                   match Parens.expr expr with
@@ -2639,7 +2639,7 @@ and printExpression (e : Parsetree.expression) cmtTbl =
           Doc.concat([|
             Doc.softLine;
             Doc.join ~sep:(Doc.concat [|Doc.text ","; Doc.line|])
-              (List.map (fun expr ->
+              (Res_array.mapList (fun expr ->
                 let doc = printExpressionWithComments expr cmtTbl in
                 match Parens.expr expr with
                 | Parens.Parenthesized -> addParens doc
@@ -2667,7 +2667,7 @@ and printExpression (e : Parsetree.expression) cmtTbl =
           Doc.concat([|
             Doc.softLine;
             Doc.join ~sep:(Doc.concat [|Doc.text ","; Doc.line|])
-              (List.map (fun expr ->
+              (Res_array.mapList (fun expr ->
                 let doc = printExpressionWithComments expr cmtTbl in
                 match Parens.expr expr with
                 | Parens.Parenthesized -> addParens doc
@@ -2706,7 +2706,7 @@ and printExpression (e : Parsetree.expression) cmtTbl =
           Doc.concat [|
             Doc.softLine;
             Doc.join ~sep:(Doc.concat [|Doc.comma; Doc.line|]) (
-              List.map
+              Res_array.mapList
                 (fun expr ->
                   let doc = printExpressionWithComments expr cmtTbl in
                   match Parens.expr expr with
@@ -2778,7 +2778,7 @@ and printExpression (e : Parsetree.expression) cmtTbl =
             Doc.softLine;
             spread;
             Doc.join ~sep:(Doc.concat [|Doc.text ","; Doc.line|])
-              (List.map (fun row -> printRecordRow row cmtTbl) rows)
+              (Res_array.mapList (fun row -> printRecordRow row cmtTbl) rows)
           |]
         );
         Doc.trailingComma;
@@ -2811,7 +2811,7 @@ and printExpression (e : Parsetree.expression) cmtTbl =
             Doc.concat [|
               Doc.softLine;
               Doc.join ~sep:(Doc.concat [|Doc.text ","; Doc.line|])
-                (List.map (fun row -> printBsObjectRow row cmtTbl) rows)
+                (Res_array.mapList (fun row -> printBsObjectRow row cmtTbl) rows)
             |]
           );
           Doc.trailingComma;
@@ -2863,7 +2863,7 @@ and printExpression (e : Parsetree.expression) cmtTbl =
               |]
             );
             Doc.concat (
-              List.map (fun (condition, consequent) ->
+              Res_array.mapList (fun (condition, consequent) ->
                 Doc.concat [|
                   Doc.line;
                   Doc.text ": ";
@@ -2872,7 +2872,7 @@ and printExpression (e : Parsetree.expression) cmtTbl =
                   Doc.text "? ";
                   printTernaryOperand consequent cmtTbl;
                 |]
-              ) rest |> Array.of_list
+              ) rest
             );
             Doc.line;
             Doc.text ": ";
@@ -3888,7 +3888,7 @@ and printJsxFragment expr cmtTbl =
 and printJsxChildren (children: Parsetree.expression list) cmtTbl =
   Doc.group (
     Doc.join ~sep:Doc.line (
-      List.map (fun (expr : Parsetree.expression) ->
+      Res_array.mapList (fun (expr : Parsetree.expression) ->
         let leadingLineCommentPresent = hasLeadingLineComment cmtTbl expr.pexp_loc in
         let exprDoc = printExpressionWithComments expr cmtTbl in
         match Parens.jsxChildExpr expr with
@@ -3922,7 +3922,7 @@ and printJsxProps args cmtTbl =
           Doc.concat [|
             Doc.line;
             Doc.group (
-              Doc.join ~sep:Doc.line (props |> List.rev)
+              Doc.join ~sep:Doc.line (props |> List.rev |> Array.of_list)
             )
           |]
       ) in
@@ -4022,7 +4022,7 @@ and printJsxName {txt = lident} =
   | Longident.Lident txt -> Doc.text txt
   | _ as lident ->
     let segments = flatten [] lident in
-    Doc.join ~sep:Doc.dot (List.map Doc.text segments)
+    Doc.join ~sep:Doc.dot (Res_array.mapList Doc.text segments)
 
 and printArgumentsWithCallbackInFirstPosition ~uncurried args cmtTbl =
   (* Because the same subtree gets printed twice, we need to copy the cmtTbl.
@@ -4049,7 +4049,7 @@ and printArgumentsWithCallbackInFirstPosition ~uncurried args cmtTbl =
     let callback = printComments callback cmtTbl expr.pexp_loc in
     let printedArgs =
       Doc.join ~sep:(Doc.concat [|Doc.comma; Doc.line|]) (
-        List.map (fun arg -> printArgument arg cmtTbl) args
+        Res_array.mapList (fun arg -> printArgument arg cmtTbl) args
       )
     in
     (callback, printedArgs)
@@ -4226,7 +4226,7 @@ and printArguments ~uncurried (args : (Asttypes.arg_label * Parsetree.expression
           Doc.concat [|
             if uncurried then Doc.line else Doc.softLine;
             Doc.join ~sep:(Doc.concat [|Doc.comma; Doc.line|]) (
-              List.map (fun arg -> printArgument arg cmtTbl) args
+              Res_array.mapList (fun arg -> printArgument arg cmtTbl) args
             )
           |]
         );
@@ -4464,7 +4464,7 @@ and printExprFunParameters ~inCallback ~uncurried ~hasConstraint parameters cmtT
       if shouldHug || inCallback then Doc.nil else Doc.softLine;
       Doc.join
         ~sep:(Doc.concat [|Doc.comma; Doc.line|])
-        (List.map (fun p -> printExpFunParameter p cmtTbl) parameters)
+        (Res_array.mapList (fun p -> printExpFunParameter p cmtTbl) parameters)
     |] in
     Doc.group (
       Doc.concat [|
@@ -4488,7 +4488,7 @@ and printExpFunParameter parameter cmtTbl =
       Doc.concat [|
         printAttributes attrs cmtTbl;
         Doc.text "type ";
-        Doc.join ~sep:Doc.space (List.map (fun lbl ->
+        Doc.join ~sep:Doc.space (Res_array.mapList (fun lbl ->
           printComments (printIdentLike lbl.Asttypes.txt) cmtTbl lbl.Asttypes.loc
         ) lbls)
       |]
@@ -4790,7 +4790,7 @@ and printAttributes ?loc ?(inline=false) (attrs: Parsetree.attributes) cmtTbl =
       end
     in
     Doc.concat [|
-      Doc.group (Doc.join ~sep:Doc.line (List.map (fun attr -> printAttribute attr cmtTbl) attrs));
+      Doc.group (Doc.join ~sep:Doc.line (Res_array.mapList (fun attr -> printAttribute attr cmtTbl) attrs));
       if inline then Doc.space else lineBreak;
     |]
 
@@ -4997,7 +4997,7 @@ and printModExpr modExpr cmtTbl =
                 Doc.concat [|
                   Doc.softLine;
                   Doc.join ~sep:(Doc.concat [|Doc.comma; Doc.line|]) (
-                    List.map (fun modArg -> printModApplyArg modArg cmtTbl) args
+                    Res_array.mapList (fun modArg -> printModApplyArg modArg cmtTbl) args
                   )
                 |]
               );
@@ -5059,7 +5059,7 @@ and printModFunctor modExpr cmtTbl =
           Doc.concat [|
             Doc.softLine;
             Doc.join ~sep:(Doc.concat [|Doc.comma; Doc.line|]) (
-              List.map (fun param -> printModFunctorParam param cmtTbl) parameters
+              Res_array.mapList (fun param -> printModFunctorParam param cmtTbl) parameters
             )
           |]
         );
