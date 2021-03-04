@@ -27,20 +27,20 @@ end = struct
     match t with
     | Atom s -> Doc.text s
     | List [] -> Doc.text "()"
-    | List [sexpr] -> Doc.concat [Doc.lparen; toDoc sexpr; Doc.rparen;]
+    | List [sexpr] -> Doc.concat [|Doc.lparen; toDoc sexpr; Doc.rparen;|]
     | List (hd::tail) ->
       Doc.group (
-        Doc.concat [
+        Doc.concat [|
           Doc.lparen;
           toDoc hd;
           Doc.indent (
-            Doc.concat [
+            Doc.concat [|
               Doc.line;
               Doc.join ~sep:Doc.line (List.map toDoc tail);
-            ]
+            |]
           );
           Doc.rparen;
-        ]
+        |]
       )
 
   let toString sexpr =

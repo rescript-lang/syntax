@@ -81,16 +81,16 @@ Solution: directly use `concat`."
 
   let experimentalIfLet expr =
     let switchExpr = {expr with Parsetree.pexp_attributes = []} in
-    Doc.concat [
+    Doc.concat [|
       Doc.text "If-let is currently highly experimental.";
       Doc.line;
       Doc.text "Use a regular `switch` with pattern matching instead:";
-      Doc.concat [
+      Doc.concat [|
         Doc.hardLine;
         Doc.hardLine;
         ResPrinter.printExpression switchExpr (CommentTable.empty);
-      ]
-    ] |> Doc.toString ~width:80
+      |]
+    |] |> Doc.toString ~width:80
 
   let typeParam = "A type param consists of a singlequote followed by a name like `'a` or `'A`"
   let typeVar = "A type variable consists of a singlequote followed by a name like `'a` or `'A`"
@@ -2264,19 +2264,19 @@ and overParseConstrainedOrCoercedOrArrowExpression p expr =
       in
       let msg =
         Doc.breakableGroup ~forceBreak:true (
-          Doc.concat [
+          Doc.concat [|
             Doc.text "Did you mean to annotate the parameter type or the return type?";
             Doc.indent (
-              Doc.concat [
+              Doc.concat [|
                 Doc.line;
                 Doc.text "1) ";
                 ResPrinter.printExpression arrow1 CommentTable.empty;
                 Doc.line;
                 Doc.text "2) ";
                 ResPrinter.printExpression arrow2 CommentTable.empty;
-              ]
+              |]
             )
-          ]
+          |]
         ) |> Doc.toString ~width:80
       in
       Parser.err
@@ -2294,15 +2294,15 @@ and overParseConstrainedOrCoercedOrArrowExpression p expr =
         ~endPos:typ.ptyp_loc.loc_end
         p
         (Diagnostics.message
-          (Doc.breakableGroup ~forceBreak:true (Doc.concat [
+          (Doc.breakableGroup ~forceBreak:true (Doc.concat [|
             Doc.text "Expressions with type constraints need to be wrapped in parens:";
             Doc.indent (
-              Doc.concat [
+              Doc.concat [|
               Doc.line;
               ResPrinter.addParens (ResPrinter.printExpression expr CommentTable.empty);
-              ]
+              |]
             )
-          ]) |> Doc.toString ~width:80
+          |]) |> Doc.toString ~width:80
         ))
       in
       expr
@@ -4058,15 +4058,15 @@ and parseTypeConstructorArgs ~constrName p =
       let typ = Ast_helper.Typ.constr constrName typeArgs in
       let msg =
         Doc.breakableGroup ~forceBreak:true (
-          Doc.concat [
+          Doc.concat [|
             Doc.text "Type parameters require angle brackets:";
             Doc.indent (
-              Doc.concat [
+              Doc.concat [|
                 Doc.line;
                 ResPrinter.printTypExpr typ CommentTable.empty;
-              ]
+              |]
             )
-          ]
+          |]
         ) |> Doc.toString ~width:80
       in
       Parser.err ~startPos:openingStartPos p (Diagnostics.message msg);
@@ -4465,18 +4465,18 @@ and parseTypeParams ~parent p =
     | Rparen when opening = Token.Lparen ->
       let msg =
         Doc.breakableGroup ~forceBreak:true (
-          Doc.concat [
+          Doc.concat [|
             Doc.text "Type parameters require angle brackets:";
             Doc.indent (
-              Doc.concat [
+              Doc.concat [|
                 Doc.line;
-                Doc.concat [
+                Doc.concat [|
                   ResPrinter.printLongident parent.Location.txt;
                   ResPrinter.printTypeParams params CommentTable.empty;
-                ]
-              ]
+                |]
+              |]
             )
-          ]
+          |]
         ) |> Doc.toString ~width:80
       in
       Parser.err ~startPos:openingStartPos p (Diagnostics.message msg);

@@ -49,20 +49,20 @@ let classifyIdentContent ~allowUident txt =
 
 let printIdentLike ~allowUident txt =
   match classifyIdentContent ~allowUident txt with
-  | ExoticIdent -> Doc.concat [
+  | ExoticIdent -> Doc.concat [|
       Doc.text "\\\"";
       Doc.text txt;
       Doc.text"\""
-    ]
+    |]
   | NormalIdent -> Doc.text txt
 
 let printPolyVarIdent txt =
   match classifyIdentContent ~allowUident:true txt with
-  | ExoticIdent -> Doc.concat [
+  | ExoticIdent -> Doc.concat [|
      Doc.text "\"";
      Doc.text txt;
      Doc.text"\""
-   ]
+   |]
   | NormalIdent -> Doc.text txt
 
   (* ReScript doesn't have parenthesized identifiers.
@@ -114,34 +114,34 @@ let printPolyVarIdent txt =
      let rec printOutIdentDoc ?(allowUident=true) (ident : Outcometree.out_ident) =
        match ident with
        | Oide_ident s -> printIdentLike ~allowUident s
-       | Oide_dot (ident, s) -> Doc.concat [
+       | Oide_dot (ident, s) -> Doc.concat [|
            printOutIdentDoc ident;
            Doc.dot;
            Doc.text s;
-         ]
-       | Oide_apply (call, arg) ->Doc.concat [
+         |]
+       | Oide_apply (call, arg) ->Doc.concat [|
            printOutIdentDoc call;
            Doc.lparen;
            printOutIdentDoc arg;
            Doc.rparen;
-         ]
+         |]
 
    let printOutAttributeDoc (outAttribute: Outcometree.out_attribute) =
-     Doc.concat [
+     Doc.concat [|
        Doc.text "@";
        Doc.text outAttribute.oattr_name;
-     ]
+     |]
 
    let printOutAttributesDoc (attrs: Outcometree.out_attribute list) =
      match attrs with
      | [] -> Doc.nil
      | attrs ->
-       Doc.concat [
+       Doc.concat [|
          Doc.group (
            Doc.join ~sep:Doc.line (List.map printOutAttributeDoc attrs)
          );
          Doc.line;
-       ]
+       |]
 
    let rec collectArrowArgs (outType: Outcometree.out_type) args =
      match outType with
@@ -168,58 +168,58 @@ let printPolyVarIdent txt =
       | (true, None) -> (* [#A | #B] *) Doc.softLine
       | (false, None) ->
         (* [> #A | #B] *)
-        Doc.concat [Doc.greaterThan; Doc.line]
+        Doc.concat [|Doc.greaterThan; Doc.line|]
       | (true, Some []) ->
         (* [< #A | #B] *)
-        Doc.concat [Doc.lessThan; Doc.line]
+        Doc.concat [|Doc.lessThan; Doc.line|]
       | (true, Some _) ->
         (* [< #A | #B > #X #Y ] *)
-        Doc.concat [Doc.lessThan; Doc.line]
+        Doc.concat [|Doc.lessThan; Doc.line|]
       | (false, Some _) ->
        (* impossible!? ocaml seems to print ?, see oprint.ml in 4.06 *)
-        Doc.concat [Doc.text "?"; Doc.line]
+        Doc.concat [|Doc.text "?"; Doc.line|]
       in
       Doc.group (
-         Doc.concat [
+         Doc.concat [|
            if nonGen then Doc.text "_" else Doc.nil;
            Doc.lbracket;
            Doc.indent (
-             Doc.concat [
+             Doc.concat [|
                opening;
                printOutVariant outVariant
-             ]
+             |]
            );
            begin match labels with
            | None | Some [] -> Doc.nil
            | Some tags ->
              Doc.group (
-               Doc.concat [
+               Doc.concat [|
                  Doc.space;
                  Doc.join ~sep:Doc.space (
                    List.map (fun lbl -> printIdentLike ~allowUident:true lbl) tags
                  )
-               ]
+               |]
              )
            end;
            Doc.softLine;
            Doc.rbracket;
-         ]
+         |]
        )
      | Otyp_alias (typ, aliasTxt) ->
-       Doc.concat [
+       Doc.concat [|
          printOutTypeDoc typ;
          Doc.text " as '";
          Doc.text aliasTxt
-       ]
+       |]
      | Otyp_constr (
         Oide_dot (Oide_dot (Oide_ident "Js", "Fn") , "arity0"), (* Js.Fn.arity0 *)
         [Otyp_constr (Oide_ident ident, [])] (* int or unit or string *)
        ) ->
         (* Js.Fn.arity0<int> -> (.) => int*)
-        Doc.concat [
+        Doc.concat [|
           Doc.text "(.) => ";
           Doc.text ident;
-        ]
+        |]
      | Otyp_constr (
         Oide_dot (Oide_dot (Oide_ident "Js", "Fn") , ident), (* Js.Fn.arity2 *)
         [(Otyp_arrow _) as arrowType] (* (int, int) => int *)
@@ -229,27 +229,27 @@ let printPolyVarIdent txt =
      | Otyp_constr (outIdent, []) ->
        printOutIdentDoc ~allowUident:false outIdent
      | Otyp_manifest (typ1, typ2) ->
-         Doc.concat [
+         Doc.concat [|
            printOutTypeDoc typ1;
            Doc.text " = ";
            printOutTypeDoc typ2;
-         ]
+         |]
      | Otyp_record record ->
        printRecordDeclarationDoc ~inline:true record
      | Otyp_stuff txt -> Doc.text txt
-     | Otyp_var (ng, s) -> Doc.concat [
+     | Otyp_var (ng, s) -> Doc.concat [|
          Doc.text ("'" ^ (if ng then "_" else ""));
          Doc.text s
-       ]
+       |]
      | Otyp_object (fields, rest) -> printObjectFields fields rest
      | Otyp_class _ -> Doc.nil
      | Otyp_attribute (typ, attribute) ->
        Doc.group (
-         Doc.concat [
+         Doc.concat [|
            printOutAttributeDoc attribute;
            Doc.line;
            printOutTypeDoc typ;
-         ]
+         |]
        )
      (* example: Red | Blue | Green | CustomColour(float, float, float) *)
      | Otyp_sum constructors ->
@@ -266,54 +266,54 @@ let printPolyVarIdent txt =
        let argsDoc = match args with
        | [] -> Doc.nil
        | args ->
-         Doc.concat [
+         Doc.concat [|
            Doc.lessThan;
            Doc.indent (
-             Doc.concat [
+             Doc.concat [|
                Doc.softLine;
-               Doc.join ~sep:(Doc.concat [Doc.comma; Doc.line]) (
+               Doc.join ~sep:(Doc.concat [|Doc.comma; Doc.line|]) (
                  List.map printOutTypeDoc args
                )
-             ]
+             |]
            );
            Doc.trailingComma;
            Doc.softLine;
            Doc.greaterThan;
-         ]
+         |]
        in
        Doc.group (
-         Doc.concat [
+         Doc.concat [|
            printOutIdentDoc outIdent;
            argsDoc;
-         ]
+         |]
        )
      | Otyp_tuple tupleArgs ->
        Doc.group (
-         Doc.concat [
+         Doc.concat [|
            Doc.lparen;
            Doc.indent (
-             Doc.concat [
+             Doc.concat [|
                Doc.softLine;
-               Doc.join ~sep:(Doc.concat [Doc.comma; Doc.line]) (
+               Doc.join ~sep:(Doc.concat [|Doc.comma; Doc.line|]) (
                  List.map printOutTypeDoc tupleArgs
                )
-             ]
+             |]
            );
            Doc.trailingComma;
            Doc.softLine;
            Doc.rparen;
-         ]
+         |]
        )
      | Otyp_poly (vars, outType) ->
        Doc.group (
-         Doc.concat [
+         Doc.concat [|
            Doc.join ~sep:Doc.space (
              List.map (fun var -> Doc.text ("'" ^ var)) vars
            );
            Doc.dot;
            Doc.space;
            printOutTypeDoc outType;
-         ]
+         |]
        )
      | Otyp_arrow _ as typ ->
        printOutArrowType ~uncurried:false typ
@@ -322,16 +322,16 @@ let printPolyVarIdent txt =
 
    and printOutArrowType ~uncurried typ =
      let (typArgs, typ) = collectArrowArgs typ [] in
-     let args = Doc.join ~sep:(Doc.concat [Doc.comma; Doc.line]) (
+     let args = Doc.join ~sep:(Doc.concat [|Doc.comma; Doc.line|]) (
        List.map (fun (lbl, typ) ->
          if lbl = "" then
            printOutTypeDoc typ
          else
            Doc.group (
-             Doc.concat [
+             Doc.concat [|
                Doc.text ("~" ^ lbl ^ ": ");
                printOutTypeDoc typ
-             ]
+             |]
            )
        ) typArgs
      ) in
@@ -345,26 +345,26 @@ let printPolyVarIdent txt =
        in
        if needsParens then
          Doc.group (
-           Doc.concat [
+           Doc.concat [|
              if uncurried then Doc.text "(. " else Doc.lparen;
              Doc.indent (
-               Doc.concat [
+               Doc.concat [|
                  Doc.softLine;
                  args;
-               ]
+               |]
              );
              Doc.trailingComma;
              Doc.softLine;
              Doc.rparen;
-           ]
+           |]
          )
        else args
      in
-     Doc.concat [
+     Doc.concat [|
        argsDoc;
        Doc.text " => ";
        printOutTypeDoc typ;
-     ]
+     |]
 
 
    and printOutVariant variant = match variant with
@@ -379,36 +379,36 @@ let printPolyVarIdent txt =
            | [(Outcometree.Otyp_tuple _)] -> false
            | _ -> true
            in
-           Doc.concat [
+           Doc.concat [|
              if i > 0 then
                Doc.text "| "
              else
                Doc.ifBreaks (Doc.text "| ") Doc.nil;
              Doc.group (
-               Doc.concat [
+               Doc.concat [|
                  Doc.text "#";
                  printPolyVarIdent name;
                  match types with
                  | [] -> Doc.nil
                  | types ->
-                   Doc.concat [
+                   Doc.concat [|
                      if ampersand then Doc.text " & " else Doc.nil;
                      Doc.indent (
-                       Doc.concat [
-                         Doc.join ~sep:(Doc.concat [Doc.text " &"; Doc.line])
+                       Doc.concat [|
+                         Doc.join ~sep:(Doc.concat [|Doc.text " &"; Doc.line|])
                           (List.map (fun typ ->
                             let outTypeDoc = printOutTypeDoc typ in
                             if needsParens then
-                              Doc.concat [Doc.lparen; outTypeDoc; Doc.rparen]
+                              Doc.concat [|Doc.lparen; outTypeDoc; Doc.rparen|]
                             else
                               outTypeDoc
                           ) types)
-                       ];
+                       |];
                      );
-                   ]
-               ]
+                   |]
+               |]
              )
-           ]
+           |]
          ) fields
        )
      | Ovar_typ typ -> printOutTypeDoc typ
@@ -419,53 +419,53 @@ let printPolyVarIdent txt =
      | None -> Doc.nil
      in
      Doc.group (
-       Doc.concat [
+       Doc.concat [|
          Doc.lbrace;
          dots;
          Doc.indent (
-           Doc.concat [
+           Doc.concat [|
              Doc.softLine;
-             Doc.join ~sep:(Doc.concat [Doc.comma; Doc.line]) (
+             Doc.join ~sep:(Doc.concat [|Doc.comma; Doc.line|]) (
                List.map (fun (lbl, outType) -> Doc.group (
-                 Doc.concat [
+                 Doc.concat [|
                    Doc.text ("\"" ^ lbl ^ "\": ");
                    printOutTypeDoc outType;
-                 ]
+                 |]
                )) fields
              )
-           ]
+           |]
          );
          Doc.softLine;
          Doc.trailingComma;
          Doc.rbrace;
-       ]
+       |]
      )
 
 
    and printOutConstructorsDoc constructors =
      Doc.group (
        Doc.indent (
-         Doc.concat [
+         Doc.concat [|
            Doc.line;
            Doc.join ~sep:Doc.line (
              List.mapi (fun i constructor ->
-               Doc.concat [
+               Doc.concat [|
                  if i > 0 then Doc.text "| " else Doc.ifBreaks (Doc.text "| ") Doc.nil;
                  printOutConstructorDoc constructor;
-               ]
+               |]
              ) constructors
            )
-         ]
+         |]
        )
      )
 
    and printOutConstructorDoc (name, args, gadt) =
        let gadtDoc = match gadt with
        | Some outType ->
-         Doc.concat [
+         Doc.concat [|
            Doc.text ": ";
            printOutTypeDoc outType
-         ]
+         |]
        | None -> Doc.nil
        in
        let argsDoc = match args with
@@ -477,64 +477,64 @@ let printPolyVarIdent txt =
           *      mutable updatedTime: float,
           *    })
           *)
-         Doc.concat [
+         Doc.concat [|
            Doc.lparen;
            Doc.indent (
              printRecordDeclarationDoc ~inline:true record;
            );
            Doc.rparen;
-         ]
+         |]
        | _types ->
          Doc.indent (
-           Doc.concat [
+           Doc.concat [|
              Doc.lparen;
              Doc.indent (
-               Doc.concat [
+               Doc.concat [|
                  Doc.softLine;
-                 Doc.join ~sep:(Doc.concat [Doc.comma; Doc.line]) (
+                 Doc.join ~sep:(Doc.concat [|Doc.comma; Doc.line|]) (
                    List.map printOutTypeDoc args
                  )
-               ]
+               |]
              );
              Doc.trailingComma;
              Doc.softLine;
              Doc.rparen;
-           ]
+           |]
          )
        in
        Doc.group (
-         Doc.concat [
+         Doc.concat [|
            Doc.text name;
            argsDoc;
            gadtDoc
-         ]
+         |]
        )
 
    and printRecordDeclRowDoc (name, mut, arg) =
      Doc.group (
-       Doc.concat [
+       Doc.concat [|
          if mut then Doc.text "mutable " else Doc.nil;
          printIdentLike ~allowUident:false name;
          Doc.text ": ";
          printOutTypeDoc arg;
-       ]
+       |]
      )
 
    and printRecordDeclarationDoc ~inline rows =
-     let content = Doc.concat [
+     let content = Doc.concat [|
        Doc.lbrace;
        Doc.indent (
-         Doc.concat [
+         Doc.concat [|
            Doc.softLine;
-           Doc.join ~sep:(Doc.concat [Doc.comma; Doc.line]) (
+           Doc.join ~sep:(Doc.concat [|Doc.comma; Doc.line|]) (
              List.map printRecordDeclRowDoc rows
            )
-         ]
+         |]
        );
        Doc.trailingComma;
        Doc.softLine;
        Doc.rbrace;
-     ] in
+     |] in
      if not inline then
        Doc.group content
      else content
@@ -544,10 +544,10 @@ let printPolyVarIdent txt =
        (Doc.toString ~width:80 (printOutTypeDoc outType))
 
    let printTypeParameterDoc (typ, (co, cn)) =
-     Doc.concat [
+     Doc.concat [|
        if not cn then Doc.text "+" else if not co then Doc.text "-" else Doc.nil;
        if typ = "_" then Doc.text "_" else Doc.text ("'" ^ typ)
-     ]
+     |]
 
 
    let rec printOutSigItemDoc (outSigItem : Outcometree.out_sig_item) =
@@ -556,7 +556,7 @@ let printPolyVarIdent txt =
      | Osig_ellipsis -> Doc.dotdotdot
      | Osig_value valueDecl ->
        Doc.group (
-         Doc.concat [
+         Doc.concat [|
            printOutAttributesDoc valueDecl.oval_attributes;
            Doc.text (
              match valueDecl.oval_prims with | [] -> "let " | _ -> "external "
@@ -568,45 +568,45 @@ let printPolyVarIdent txt =
            match valueDecl.oval_prims with
            | [] -> Doc.nil
            | primitives -> Doc.indent (
-               Doc.concat [
+               Doc.concat [|
                  Doc.text " =";
                  Doc.line;
                  Doc.group (
                    Doc.join ~sep:Doc.line (List.map (fun prim -> Doc.text ("\"" ^ prim ^ "\"")) primitives)
                  )
-               ]
+               |]
              )
-         ]
+         |]
        )
    | Osig_typext (outExtensionConstructor, _outExtStatus) ->
      printOutExtensionConstructorDoc outExtensionConstructor
    | Osig_modtype (modName, Omty_signature []) ->
-     Doc.concat [
+     Doc.concat [|
        Doc.text "module type ";
        Doc.text modName;
-     ]
+     |]
    | Osig_modtype (modName, outModuleType) ->
      Doc.group (
-       Doc.concat [
+       Doc.concat [|
          Doc.text "module type ";
          Doc.text modName;
          Doc.text " = ";
          printOutModuleTypeDoc outModuleType;
-       ]
+       |]
      )
    | Osig_module (modName, Omty_alias ident, _) ->
      Doc.group (
-       Doc.concat [
+       Doc.concat [|
          Doc.text "module ";
          Doc.text modName;
          Doc.text " =";
          Doc.line;
          printOutIdentDoc ident;
-       ]
+       |]
      )
    | Osig_module (modName, outModType, outRecStatus) ->
       Doc.group (
-       Doc.concat [
+       Doc.concat [|
          Doc.text (
            match outRecStatus with
            | Orec_not -> "module "
@@ -616,18 +616,18 @@ let printPolyVarIdent txt =
          Doc.text modName;
          Doc.text " = ";
          printOutModuleTypeDoc outModType;
-       ]
+       |]
      )
    | Osig_type (outTypeDecl, outRecStatus) ->
      (* TODO: manifest ? *)
      let attrs = match outTypeDecl.otype_immediate, outTypeDecl.otype_unboxed with
      | false, false -> Doc.nil
      | true, false ->
-       Doc.concat [Doc.text "@immediate"; Doc.line]
+       Doc.concat [|Doc.text "@immediate"; Doc.line|]
      | false, true ->
-       Doc.concat [Doc.text "@unboxed"; Doc.line]
+       Doc.concat [|Doc.text "@unboxed"; Doc.line|]
      | true, true ->
-       Doc.concat [Doc.text "@immediate @unboxed"; Doc.line]
+       Doc.concat [|Doc.text "@immediate @unboxed"; Doc.line|]
      in
      let kw = Doc.text (
        match outRecStatus with
@@ -638,20 +638,20 @@ let printPolyVarIdent txt =
      let typeParams = match outTypeDecl.otype_params with
      | [] -> Doc.nil
      | _params -> Doc.group (
-         Doc.concat [
+         Doc.concat [|
            Doc.lessThan;
            Doc.indent (
-             Doc.concat [
+             Doc.concat [|
                Doc.softLine;
-               Doc.join ~sep:(Doc.concat [Doc.comma; Doc.line]) (
+               Doc.join ~sep:(Doc.concat [|Doc.comma; Doc.line|]) (
                  List.map printTypeParameterDoc outTypeDecl.otype_params
                )
-             ]
+             |]
            );
            Doc.trailingComma;
            Doc.softLine;
            Doc.greaterThan;
-         ]
+         |]
        )
      in
      let privateDoc = match outTypeDecl.otype_private with
@@ -659,63 +659,63 @@ let printPolyVarIdent txt =
      | Public -> Doc.nil
      in
      let kind = match outTypeDecl.otype_type with
-     | Otyp_open -> Doc.concat [
+     | Otyp_open -> Doc.concat [|
          Doc.text " = ";
          privateDoc;
          Doc.text "..";
-       ]
+       |]
      | Otyp_abstract -> Doc.nil
-     | Otyp_record record -> Doc.concat [
+     | Otyp_record record -> Doc.concat [|
          Doc.text " = ";
          privateDoc;
          printRecordDeclarationDoc ~inline:false record;
-       ]
-     | typ -> Doc.concat [
+       |]
+     | typ -> Doc.concat [|
          Doc.text " = ";
          printOutTypeDoc typ
-       ]
+       |]
      in
      let constraints =  match outTypeDecl.otype_cstrs with
      | [] -> Doc.nil
      | _ -> Doc.group (
-       Doc.concat [
+       Doc.concat [|
          Doc.line;
          Doc.indent (
-           Doc.concat [
+           Doc.concat [|
              Doc.hardLine;
              Doc.join ~sep:Doc.line (List.map (fun (typ1, typ2) ->
                Doc.group (
-                 Doc.concat [
+                 Doc.concat [|
                    Doc.text "constraint ";
                    printOutTypeDoc typ1;
                    Doc.text " =";
                    Doc.indent (
-                     Doc.concat [
+                     Doc.concat [|
                        Doc.line;
                        printOutTypeDoc typ2;
-                     ]
+                     |]
                    )
-                 ]
+                 |]
                )
              ) outTypeDecl.otype_cstrs)
-           ]
+           |]
          )
-       ]
+       |]
      ) in
      Doc.group (
-       Doc.concat [
+       Doc.concat [|
          attrs;
          Doc.group (
-           Doc.concat [
+           Doc.concat [|
              attrs;
              kw;
              printIdentLike ~allowUident:false outTypeDecl.otype_name;
              typeParams;
              kind
-           ]
+           |]
          );
          constraints
-       ]
+       |]
      )
 
    and printOutModuleTypeDoc (outModType : Outcometree.out_module_type) =
@@ -729,53 +729,53 @@ let printPolyVarIdent txt =
        | [_, None] -> Doc.text "()"
        | args ->
          Doc.group (
-           Doc.concat [
+           Doc.concat [|
              Doc.lparen;
              Doc.indent (
-               Doc.concat [
+               Doc.concat [|
                  Doc.softLine;
-                 Doc.join ~sep:(Doc.concat [Doc.comma; Doc.line]) (
+                 Doc.join ~sep:(Doc.concat [|Doc.comma; Doc.line|]) (
                    List.map (fun (lbl, optModType) -> Doc.group (
-                     Doc.concat [
+                     Doc.concat [|
                        Doc.text lbl;
                        match optModType with
                        | None -> Doc.nil
-                       | Some modType -> Doc.concat [
+                       | Some modType -> Doc.concat [|
                            Doc.text ": ";
                            printOutModuleTypeDoc modType;
-                         ]
-                     ]
+                         |]
+                     |]
                    )) args
                  )
-               ]
+               |]
              );
              Doc.trailingComma;
              Doc.softLine;
              Doc.rparen;
-           ]
+           |]
          )
        in
        Doc.group (
-         Doc.concat [
+         Doc.concat [|
            argsDoc;
            Doc.text " => ";
            printOutModuleTypeDoc returnModType
-         ]
+         |]
        )
      | Omty_signature [] -> Doc.nil
      | Omty_signature signature ->
        Doc.breakableGroup ~forceBreak:true (
-         Doc.concat [
+         Doc.concat [|
            Doc.lbrace;
            Doc.indent (
-             Doc.concat [
+             Doc.concat [|
                Doc.line;
                printOutSignatureDoc signature;
-             ]
+             |]
            );
            Doc.softLine;
            Doc.rbrace;
-         ]
+         |]
        )
      | Omty_alias _ident -> Doc.nil
 
@@ -822,26 +822,26 @@ let printPolyVarIdent txt =
      | [] -> Doc.nil
      | params ->
        Doc.group(
-         Doc.concat [
+         Doc.concat [|
            Doc.lessThan;
            Doc.indent (
-             Doc.concat [
+             Doc.concat [|
                Doc.softLine;
-               Doc.join ~sep:(Doc.concat [Doc.comma; Doc.line]) (List.map
+               Doc.join ~sep:(Doc.concat [|Doc.comma; Doc.line|]) (List.map
                  (fun ty -> Doc.text (if ty = "_" then ty else "'" ^ ty))
                  params
 
                )
-             ]
+             |]
            );
            Doc.softLine;
            Doc.greaterThan;
-         ]
+         |]
        )
 
      in
      Doc.group (
-       Doc.concat [
+       Doc.concat [|
          Doc.text "type ";
          printIdentLike ~allowUident:false outExt.oext_type_name;
          typeParams;
@@ -853,7 +853,7 @@ let printPolyVarIdent txt =
            Doc.nil;
          printOutConstructorDoc
            (outExt.oext_name, outExt.oext_args, outExt.oext_ret_type)
-       ]
+       |]
      )
 
    and printOutTypeExtensionDoc (typeExtension : Outcometree.out_type_extension) =
@@ -861,26 +861,26 @@ let printPolyVarIdent txt =
      | [] -> Doc.nil
      | params ->
        Doc.group(
-         Doc.concat [
+         Doc.concat [|
            Doc.lessThan;
            Doc.indent (
-             Doc.concat [
+             Doc.concat [|
                Doc.softLine;
-               Doc.join ~sep:(Doc.concat [Doc.comma; Doc.line]) (List.map
+               Doc.join ~sep:(Doc.concat [|Doc.comma; Doc.line|]) (List.map
                  (fun ty -> Doc.text (if ty = "_" then ty else "'" ^ ty))
                  params
 
                )
-             ]
+             |]
            );
            Doc.softLine;
            Doc.greaterThan;
-         ]
+         |]
        )
 
      in
      Doc.group (
-       Doc.concat [
+       Doc.concat [|
          Doc.text "type ";
          printIdentLike ~allowUident:false typeExtension.otyext_name;
          typeParams;
@@ -890,7 +890,7 @@ let printPolyVarIdent txt =
          else
            Doc.nil;
          printOutConstructorsDoc typeExtension.otyext_constructors;
-       ]
+       |]
      )
 
    let printOutSigItem fmt outSigItem =
@@ -928,39 +928,39 @@ let printPolyVarIdent txt =
      match outValue with
      | Oval_array outValues ->
        Doc.group (
-         Doc.concat [
+         Doc.concat [|
            Doc.lbracket;
            Doc.indent (
-             Doc.concat [
+             Doc.concat [|
                Doc.softLine;
-               Doc.join ~sep:(Doc.concat [Doc.comma; Doc.line]) (
+               Doc.join ~sep:(Doc.concat [|Doc.comma; Doc.line|]) (
                  List.map printOutValueDoc outValues
                )
-             ]
+             |]
            );
            Doc.trailingComma;
            Doc.softLine;
            Doc.rbracket;
-         ]
+         |]
        )
      | Oval_char c -> Doc.text ("'" ^ (Char.escaped c) ^ "'")
      | Oval_constr (outIdent, outValues) ->
        Doc.group (
-         Doc.concat [
+         Doc.concat [|
            printOutIdentDoc outIdent;
            Doc.lparen;
            Doc.indent (
-             Doc.concat [
+             Doc.concat [|
                Doc.softLine;
-               Doc.join ~sep:(Doc.concat [Doc.comma; Doc.line]) (
+               Doc.join ~sep:(Doc.concat [|Doc.comma; Doc.line|]) (
                  List.map printOutValueDoc outValues
                )
-             ]
+             |]
            );
            Doc.trailingComma;
            Doc.softLine;
            Doc.rparen;
-         ]
+         |]
        )
      | Oval_ellipsis -> Doc.text "..."
      | Oval_int i -> Doc.text (Format.sprintf "%i" i)
@@ -970,20 +970,20 @@ let printPolyVarIdent txt =
      | Oval_float f -> Doc.text (floatRepres f)
      | Oval_list outValues ->
        Doc.group (
-         Doc.concat [
+         Doc.concat [|
            Doc.text "list[";
            Doc.indent (
-             Doc.concat [
+             Doc.concat [|
                Doc.softLine;
-               Doc.join ~sep:(Doc.concat [Doc.comma; Doc.line]) (
+               Doc.join ~sep:(Doc.concat [|Doc.comma; Doc.line|]) (
                  List.map printOutValueDoc outValues
                )
-             ]
+             |]
            );
            Doc.trailingComma;
            Doc.softLine;
            Doc.rbracket;
-         ]
+         |]
        )
      | Oval_printer fn ->
        let fmt = Format.str_formatter in
@@ -992,47 +992,47 @@ let printPolyVarIdent txt =
        Doc.text str
      | Oval_record rows ->
        Doc.group (
-         Doc.concat [
+         Doc.concat [|
            Doc.lparen;
            Doc.indent (
-             Doc.concat [
+             Doc.concat [|
                Doc.softLine;
-               Doc.join ~sep:(Doc.concat [Doc.comma; Doc.line]) (
+               Doc.join ~sep:(Doc.concat [|Doc.comma; Doc.line|]) (
                  List.map (fun (outIdent, outValue) -> Doc.group (
-                     Doc.concat [
+                     Doc.concat [|
                        printOutIdentDoc outIdent;
                        Doc.text ": ";
                        printOutValueDoc outValue;
-                     ]
+                     |]
                    )
                  ) rows
                );
-             ]
+             |]
            );
            Doc.trailingComma;
            Doc.softLine;
            Doc.rparen;
-         ]
+         |]
        )
      | Oval_string (txt, _sizeToPrint, _kind) ->
        Doc.text (escapeStringContents txt)
      | Oval_stuff txt -> Doc.text txt
      | Oval_tuple outValues ->
        Doc.group (
-         Doc.concat [
+         Doc.concat [|
            Doc.lparen;
            Doc.indent (
-             Doc.concat [
+             Doc.concat [|
                Doc.softLine;
-               Doc.join ~sep:(Doc.concat [Doc.comma; Doc.line]) (
+               Doc.join ~sep:(Doc.concat [|Doc.comma; Doc.line|]) (
                  List.map printOutValueDoc outValues
                )
-             ]
+             |]
            );
            Doc.trailingComma;
            Doc.softLine;
            Doc.rparen;
-         ]
+         |]
        )
      (* Not supported by NapkinScript *)
      | Oval_variant _ -> Doc.nil
@@ -1046,11 +1046,11 @@ let printPolyVarIdent txt =
      | _ ->
        Doc.group (
          Doc.indent(
-           Doc.concat [
+           Doc.concat [|
              Doc.text "Exception:";
              Doc.line;
              printOutValueDoc outValue;
-           ]
+           |]
          )
        )
 
@@ -1087,11 +1087,11 @@ let printPolyVarIdent txt =
            printOutSigItemDoc sigItem
          | Some outValue ->
            Doc.group (
-             Doc.concat [
+             Doc.concat [|
                printOutSigItemDoc sigItem;
                Doc.text " = ";
                printOutValueDoc outValue;
-             ]
+             |]
            )
         in
         loop signature (doc::acc)
@@ -1104,17 +1104,17 @@ let printPolyVarIdent txt =
      match outPhrase with
      | Ophr_eval (outValue, outType) ->
        Doc.group (
-         Doc.concat [
+         Doc.concat [|
            Doc.text "- : ";
            printOutTypeDoc outType;
            Doc.text " =";
            Doc.indent (
-             Doc.concat [
+             Doc.concat [|
                Doc.line;
                printOutValueDoc outValue;
-             ]
+             |]
            )
-         ]
+         |]
        )
      | Ophr_signature [] -> Doc.nil
      | Ophr_signature signature -> printOutPhraseSignature signature

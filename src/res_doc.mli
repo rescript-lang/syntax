@@ -6,7 +6,7 @@ val hardLine: t
 val softLine: t
 val literalLine: t
 val text: string -> t
-val concat: t list -> t
+val concat: t array -> t
 val indent: t -> t
 val ifBreaks: t -> t -> t
 val lineSuffix: t -> t
