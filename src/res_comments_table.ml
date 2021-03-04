@@ -24,7 +24,7 @@ let empty = make ()
 let log t =
   let open Location in
   let leadingStuff = Hashtbl.fold (fun (k : Location.t) (v : Comment.t list) acc ->
-    let loc = Doc.concat [
+    let loc = Doc.concat [|
       Doc.lbracket;
       Doc.text (string_of_int k.loc_start.pos_lnum);
       Doc.text ":";
@@ -34,24 +34,24 @@ let log t =
       Doc.text ":";
       Doc.text (string_of_int (k.loc_end.pos_cnum  - k.loc_end.pos_bol));
       Doc.rbracket;
-    ] in
+    |] in
     let doc = Doc.breakableGroup ~forceBreak:true (
-      Doc.concat [
+      Doc.concat [|
         loc;
         Doc.indent (
-          Doc.concat [
+          Doc.concat [|
             Doc.line;
             Doc.join ~sep:Doc.comma (List.map (fun c -> Doc.text (Comment.txt c)) v)
-          ]
+          |]
         );
         Doc.line;
-      ]
+      |]
     ) in
     doc::acc
   ) t.leading []
   in
   let trailingStuff = Hashtbl.fold (fun (k : Location.t) (v : Comment.t list) acc ->
-    let loc = Doc.concat [
+    let loc = Doc.concat [|
       Doc.lbracket;
       Doc.text (string_of_int k.loc_start.pos_lnum);
       Doc.text ":";
@@ -61,34 +61,34 @@ let log t =
       Doc.text ":";
       Doc.text (string_of_int (k.loc_end.pos_cnum  - k.loc_end.pos_bol));
       Doc.rbracket;
-    ] in
+    |] in
     let doc = Doc.breakableGroup ~forceBreak:true (
-      Doc.concat [
+      Doc.concat [|
         loc;
         Doc.indent (
-          Doc.concat [
+          Doc.concat [|
             Doc.line;
-            Doc.join ~sep:(Doc.concat [Doc.comma; Doc.line]) (List.map (fun c -> Doc.text (Comment.txt c)) v)
-          ]
+            Doc.join ~sep:(Doc.concat [|Doc.comma; Doc.line|]) (List.map (fun c -> Doc.text (Comment.txt c)) v)
+          |]
         );
         Doc.line;
-      ]
+      |]
     ) in
     doc::acc
   ) t.trailing []
   in
   Doc.breakableGroup ~forceBreak:true (
-    Doc.concat [
+    Doc.concat [|
       Doc.text "leading comments:";
       Doc.line;
-      Doc.indent (Doc.concat leadingStuff);
+      Doc.indent (Doc.concat (Array.of_list leadingStuff));
       Doc.line;
       Doc.line;
       Doc.text "trailing comments:";
-      Doc.indent (Doc.concat trailingStuff);
+      Doc.indent (Doc.concat (Array.of_list trailingStuff));
       Doc.line;
       Doc.line;
-    ]
+    |]
   ) |> Doc.toString ~width:80 |> print_endline
   [@@live]
 
