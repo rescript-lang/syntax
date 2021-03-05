@@ -122,19 +122,23 @@ let printMultilineCommentContent txt =
    * What makes a comment suitable for this kind of indentation?
    *  ->  multiple lines + every line starts with a star
    *)
-  let rec indentStars lines acc =
+  let rec indentStars lines acc i =
     match lines with
     | [] -> Doc.nil
     | [lastLine] ->
       let line = String.trim lastLine in
       let doc = Doc.text (" " ^ line) in
       let trailingSpace = if line = "" then Doc.nil else Doc.space in
-      List.rev (trailingSpace::doc::acc) |> Array.of_list |> Doc.concat
+      Array.unsafe_set acc i doc;
+      Array.unsafe_set acc (i + 1) trailingSpace;
+      Doc.concat acc;
     | line::lines ->
       let line = String.trim line in
       if line != "" && String.unsafe_get line 0 == '*' then
         let doc = Doc.text (" " ^ line) in
-        indentStars lines (Doc.hardLine::doc::acc)
+        Array.unsafe_set acc i doc;
+        Array.unsafe_set acc (i + 1) Doc.hardLine;
+        indentStars lines acc (i + 2)
       else
         let trailingSpace =
           let len = String.length txt in
@@ -155,12 +159,15 @@ let printMultilineCommentContent txt =
     |]
   | first::rest ->
     let firstLine = Comment.trimSpaces first in
+    let acc = (Array.make [@doesNotRaise]) (List.length rest * 2 + 2) Doc.nil in
+    Array.unsafe_set acc 0 (Doc.text firstLine);
+    Array.unsafe_set acc 1 Doc.hardLine;
     Doc.concat [|
       Doc.text "/*";
       (match firstLine with
       | "" | "*" -> Doc.nil
       | _ -> Doc.space);
-      indentStars rest [Doc.hardLine; Doc.text firstLine];
+      indentStars rest acc 2;
       Doc.text "*/";
     |]
 
