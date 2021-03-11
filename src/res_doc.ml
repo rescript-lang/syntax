@@ -130,7 +130,59 @@ let join ~sep docs =
   in
   concat(loop [] sep docs)
 
-let fits w stack =
+type slot = {mutable ind:int; mutable mode:mode; mutable doc:t}
+
+module St = struct
+
+  type t = {mutable pool: slot array; mutable maxSize:int; mutable first:int}
+  let maxSize = 500
+  let dummySlot = {ind=1; mode=Break; doc=Nil}
+
+  let createWithSize size = {maxSize=size; pool = Array.make size dummySlot; first=size}
+
+  let extend st =
+    let oldSize = st.maxSize in
+    let newSize = oldSize * 2 in
+    let oldPool = st.pool in
+    let newPool = Array.make newSize dummySlot in
+    for i = 0 to oldSize-1 do
+      newPool.(oldSize+i) <- oldPool.(i)
+    done;
+    st.first <- st.first + oldSize;
+    st.maxSize <- newSize;
+    st.pool <- newPool
+
+  let _ = extend
+  let create () = createWithSize maxSize
+
+  let isEmpty s = s.first = s.maxSize
+
+  let getHeadUnsafe s =
+    assert (s.first < s.maxSize);
+    let slot = s.pool.(s.first) in
+    s.first <- s.first + 1;
+    slot
+
+  let add ind mode doc s =
+    if (s.first <= 0) then extend s;
+    s.first <- s.first -1;
+    let slot = s.pool.(s.first) in
+    if slot == dummySlot
+    then (
+      let newSlot = {ind; mode; doc} in
+      s.pool.(s.first) <- newSlot
+    )
+    else (
+    slot.ind <- ind;
+    slot.mode <- mode;
+    slot.doc <- doc
+    )
+  let getLength s = s.maxSize - s.first
+
+  let getNthUnsafe n s = s.pool.(n+s.first)
+end
+
+let fits w ind mode doc stack =
   let width = ref w in
   let result = ref None in
 
@@ -167,57 +219,81 @@ let fits w stack =
         calculateConcat indent mode rest
     )
   in
-  let rec calculateAll stack =
-    match result.contents, stack with
-    | Some r, _ -> r
-    | None, [] -> !width >= 0
-    | None, (indent, mode, doc)::rest ->
-      calculate indent mode doc;
-      calculateAll rest
+  let len = St.getLength(stack) in
+  let rec calculateAll n =
+    match result.contents with
+    | Some r -> r
+    | None when n = len -> !width >= 0
+    | None ->
+      let {ind; mode; doc} = St.getNthUnsafe n stack in
+      calculate ind mode doc;
+      calculateAll (n+1)
   in
-  calculateAll stack
+  calculate ind mode doc;
+  calculateAll 0
 
 let toString ~width doc =
   propagateForcedBreaks doc;
   let buffer = MiniBuffer.create 1000 in
 
+  let rec addSuffices lineSuffices stack = match lineSuffices with
+    | [] -> ()
+    | (ind, mode, doc)::rest ->
+      St.add ind mode doc stack;
+      addSuffices rest stack
+  in
+
+  let rec addDocs ind mode docs stack = match docs with
+    | [] -> ()
+    | doc::rest ->
+      addDocs ind mode rest stack;
+      St.add ind mode doc stack
+  in
+
   let rec process ~pos lineSuffices stack =
-    match stack with
-    | ((ind, mode, doc) as cmd)::rest ->
+    match St.isEmpty stack with
+    | false ->
+      let {ind; mode; doc} = St.getHeadUnsafe stack in
       begin match doc with
       | Nil | BreakParent ->
-        process ~pos lineSuffices rest
+        process ~pos lineSuffices stack
       | Text txt ->
         MiniBuffer.add_string buffer txt;
-        process ~pos:(String.length txt + pos) lineSuffices rest
+        process ~pos:(String.length txt + pos) lineSuffices stack
       | LineSuffix doc ->
-        process ~pos ((ind, mode, doc)::lineSuffices) rest
+        process ~pos ((ind, mode, doc)::lineSuffices) stack
       | Concat docs ->
-        let ops = List.map (fun doc -> (ind, mode, doc)) docs in
-        process ~pos lineSuffices (List.append ops rest)
+        addDocs ind mode docs stack;
+        process ~pos lineSuffices stack
       | Indent doc ->
-        process ~pos lineSuffices ((ind + 2, mode, doc)::rest)
+        St.add (ind + 2) mode doc stack;
+        process ~pos lineSuffices stack
       | IfBreaks {yes = breakDoc; broken = true} ->
-        process ~pos lineSuffices ((ind, mode, breakDoc)::rest)
+        St.add ind mode breakDoc stack;
+        process ~pos lineSuffices stack
       | IfBreaks {yes = breakDoc; no = flatDoc} ->
         if mode = Break then
-          process ~pos lineSuffices ((ind, mode, breakDoc)::rest)
+          let () = St.add ind mode breakDoc stack in
+          process ~pos lineSuffices stack
         else
-          process ~pos lineSuffices ((ind, mode, flatDoc)::rest)
+          let () = St.add ind mode flatDoc stack in
+          process ~pos lineSuffices stack
       | LineBreak lineStyle  ->
         if mode = Break then (
           begin match lineSuffices with
           | [] ->
             if lineStyle = Literal then (
               MiniBuffer.add_char buffer '\n';
-              process ~pos:0 [] rest
+              process ~pos:0 [] stack
             ) else (
               MiniBuffer.flush_newline buffer;
               MiniBuffer.add_string buffer (String.make ind ' ' [@doesNotRaise]);
-              process ~pos:ind [] rest
+              process ~pos:ind [] stack
             )
           | _docs ->
-            process ~pos:ind [] (List.concat [List.rev lineSuffices; cmd::rest])
+            St.add ind mode doc stack;
+            addSuffices lineSuffices stack;
+            process ~pos:ind [] stack
           end
         ) else (* mode = Flat *) (
           let pos = match lineStyle with
@@ -226,34 +302,42 @@ let toString ~width doc =
           | Literal -> MiniBuffer.add_char buffer '\n'; 0
           | Soft -> pos
           in
-          process ~pos lineSuffices rest
+          process ~pos lineSuffices stack
         )
       | Group {shouldBreak; doc} ->
-        if shouldBreak || not (fits (width - pos) ((ind, Flat, doc)::rest)) then
-          process ~pos lineSuffices ((ind, Break, doc)::rest)
+        if shouldBreak || not (fits (width - pos) ind Flat doc stack) then
+          let () = St.add ind Break doc stack in
+          process ~pos lineSuffices stack
         else
-          process ~pos lineSuffices ((ind, Flat, doc)::rest)
+          let () = St.add ind Flat doc stack in
+          process ~pos lineSuffices stack
       | CustomLayout docs ->
         let rec findGroupThatFits groups = match groups with
         | [] -> Nil
         | [lastGroup] -> lastGroup
         | doc::docs ->
-          if (fits (width - pos) ((ind, Flat, doc)::rest)) then
+          if (fits (width - pos) ind Flat doc stack) then
             doc
           else
             findGroupThatFits docs
         in
         let doc = findGroupThatFits docs in
-        process ~pos lineSuffices ((ind, Flat, doc)::rest)
+        St.add ind Flat doc stack;
+        process ~pos lineSuffices stack
       end
-    | [] ->
+    | true ->
       begin match lineSuffices with
       | [] -> ()
       | suffices ->
-        process ~pos:0 [] (List.rev suffices)
+        addSuffices suffices stack;
+        process ~pos:0 [] stack;
       end
   in
-  process ~pos:0 [] [(0, Flat, doc)];
+  let stack = St.create() in
+  St.add 0 Flat doc stack;
+  process ~pos:0 [] stack;
+
+
   MiniBuffer.contents buffer
 
 
