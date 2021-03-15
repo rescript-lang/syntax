@@ -38,3 +38,8 @@ type polyTaggedUser2 = [
   | #User({...user, "age": int}) 
   | #Ceo({...user, "age": int, "direction": bool}, {...salary, "taxFraud": bool}) 
 ]
+
+// notice .. and ..., they should have a space
+type u<'a> = {.. ...hi} as 'a
+type u<'a> = {.. ...hi, "superLongFieldName": string, "superLongFieldName22222222222": int} as 'a
+type u<'a> = {.. ...hi, "superLongFieldName": string, ...hi, "superLongFieldName22222222222": int, ...hi} as 'a
