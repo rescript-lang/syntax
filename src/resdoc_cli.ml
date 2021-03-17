@@ -136,7 +136,6 @@ end
 
 (* all documentation data for a module interface *)
 module DocItem = struct
-  type doc_constructor = { name: string; docstring: string }
   type t =
     | Doc_value of {
         signature: string;
@@ -144,7 +143,8 @@ module DocItem = struct
         docstring: string;
       }
     | Doc_variant of {
-        constructors: doc_constructor list;
+        signature: string;
+        constructorDocs: (string * string) list; (* (constructorName, docstring) *)
         docstring: string;
       }
       (* abstract, record *)
@@ -153,11 +153,22 @@ module DocItem = struct
         name: string;
         docstring: string;
       }
+    | Doc_record of {
+        signature: string;
+        name: string;
+        labelDocs: (string * string) list; (* (labelName, docstring) *) 
+        docstring: string;
+      }
     | Doc_text of string
     | Doc_module of {
         name: string;
         docstring: string;
         items: t list;
+      }
+    | Doc_module_alias of {
+        name: string;
+        signature: string;
+        docstring: string;
       }
 
   let rec toJson t =
@@ -175,10 +186,25 @@ module DocItem = struct
         ("name", String name);
         ("docstring", String docstring)
       ]
-    | Doc_variant { constructors; docstring } ->
+    | Doc_variant { signature; constructorDocs; docstring } ->
+      let constructorDocsJson = Array (List.map (fun (name, docs) ->
+          Array ( [String name; String docs])) constructorDocs)
+      in
       Object [
         ("kind", String "Doc_variant");
-        ("constructors", Array (List.map (fun item -> String item.docstring) constructors));
+        ("signature", String signature);
+        ("constructorDocs", constructorDocsJson);
+        ("docstring", String docstring)
+      ]
+    | Doc_record { signature; name; labelDocs; docstring } ->
+      let labelDocsJson = Array (List.map (fun (labelName, labelDocs) ->
+          Array ( [String labelName; String labelDocs])) labelDocs)
+      in
+      Object [
+        ("kind", String "Doc_variant");
+        ("signature", String signature);
+        ("name", String name);
+        ("labelDocs", labelDocsJson);
         ("docstring", String docstring)
       ]
     | Doc_text docstring ->
@@ -193,6 +219,14 @@ module DocItem = struct
         ("name", String name);
         ("items", Array (List.map (fun item -> toJson item) items))
       ]
+    | Doc_module_alias {name; signature; docstring} ->
+      Object [
+        ("kind", String "Doc_module_alias");
+        ("name", String name);
+        ("docstring", String docstring);
+        ("signature", String signature);
+      ]
+
 end
 
 (* Used for the ReScript printer facilities *)
@@ -212,43 +246,50 @@ let drop_doc_attributes (sigItem: Parsetree.signature_item) : Parsetree.signatur
     let filteredAttrs = List.filter filterDocAttrs pval_attributes in
     let desc = Psig_value ({ desc with pval_attributes = filteredAttrs }) in
     { sigItem with psig_desc = desc }
-  | Psig_type (loc, tdecls) ->
+  | Psig_type (recFlag, tdecls) ->
     let newDecls = tdecls |> List.map (fun declr ->
-        let filteredAttrs = List.filter filterDocAttrs declr.ptype_attributes in
-        { declr with ptype_attributes = filteredAttrs }
+        let newDeclr = match declr.ptype_kind with
+          | Ptype_variant cstrDecls ->
+            let newCstrDecls =
+              cstrDecls
+              |> List.map (fun cdeclr ->
+                  let filteredAttrs = List.filter filterDocAttrs cdeclr.pcd_attributes in
+                  { cdeclr with pcd_attributes = filteredAttrs }
+                )
+            in 
+            { declr with ptype_kind = Ptype_variant newCstrDecls }
+          | Ptype_record labelDecls ->
+            let newLabelDecls =
+              labelDecls
+              |> List.map (fun ldecl ->
+                  let filteredAttrs = List.filter filterDocAttrs ldecl.pld_attributes in
+                  { ldecl with pld_attributes = filteredAttrs }
+                )
+            in
+            { declr with ptype_kind = Ptype_record newLabelDecls }
+          | _ ->
+            declr
+        in
+        let filteredAttrs = List.filter filterDocAttrs newDeclr.ptype_attributes in
+        { newDeclr with ptype_attributes = filteredAttrs }
       )
     in
-    let desc = Psig_type (loc, newDecls) in
+    let desc = Psig_type (recFlag, newDecls) in
     { sigItem with psig_desc = desc }
-
   | Psig_module desc ->
     let filteredAttrs = List.filter filterDocAttrs desc.pmd_attributes in
     let newDesc = { desc with pmd_attributes = filteredAttrs } in
     { sigItem with psig_desc = Psig_module newDesc }
   | _ -> sigItem
 
-
-let getOCamlDocString (loc: Parsetree.attribute) =
-  let (id, payload) = loc in
-  match id.txt, payload with 
-  | "ocaml.doc", PStr [{pstr_desc = Pstr_eval ({pexp_desc = Pexp_constant (Pconst_string(a,_));_},_); _}]
-    -> 
-    let docstring = sprintf "@[<v>@ @[%s@]@]@." a in
-    Some docstring
-  | _ -> None
-
-(* returns (signatureString, docstring) *)
-let extractSignatureAndDocstring signatureItem (attrs: Parsetree.attributes) =
+let extractDocstring (attrs: Parsetree.attributes) =
   let open Parsetree in
   let rec findFirstItem (attrs: Parsetree.attributes) =
     match attrs with
     | [] -> None
     | ({Location.txt = "ocaml.doc"}, PStr [{pstr_desc = Pstr_eval ({pexp_desc = Pexp_constant (Pconst_string(a,_));_},_); _}]):: _ ->
-      let signature =
-        Res_printer.printSignatureItem (drop_doc_attributes signatureItem) cmtTable |> Res_doc.toString ~width:80
-      in
       let docstring = sprintf "@[<v>@ @[%s@]@]@." a in
-      Some (signature, docstring)
+      Some docstring
     | _::attrs -> findFirstItem attrs
   in
   findFirstItem attrs
@@ -257,7 +298,6 @@ module Signature = struct
   let fromSignatureItem item =
     Res_printer.printSignatureItem (drop_doc_attributes item) cmtTable |> Res_doc.toString ~width:80
 end
-
 
 let rec extractDocItem (signatureItem: Parsetree.signature_item) : DocItem.t option =
   match signatureItem.psig_desc with
@@ -268,45 +308,56 @@ let rec extractDocItem (signatureItem: Parsetree.signature_item) : DocItem.t opt
       | _ -> None
     end
   | Psig_value {pval_attributes; pval_name; _} ->
-    (match extractSignatureAndDocstring signatureItem pval_attributes with
-     | Some (signature, docstring) ->
-       Some (DocItem.Doc_value({
-           signature;
-           name=pval_name.txt;
-           docstring
-         }))
-     | None -> None)
+    let docstring = match extractDocstring pval_attributes with
+      | Some docstring -> docstring
+      | None -> ""
+    in
+    let signature = Signature.fromSignatureItem signatureItem in
+    Some (DocItem.Doc_value({
+        signature;
+        name=pval_name.txt;
+        docstring
+      }))
   | Psig_type (_, tdecls) ->
     (* Retrieve all the doc comments attached to variant constructors *)
     let (items: DocItem.t list) = 
       List.fold_right (fun (decl: Parsetree.type_declaration) acc -> 
           match decl.ptype_kind with
           | Ptype_variant cdecls ->
-            (match extractSignatureAndDocstring signatureItem decl.ptype_attributes with
-             | Some (_signature, docstring) ->
-               begin
-                 let constructors = List.fold_right (fun { Parsetree.pcd_attributes; pcd_name } acc -> 
-                     let constructors = Util.filter_map (fun ((id, payload) : Parsetree.attribute) ->
-                         match id.txt, payload with 
-                         | "ocaml.doc", PStr [{pstr_desc = Pstr_eval ({pexp_desc = Pexp_constant (Pconst_string(a,_));_},_); _}] -> 
-                           let docstring=sprintf "@[<v>@ @[%s@]@]@." a in
-                           Some { DocItem.name=pcd_name.txt; docstring }
-                         | _ -> None
-                       ) pcd_attributes
-                     in
-                     acc @ constructors
-                   ) cdecls [] 
-                 in
-                 acc @ [DocItem.Doc_variant {constructors=constructors; docstring=docstring}]
-               end
-             | None -> acc)
+            let signature = Signature.fromSignatureItem signatureItem in
+            let docstring = match extractDocstring decl.ptype_attributes with
+              | Some docstring -> docstring
+              | None -> ""
+            in
+            let constructorDocs = Util.filter_map (fun { Parsetree.pcd_attributes; pcd_name } ->
+                (match extractDocstring pcd_attributes with
+                  | Some docstring ->
+                    Some (pcd_name.txt, docstring)
+                  | None -> None)
+              ) cdecls
+            in
+            acc @ [DocItem.Doc_variant {signature; constructorDocs; docstring}]
+          | Ptype_record labelDecls ->
+            let signature = Signature.fromSignatureItem signatureItem in
+            let docstring = match extractDocstring decl.ptype_attributes with
+              | Some docstring -> docstring
+              | None -> ""
+            in
+            let labelDocs = Util.filter_map (fun { Parsetree.pld_attributes; pld_name } ->
+                (match extractDocstring pld_attributes with
+                  | Some docstring ->
+                    Some (pld_name.txt, docstring)
+                  | None -> None)
+              ) labelDecls
+            in
+            acc @ [DocItem.Doc_record {name=decl.ptype_name.txt; signature=signature; labelDocs; docstring}]
           | Ptype_abstract ->
-            let docstrings = Util.filter_map getOCamlDocString decl.ptype_attributes in
-            (match docstrings with
-             | [docstring] ->
-               let signature = Signature.fromSignatureItem signatureItem in
-               acc @ [Doc_type {signature= signature; name=decl.ptype_name.txt; docstring=docstring}]
-             | _ -> acc)
+            let docstring = match extractDocstring decl.ptype_attributes with
+              | Some str -> str
+              | None -> ""
+            in
+            let signature = Signature.fromSignatureItem signatureItem in
+            acc @ [Doc_type {signature= signature; name=decl.ptype_name.txt; docstring=docstring}]
           | _ -> acc
         ) tdecls []
     in
@@ -318,10 +369,20 @@ let rec extractDocItem (signatureItem: Parsetree.signature_item) : DocItem.t opt
      | Pmty_signature signature ->
        let items = Util.filter_map extractDocItem signature in
        let docstring =
-         match extractSignatureAndDocstring signatureItem pmd_attributes with
-         | Some (_signature, docstring) -> docstring
-         | None -> "" in
+         match extractDocstring pmd_attributes with
+         | Some str -> str
+         | None -> ""
+       in
        Some (DocItem.Doc_module {name=pmd_name.txt; items; docstring; })
+     | Pmty_alias {txt = Ldot _} ->
+       (*print_endline str;*)
+       let signature = Signature.fromSignatureItem signatureItem in 
+       let docstring =
+         match extractDocstring pmd_attributes with
+         | Some docstring -> docstring
+         | None -> ""
+       in
+       Some (DocItem.Doc_module_alias {name=pmd_name.txt; docstring; signature})
      | _ -> None
     )
   | _ -> None
