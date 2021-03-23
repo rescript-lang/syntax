@@ -308,7 +308,7 @@ global.idemPotency = (dirname) => {
         let sexpAst = parseFileToSexp(filename);
 
         let rescriptOutput = filename + '.res';
-        fs.writeFileSync(rescriptOutput, parseFunction(filename));
+        fs.writeFileSync(rescriptOutput, rescript);
 
         let rescriptSexpAst = parseReScriptToSexp(rescriptOutput, intf);
         let rescript2 = parseReScriptToReScript(rescriptOutput, intf);
