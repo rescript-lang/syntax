@@ -6,3 +6,6 @@ let {...x, ...y} = myRecord
 
 let myList = list{...x, ...y}
 let list{...x, ...y} = myList
+
+type t = {...a}
+type t = Foo({...a})

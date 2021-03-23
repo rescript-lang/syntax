@@ -121,6 +121,9 @@ Solution: directly use `concat`."
 
   let forbiddenInlineRecordDeclaration =
     "An inline record type declaration is only allowed in a variant constructor's declaration"
+
+  let ambiguousRecordSpread =
+    "The … spread is only supported for record value update and object type declaration."
 end
 
 
@@ -4280,7 +4283,13 @@ and parseConstrDeclArgs p =
         (* start of object type spreading, e.g. `User({...a, "u": int})` *)
         Parser.next p;
         let typ = parseTypExpr p in
-        Parser.expect Comma p;
+        let () = match p.token with
+        | Rbrace ->
+          Parser.err ~startPos:dotdotdotStart ~endPos:dotdotdotEnd p
+            (Diagnostics.message ErrorMessages.ambiguousRecordSpread);
+          Parser.next p;
+        | _ -> Parser.expect Comma p
+        in
         let () = match p.token with
         | Lident _ ->
           Parser.err ~startPos:dotdotdotStart ~endPos:dotdotdotEnd p
@@ -4694,7 +4703,13 @@ and parseRecordOrObjectDecl p =
     (* start of object type spreading, e.g. `type u = {...a, "u": int}` *)
     Parser.next p;
     let typ = parseTypExpr p in
-    Parser.expect Comma p;
+    let () = match p.token with
+    | Rbrace ->
+      Parser.err ~startPos:dotdotdotStart ~endPos:dotdotdotEnd p
+        (Diagnostics.message ErrorMessages.ambiguousRecordSpread);
+      Parser.next p;
+    | _ -> Parser.expect Comma p
+    in
     let () = match p.token with
     | Lident _ ->
       Parser.err ~startPos:dotdotdotStart ~endPos:dotdotdotEnd p
