@@ -9,3 +9,4 @@ let list{...x, ...y} = myList
 
 type t = {...a}
 type t = Foo({...a})
+type t = option<foo, {...x}>

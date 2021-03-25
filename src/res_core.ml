@@ -122,8 +122,8 @@ Solution: directly use `concat`."
   let forbiddenInlineRecordDeclaration =
     "An inline record type declaration is only allowed in a variant constructor's declaration"
 
-  let ambiguousRecordSpread =
-    "The … spread is only supported for record value update and object type declaration."
+  let sameTypeSpread =
+    "You're using a ... spread without extra fields. This is the same type."
 end
 
 
@@ -3851,12 +3851,20 @@ and parseRecordOrObjectType ~attrs p =
     Parser.err p (Diagnostics.message ErrorMessages.forbiddenInlineRecordDeclaration)
   | _ -> ()
   in
+  let startFirstField = p.startPos in
   let fields =
     parseCommaDelimitedRegion
       ~grammar:Grammar.StringFieldDeclarations
       ~closing:Rbrace
       ~f:parseStringFieldDeclaration
       p
+  in
+  let () = match fields with
+  | [Parsetree.Oinherit {ptyp_loc}] ->
+    (* {...x}, spread without extra fields *)
+    Parser.err p ~startPos:startFirstField ~endPos:ptyp_loc.loc_end
+      (Diagnostics.message ErrorMessages.sameTypeSpread)
+  | _ -> ()
   in
   Parser.expect Rbrace p;
   let loc = mkLoc startPos p.prevEndPos in
@@ -4285,8 +4293,9 @@ and parseConstrDeclArgs p =
         let typ = parseTypExpr p in
         let () = match p.token with
         | Rbrace ->
+          (* {...x}, spread without extra fields *)
           Parser.err ~startPos:dotdotdotStart ~endPos:dotdotdotEnd p
-            (Diagnostics.message ErrorMessages.ambiguousRecordSpread);
+            (Diagnostics.message ErrorMessages.sameTypeSpread);
           Parser.next p;
         | _ -> Parser.expect Comma p
         in
@@ -4705,8 +4714,9 @@ and parseRecordOrObjectDecl p =
     let typ = parseTypExpr p in
     let () = match p.token with
     | Rbrace ->
+      (* {...x}, spread without extra fields *)
       Parser.err ~startPos:dotdotdotStart ~endPos:dotdotdotEnd p
-        (Diagnostics.message ErrorMessages.ambiguousRecordSpread);
+        (Diagnostics.message ErrorMessages.sameTypeSpread);
       Parser.next p;
     | _ -> Parser.expect Comma p
     in
