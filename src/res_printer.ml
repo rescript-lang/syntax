@@ -2747,7 +2747,7 @@ and printExpression (e : Parsetree.expression) cmtTbl =
           Doc.concat [
             Doc.softLine;
             spread;
-            Doc.join ~sep:(Doc.concat [Doc.text ","; Doc.line])
+            Doc.join ~sep:(Doc.concat [Doc.text ",  "; Doc.line])
               (List.map (fun row -> printRecordRow row cmtTbl) rows)
           ]
         );
