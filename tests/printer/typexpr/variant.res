@@ -96,3 +96,8 @@ type currencyPoly = [#UUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUSD | #CAAA
 
 type t = [s]
 type t = [ListStyleType.t];
+
+type permissions = [
+  | #777
+  | #644
+]
