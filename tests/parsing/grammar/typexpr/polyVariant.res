@@ -15,3 +15,9 @@ module type Conjunctive = {
 
 type t = [s]
 type t = [ListStyleType.t];
+
+type number = [
+  | #1
+  | #42
+  | #4244
+]

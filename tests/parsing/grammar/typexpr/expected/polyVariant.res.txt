@@ -11,3 +11,4 @@ module type Conjunctive  =
   end
 type nonrec t = [ s]
 type nonrec t = [ ListStyleType.t]
+type nonrec number = [ `1  | `42  | `4244 ]

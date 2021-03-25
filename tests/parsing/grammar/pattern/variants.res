@@ -82,3 +82,9 @@ switch x {
     | #...typeVar => ()
     | #lowercase => ()
     }
+
+switch numericPolyVar {
+| #1 => ()
+| #42 => ()
+| #42444 => ()
+}
