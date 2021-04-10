@@ -21,3 +21,8 @@ type number = [
   | #42
   | #4244
 ]
+
+type complexNumbericPolyVar = [
+  | #1(string)
+  | #2(int, string)
+]
