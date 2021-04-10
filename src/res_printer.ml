@@ -432,8 +432,7 @@ let rec unsafe_for_all_range s ~start ~finish p =
 
 let for_all_from s start  p =
   let len = String.length s in
-  if start < 0  then invalid_arg "Ext_string.for_all_from"
-  else unsafe_for_all_range s ~start ~finish:(len - 1) p
+  unsafe_for_all_range s ~start ~finish:(len - 1) p
 
 (* See https://github.com/rescript-lang/rescript-compiler/blob/726cfa534314b586e5b5734471bc2023ad99ebd9/jscomp/ext/ext_string.ml#L510 *)
 let isValidNumericPolyvarNumber (x : string) =
