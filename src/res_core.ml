@@ -197,7 +197,12 @@ let isEs6ArrowExpression ~inTernary p =
       | Rparen ->
         Parser.next state;
         begin match state.Parser.token with
-        | Colon when not inTernary -> true
+        | Colon when not inTernary ->
+          Parser.next state;
+          begin match state.Parser.token with
+          | Lident "unit" -> false
+          | _ -> true
+          end
         | EqualGreater -> true
         | _ -> false
         end
