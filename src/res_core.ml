@@ -200,7 +200,13 @@ let isEs6ArrowExpression ~inTernary p =
         | Colon when not inTernary ->
           Parser.next state;
           begin match state.Parser.token with
-          | Lident "unit" -> false
+          | Lident _ ->
+            Parser.next state;
+            begin match state.Parser.token with
+            | EqualGreater -> 
+              true
+            | _ -> false
+            end
           | _ -> true
           end
         | EqualGreater -> true
