@@ -158,14 +158,15 @@ let getClosingToken = function
   | Lbrace -> Rbrace
   | Lbracket -> Rbracket
   | List -> Rbrace
+  | LessThan -> GreaterThan
   | _ -> assert false
 
 let rec goToClosing closingToken state =
   match (state.Parser.token, closingToken) with
-  | (Rparen, Token.Rparen) | (Rbrace, Rbrace) | (Rbracket, Rbracket) ->
+  | (Rparen, Token.Rparen) | (Rbrace, Rbrace) | (Rbracket, Rbracket) | (GreaterThan, GreaterThan) ->
     Parser.next state;
     ()
-  | (Token.Lbracket | Lparen | Lbrace | List) as t, _ ->
+  | (Token.Lbracket | Lparen | Lbrace | List | LessThan) as t, _ ->
     Parser.next state;
     goToClosing (getClosingToken t) state;
     goToClosing closingToken state
@@ -203,8 +204,17 @@ let isEs6ArrowExpression ~inTernary p =
           | Lident _ ->
             Parser.next state;
             begin match state.Parser.token with
-            | EqualGreater -> 
+            | LessThan ->
+              Parser.next state;
+              goToClosing GreaterThan state;
+            | _ -> ()
+            end;
+            begin match state.Parser.token with
+            | EqualGreater ->
               true
+            | Lident a ->
+            print_endline a;
+            false
             | _ -> false
             end
           | _ -> true
