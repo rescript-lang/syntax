@@ -212,9 +212,6 @@ let isEs6ArrowExpression ~inTernary p =
             begin match state.Parser.token with
             | EqualGreater ->
               true
-            | Lident a ->
-            print_endline a;
-            false
             | _ -> false
             end
           | _ -> true
