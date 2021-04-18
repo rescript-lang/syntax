@@ -195,21 +195,26 @@ let isEs6ArrowExpression ~inTernary p =
       let prevEndPos = state.prevEndPos in
       Parser.next state;
       begin match state.token with
+      (* arrived at `()` here *)
       | Rparen ->
         Parser.next state;
         begin match state.Parser.token with
+        (* arrived at `() :` here *)
         | Colon when not inTernary ->
           Parser.next state;
           begin match state.Parser.token with
+          (* arrived at `() :typ` here *)
           | Lident _ ->
             Parser.next state;
             begin match state.Parser.token with
+            (* arrived at `() :typ<` here *)
             | LessThan ->
               Parser.next state;
               goToClosing GreaterThan state;
             | _ -> ()
             end;
             begin match state.Parser.token with
+            (* arrived at `() :typ =>` or `() :typ<'a,'b> =>` here *)
             | EqualGreater ->
               true
             | _ -> false
