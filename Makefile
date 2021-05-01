@@ -79,7 +79,7 @@ roundtrip-test: reanalyze bootstrap lib/test.exe
 	ROUNDTRIP_TEST=1 ./test.sh
 
 reanalyze: build-native lib/test.exe
-	./node_modules/.bin/reanalyze -all-cmt . -suppress tests -suppress benchmarks
+	./node_modules/.bin/reanalyze -all-cmt . -suppress tests
 
 clean:
 	git clean -dfx src benchmarks lib tests
