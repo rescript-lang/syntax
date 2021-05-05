@@ -143,6 +143,9 @@ type stringLiteralState =
   | HexEscape
   | DecimalEscape
   | OctalEscape
+  | UnicodeEscape
+  | UnicodeCodePointEscape
+  | UnicodeEscapeStart
   | EscapedLineBreak
 
 type typDefOrExt =
@@ -482,15 +485,12 @@ let processUnderscoreApplication args =
   in
   (args, wrap)
 
-let hexValue x =
-  match x with
-  | '0' .. '9' ->
-    (Char.code x) - 48
-  | 'A' .. 'Z' ->
-    (Char.code x) - 55
-  | 'a' .. 'z' ->
-    (Char.code x) - 97
-  | _ -> 16
+let hexValue ch =
+  match ch with
+  | '0'..'9' -> (Char.code ch) - 48
+  | 'a'..'f' -> (Char.code ch) - (Char.code 'a') + 10
+  | 'A'..'F' -> (Char.code ch) + 32 - (Char.code 'a') + 10
+  | _ -> 16 (* larger than any legal value *)
 
 let parseStringLiteral s =
   let len = String.length s in
@@ -499,7 +499,7 @@ let parseStringLiteral s =
   let rec parse state i d =
     if i = len then
       (match state with
-      | HexEscape | DecimalEscape | OctalEscape -> false
+      | HexEscape | DecimalEscape | OctalEscape | UnicodeEscape | UnicodeCodePointEscape -> false
       | _ -> true)
     else
       let c = String.unsafe_get s i in
@@ -517,6 +517,7 @@ let parseStringLiteral s =
         | ('\\' | ' ' | '\'' | '"') as c -> Buffer.add_char b c; parse Start (i + 1) d
         | 'x' -> parse HexEscape (i + 1) 0
         | 'o' -> parse OctalEscape (i + 1) 0
+        | 'u' -> parse UnicodeEscapeStart (i + 1) 0
         | '0' .. '9' -> parse DecimalEscape i 0
         | '\010' | '\013' -> parse EscapedLineBreak (i + 1) d
         | c -> Buffer.add_char b '\\'; Buffer.add_char b c; parse Start (i + 1) d)
@@ -558,6 +559,45 @@ let parseStringLiteral s =
           )
         else
           parse OctalEscape (i + 1) (d + 1)
+      | UnicodeEscapeStart ->
+        (match c with
+        | '{' -> parse UnicodeCodePointEscape (i + 1) 0
+        | _ -> parse UnicodeEscape (i + 1) 1)
+      | UnicodeEscape ->
+        if d == 3 then
+          let c0 = String.unsafe_get s (i - 3) in
+          let c1 = String.unsafe_get s (i - 2) in
+          let c2 = String.unsafe_get s (i - 1) in
+          let c3 = String.unsafe_get s i in
+          let c = (4096 * (hexValue c0)) + (256 * (hexValue c1)) + (16 * (hexValue c2)) + (hexValue c3) in
+          if Res_utf8.isValidCodePoint c then (
+            let codePoint = Res_utf8.encodeCodePoint c in
+            Buffer.add_string b codePoint;
+            parse Start (i + 1) 0
+          ) else (
+            false
+          )
+        else
+          parse UnicodeEscape (i + 1) (d + 1)
+      | UnicodeCodePointEscape ->
+        (match c with
+        | '0'..'9' | 'a'..'f' | 'A'.. 'F' ->
+          parse UnicodeCodePointEscape (i + 1) (d + 1)
+        | '}' ->
+          let x = ref 0 in
+          for remaining = d downto 1 do
+            let ix = i - remaining in
+            x := (!x * 16) + (hexValue (String.unsafe_get s ix));
+          done;
+          let c = !x in
+          if Res_utf8.isValidCodePoint c then (
+            let codePoint = Res_utf8.encodeCodePoint !x in
+            Buffer.add_string b codePoint;
+            parse Start (i + 1) 0
+          ) else (
+            false
+          )
+        | _ -> false)
       | EscapedLineBreak ->
         (match c with
         | ' ' | '\t' -> parse EscapedLineBreak (i + 1) d
@@ -877,7 +917,11 @@ let parseConstant p =
       s
     in
     Pconst_string(txt, None)
-  | Character c -> Pconst_char c
+  | Character {c; original} ->
+    if p.mode = ParseForTypeChecker then
+      Pconst_char c
+    else
+      Pconst_string (original, Some "INTERNAL_RES_CHAR_CONTENTS")
   | token ->
     Parser.err p (Diagnostics.unexpected token p.breadcrumbs);
     Pconst_string("", None)
