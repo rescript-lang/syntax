@@ -77,7 +77,7 @@ Explanation: since records have a known, fixed shape, a spread like `{a, ...b}` 
 Explanation: lists are singly-linked list, where a node contains a value and points to the next node. `list[a, ...bc]` efficiently creates a new item and links `bc` as its next nodes. `[...bc, a]` would be expensive, as it'd need to traverse `bc` and prepend each item to `a` one by one. We therefore disallow such syntax sugar.\n\
 Solution: directly use `concat`."
 
-  let variantIdent = "A polymorphic variant (e.g. #id) must start with an alphabetical letter."
+  let variantIdent = "A polymorphic variant (e.g. #id) must start with an alphabetical letter or is a number (e.g. #742)"
 
   let experimentalIfLet expr =
     let switchExpr = {expr with Parsetree.pexp_attributes = []} in
@@ -696,7 +696,7 @@ let parseHashIdent ~startPos p =
     Parser.next p;
     let text = if p.mode = ParseForTypeChecker then parseStringLiteral text else text in
     (text, mkLoc startPos p.prevEndPos)
-  | Int {i} ->
+  | Int {i; suffix = None} ->
     Parser.next p;
     (i, mkLoc startPos p.prevEndPos)
   | _ ->
@@ -1202,7 +1202,7 @@ let rec parsePattern ?(alias=true) ?(or_=true) p =
         Parser.next p;
         let text = if p.mode = ParseForTypeChecker then parseStringLiteral text else text in
         (text, mkLoc startPos p.prevEndPos)
-      | Int {i} ->
+      | Int {i; suffix = None} ->
         Parser.next p;
         (i, mkLoc startPos p.prevEndPos)
       | _ ->

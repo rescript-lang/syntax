@@ -1,0 +1,37 @@
+
+  Syntax error!
+  tests/parsing/errors/other/hashIdent.res:1:9-12
+
+  1 │ let x = #10s
+  2 │ 
+  3 │ type t = [ #red | #10s ] 
+
+  A polymorphic variant (e.g. #id) must start with an alphabetical letter or is a number (e.g. #742)
+
+
+  Syntax error!
+  tests/parsing/errors/other/hashIdent.res:3:19-22
+
+  1 │ let x = #10s
+  2 │ 
+  3 │ type t = [ #red | #10s ] 
+  4 │ 
+  5 │ switch x {
+
+  A polymorphic variant (e.g. #id) must start with an alphabetical letter or is a number (e.g. #742)
+
+
+  Syntax error!
+  tests/parsing/errors/other/hashIdent.res:6:3-6
+
+  4 │ 
+  5 │ switch x {
+  6 │ | #10s => ()
+  7 │ }
+  8 │ 
+
+  A polymorphic variant (e.g. #id) must start with an alphabetical letter or is a number (e.g. #742)
+
+let x = `
+type nonrec t = [ `red  | ` ]
+;;match x with | ` -> ()
