@@ -6,7 +6,7 @@
   2 │ 
   3 │ type t = [ #red | #10s ] 
 
-  A polymorphic variant (e.g. #id) must start with an alphabetical letter or is a number (e.g. #742)
+  A polymorphic variant (e.g. #id) must start with an alphabetical letter or be a number (e.g. #742)
 
 
   Syntax error!
@@ -18,7 +18,7 @@
   4 │ 
   5 │ switch x {
 
-  A polymorphic variant (e.g. #id) must start with an alphabetical letter or is a number (e.g. #742)
+  A polymorphic variant (e.g. #id) must start with an alphabetical letter or be a number (e.g. #742)
 
 
   Syntax error!
@@ -30,7 +30,7 @@
   7 │ }
   8 │ 
 
-  A polymorphic variant (e.g. #id) must start with an alphabetical letter or is a number (e.g. #742)
+  A polymorphic variant (e.g. #id) must start with an alphabetical letter or be a number (e.g. #742)
 
 let x = `
 type nonrec t = [ `red  | ` ]
