@@ -1,16 +1,16 @@
 
   Syntax error!
-  tests/parsing/errors/other/hashIdent.res:1:9-12
+  tests/parsing/errors/other/hashIdent.res:1:10-12
 
   1 │ let x = #10s
   2 │ 
   3 │ type t = [ #red | #10s ] 
 
-  A polymorphic variant (e.g. #id) must start with an alphabetical letter or be a number (e.g. #742)
+  A numeric polymorphic variant cannot be followed by a letter. Did you mean `#10`?
 
 
   Syntax error!
-  tests/parsing/errors/other/hashIdent.res:3:19-22
+  tests/parsing/errors/other/hashIdent.res:3:20-22
 
   1 │ let x = #10s
   2 │ 
@@ -18,11 +18,11 @@
   4 │ 
   5 │ switch x {
 
-  A polymorphic variant (e.g. #id) must start with an alphabetical letter or be a number (e.g. #742)
+  A numeric polymorphic variant cannot be followed by a letter. Did you mean `#10`?
 
 
   Syntax error!
-  tests/parsing/errors/other/hashIdent.res:6:3-6
+  tests/parsing/errors/other/hashIdent.res:6:4-6
 
   4 │ 
   5 │ switch x {
@@ -30,8 +30,8 @@
   7 │ }
   8 │ 
 
-  A polymorphic variant (e.g. #id) must start with an alphabetical letter or be a number (e.g. #742)
+  A numeric polymorphic variant cannot be followed by a letter. Did you mean `#10`?
 
-let x = `
-type nonrec t = [ `red  | ` ]
-;;match x with | ` -> ()
+let x = `10
+type nonrec t = [ `red  | `10 ]
+;;match x with | `10 -> ()

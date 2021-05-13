@@ -124,6 +124,9 @@ Solution: directly use `concat`."
 
   let sameTypeSpread =
     "You're using a ... spread without extra fields. This is the same type."
+
+  let polyVarIntWithSuffix number =
+    "A numeric polymorphic variant cannot be followed by a letter. Did you mean `#" ^ number ^ "`?"
 end
 
 
@@ -696,7 +699,12 @@ let parseHashIdent ~startPos p =
     Parser.next p;
     let text = if p.mode = ParseForTypeChecker then parseStringLiteral text else text in
     (text, mkLoc startPos p.prevEndPos)
-  | Int {i; suffix = None} ->
+  | Int {i; suffix} ->
+    let () = match suffix with
+    | Some _ ->
+      Parser.err p (Diagnostics.message (ErrorMessages.polyVarIntWithSuffix i))
+    | None -> ()
+    in
     Parser.next p;
     (i, mkLoc startPos p.prevEndPos)
   | _ ->
@@ -1202,7 +1210,12 @@ let rec parsePattern ?(alias=true) ?(or_=true) p =
         Parser.next p;
         let text = if p.mode = ParseForTypeChecker then parseStringLiteral text else text in
         (text, mkLoc startPos p.prevEndPos)
-      | Int {i; suffix = None} ->
+      | Int {i; suffix} ->
+        let () = match suffix with
+        | Some _ ->
+          Parser.err p (Diagnostics.message (ErrorMessages.polyVarIntWithSuffix i))
+        | None -> ()
+        in
         Parser.next p;
         (i, mkLoc startPos p.prevEndPos)
       | _ ->
