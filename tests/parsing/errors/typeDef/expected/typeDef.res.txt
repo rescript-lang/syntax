@@ -29,21 +29,35 @@
   10 │ // missing type
   11 │ type state =
   12 │ 
+  13 │ // name cannot be capitalized
 
   Missing a type here
 
 
   Syntax error!
-  tests/parsing/errors/typeDef/typeDef.res:12:1
+  tests/parsing/errors/typeDef/typeDef.res:14:1-4
 
-  10 │ // missing type
-  11 │ type state =
   12 │ 
+  13 │ // name cannot be capitalized
+  14 │ type User = string
+  15 │ 
 
   Missing a type here
+
+
+  Syntax error!
+  tests/parsing/errors/typeDef/typeDef.res:14:6-9
+
+  12 │ 
+  13 │ // name cannot be capitalized
+  14 │ type User = string
+  15 │ 
+
+  Type names need to start with a lower-cased letter.
 
 type stack =
   | Empty 
 type nonrec bar = string
 type nonrec t = [%rescript.typehole ]
 type nonrec state = [%rescript.typehole ]
+type nonrec User = string
