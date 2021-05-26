@@ -9,3 +9,6 @@ type t =
 
 // missing type
 type state =
+
+// name cannot be capitalized
+type User = string

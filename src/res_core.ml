@@ -728,8 +728,14 @@ let parseValuePath p =
   | Lident ident -> Longident.Lident ident
   | Uident ident ->
     Parser.next p;
-    Parser.expect Dot p;
-    aux p (Lident ident)
+    begin match p.token with
+      | Dot ->
+        Parser.next p;
+        aux p (Lident ident)
+      | _ ->
+        Parser.err p (Diagnostics.message "Identifier needs to be lower-cased.");
+        Longident.Lident ident
+    end
   | token ->
     Parser.err p (Diagnostics.unexpected token p.breadcrumbs);
     Longident.Lident "_"
@@ -5223,7 +5229,20 @@ and parseTypeDefinitionOrExtension ~attrs p =
       Asttypes.Nonrecursive
     | _ -> Asttypes.Nonrecursive
   in
-  let name = parseValuePath p in
+  (*let name = parseValuePath p in*)
+  let name = match p.token with
+    | Uident ident ->
+      let identStartPos = p.startPos in
+      let identEndPos = p.endPos in
+      Parser.next p;
+      begin match p.token with
+        | Dot -> parseValuePathTail p startPos (Longident.Lident ident)
+        | _ ->
+          Parser.err p ~startPos:identStartPos ~endPos:identEndPos (Diagnostics.message "Type names need to start with a lower-cased letter.");
+          Location.mkloc (Longident.Lident ident) (mkLoc identStartPos identEndPos)
+      end
+    | _ -> parseValuePath p
+  in
   let params = parseTypeParams ~parent:name p in
   match p.Parser.token with
   | PlusEqual ->
