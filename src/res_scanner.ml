@@ -96,26 +96,15 @@ let _printDebug ~startPos ~endPos scanner token =
 [@@live]
 
 let next scanner =
-  let nextOffset =
-    let nextPos = scanner.offset + 1 in
-    match scanner.ch with
-    | '\n' ->
-      scanner.lineOffset <- nextPos;
-      scanner.lnum <- scanner.lnum + 1;
-      nextPos
-    | '\r' ->
-      scanner.lineOffset <- nextPos;
-      scanner.lnum <- scanner.lnum + 1;
-      (* windows users might use CRLF as line break. \r followed by \n should be considered one line break, not two *)
-      if nextPos < String.length scanner.src then (
-        match String.unsafe_get scanner.src nextPos with
-        | '\n' -> nextPos + 1
-        | _ -> nextPos
-      ) else (
-        nextPos
-      )
-    | _ -> nextPos
-  in
+  let nextOffset = scanner.offset + 1 in
+  (match scanner.ch with
+  | '\n' ->
+    scanner.lineOffset <- nextOffset;
+    scanner.lnum <- scanner.lnum + 1;
+    (* What about CRLF (\r + \n) on windows?
+     * \r\n will always be terminated by a \n
+     * -> we can just bump the line count on \n *)
+  | _ -> ());
   if nextOffset < String.length scanner.src then (
     scanner.offset <- nextOffset;
     scanner.ch <- String.unsafe_get scanner.src scanner.offset;
