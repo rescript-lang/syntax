@@ -484,7 +484,7 @@ let hexValue x =
     (Char.code x) - 97
   | _ -> 16
 
-let parseStringLiteral p s =
+let parseStringLiteral _p s =
   let len = String.length s in
   let b = Buffer.create (String.length s) in
 
@@ -581,16 +581,16 @@ let parseStringLiteral p s =
     if result = Success then
       Buffer.contents b
     else (
-      let m = match result with
-      | ExpectedHexDigits -> "Expected hex digits after \\x"
-      | InvalidHexEscape -> "Invalid hex escape sequence"
-      | ExpectedDecimalDigits -> "Expected a valid decimal escape sequence"
-      | InvalidDecimalEscape -> "Invalid decimal escape sequence"
-      | ExpectedOctalDigits -> "Expected octal digits after \\o"
-      | InvalidOctalEscape -> "Invalid octal escape sequence"
-      | Success -> assert false
-      in
-      Parser.err p (Diagnostics.message m);
+      (* let m = match result with *)
+      (* | ExpectedHexDigits -> "Expected hex digits after \\x" *)
+      (* | InvalidHexEscape -> "Invalid hex escape sequence" *)
+      (* | ExpectedDecimalDigits -> "Expected a valid decimal escape sequence" *)
+      (* | InvalidDecimalEscape -> "Invalid decimal escape sequence" *)
+      (* | ExpectedOctalDigits -> "Expected octal digits after \\o" *)
+      (* | InvalidOctalEscape -> "Invalid octal escape sequence" *)
+      (* | Success -> assert false *)
+      (* in *)
+      (* Parser.err p (Diagnostics.message m); *)
       s
     )
 
