@@ -484,153 +484,115 @@ let hexValue x =
     (Char.code x) - 97
   | _ -> 16
 
-let parseStringLiteral s =
+let parseStringLiteral p s =
   let len = String.length s in
   let b = Buffer.create (String.length s) in
 
-  let rec loop i =
+  let module StringLiteral = struct
+    type state =
+      | Start
+      | Backslash
+      | HexEscape
+      | DecimalEscape
+      | OctalEscape
+      | EscapedLineBreak
+
+    type result =
+      | Success
+      | ExpectedHexDigits
+      | InvalidHexEscape
+      | ExpectedDecimalDigits
+      | InvalidDecimalEscape
+      | ExpectedOctalDigits
+      | InvalidOctalEscape
+  end in
+
+  let rec parse state i d :StringLiteral.result =
     if i = len then
-      ()
+      (match (state : StringLiteral.state) with
+      | HexEscape -> ExpectedHexDigits
+      | DecimalEscape -> ExpectedDecimalDigits
+      | OctalEscape -> ExpectedOctalDigits
+      | _ -> Success
+      )
     else
       let c = String.unsafe_get s i in
-      match c with
-      | '\\' as c ->
-        let nextIx = i + 1 in
-        if nextIx < len then
-          let nextChar = String.unsafe_get s nextIx in
-          begin match nextChar with
-          (* this is interesting:
-           * let x = "foo\
-           * bar"
-           * The `\` escapes the newline, as if there was nothing here.
-           * Essentialy transforming this piece of code in `let x = "foobar"`
-           *
-           * What is even more interesting is that any space or tabs after the
-           * escaped newline are also dropped.
-           * let x = "foo\
-           *          bar"
-           * is the same as `let x = "foobar"`
-           *)
-          | '\010' | '\013' ->
-            let i = ref (nextIx + 1) in
-            while !i < len && (
-              let c = String.unsafe_get s !i in
-              c = ' ' || c = '\t'
-            ) do
-              incr i
-            done;
-            loop !i
-          | 'n' ->
-            Buffer.add_char b '\010';
-            loop (nextIx + 1)
-          | 'r' ->
-            Buffer.add_char b '\013';
-            loop (nextIx + 1)
-          | 'b' ->
-            Buffer.add_char b '\008';
-            loop (nextIx + 1)
-          | 't' ->
-            Buffer.add_char b '\009';
-            loop (nextIx + 1)
-          | '\\' as c ->
-            Buffer.add_char b c;
-            loop (nextIx + 1)
-          | ' ' as c ->
-              Buffer.add_char b c;
-            loop (nextIx + 1)
-          | '\'' as c ->
-              Buffer.add_char b c;
-            loop (nextIx + 1)
-          | '\"' as c ->
-            Buffer.add_char b c;
-            loop (nextIx + 1)
-          | '0' .. '9' ->
-            if nextIx + 2 < len then
-              let c0 = nextChar in
-              let c1 = (String.unsafe_get s (nextIx + 1)) in
-              let c2 = (String.unsafe_get s (nextIx + 2)) in
-              let c =
-                100 * (Char.code c0 - 48) +
-                10 * (Char.code c1  - 48) +
-                (Char.code c2 - 48)
-              in
-              if (c < 0 || c > 255) then (
-                Buffer.add_char b '\\';
-                Buffer.add_char b c0;
-                Buffer.add_char b c1;
-                Buffer.add_char b c2;
-                loop (nextIx + 3)
-              ) else (
-                Buffer.add_char b (Char.unsafe_chr c);
-                loop (nextIx + 3)
-              )
-            else (
-              Buffer.add_char b '\\';
-              Buffer.add_char b nextChar;
-              loop (nextIx + 1)
-            )
-          | 'o' ->
-            if nextIx + 3 < len then
-              let c0 = (String.unsafe_get s (nextIx + 1)) in
-              let c1 = (String.unsafe_get s (nextIx + 2)) in
-              let c2 = (String.unsafe_get s (nextIx + 3)) in
-              let c =
-                64 * (Char.code c0 - 48) +
-                8 * (Char.code c1  - 48) +
-                (Char.code c2 - 48)
-              in
-              if (c < 0 || c > 255) then (
-                Buffer.add_char b '\\';
-                Buffer.add_char b '0';
-                Buffer.add_char b c0;
-                Buffer.add_char b c1;
-                Buffer.add_char b c2;
-                loop (nextIx + 4)
-              ) else (
-                Buffer.add_char b (Char.unsafe_chr c);
-                loop (nextIx + 4)
-              )
-            else (
-              Buffer.add_char b '\\';
-              Buffer.add_char b nextChar;
-              loop (nextIx + 1)
-            )
-          | 'x' as c ->
-            if nextIx + 2 < len then
-              let c0 = (String.unsafe_get s (nextIx + 1)) in
-              let c1 = (String.unsafe_get s (nextIx + 2)) in
-              let c = (16 * (hexValue c0)) + (hexValue c1) in
-              if (c < 0 || c > 255) then (
-                Buffer.add_char b '\\';
-                Buffer.add_char b 'x';
-                Buffer.add_char b c0;
-                Buffer.add_char b c1;
-                loop (nextIx + 3)
-              ) else (
-                Buffer.add_char b (Char.unsafe_chr c);
-                loop (nextIx + 3)
-              )
-            else (
-              Buffer.add_char b '\\';
-              Buffer.add_char b c;
-              loop (nextIx + 2)
-            )
-          | _ ->
-            Buffer.add_char b c;
-            Buffer.add_char b nextChar;
-            loop (nextIx + 1)
-          end
-        else (
-          Buffer.add_char b c;
-          ()
-        )
-      | c ->
-        Buffer.add_char b c;
-        loop (i + 1)
+      match (state : StringLiteral.state) with
+      | Start ->
+        (match c with
+        | '\\' -> parse Backslash (i + 1) d
+        | c -> Buffer.add_char b c; parse Start (i + 1) d)
+      | Backslash ->
+        (match c with
+        | 'n' -> Buffer.add_char b '\n'; parse Start (i + 1) d
+        | 'r' -> Buffer.add_char b '\r'; parse Start (i + 1) d
+        | 'b' -> Buffer.add_char b '\008'; parse Start (i + 1) d
+        | 't' -> Buffer.add_char b '\009'; parse Start (i + 1) d
+        | ('\\' | ' ' | '\'' | '"') as c -> Buffer.add_char b c; parse Start (i + 1) d
+        | 'x' -> parse HexEscape (i + 1) 0
+        | 'o' -> parse OctalEscape (i + 1) 0
+        | '0' .. '9' -> parse DecimalEscape i 0
+        | '\010' | '\013' -> parse EscapedLineBreak (i + 1) d
+        | c -> Buffer.add_char b '\\'; Buffer.add_char b c; parse Start (i + 1) d)
+      | HexEscape ->
+        if d == 1 then
+          let c0 = String.unsafe_get s (i - 1) in
+          let c1 = String.unsafe_get s i in
+          let c = (16 * (hexValue c0)) + (hexValue c1) in
+          if c < 0 || c > 255 then InvalidHexEscape
+          else (
+            Buffer.add_char b (Char.unsafe_chr c);
+            parse Start (i + 1) 0
+          )
+        else
+          parse HexEscape (i + 1) (d + 1)
+      | DecimalEscape ->
+        if d == 2 then
+          let c0 = String.unsafe_get s (i - 2) in
+          let c1 = String.unsafe_get s (i - 1) in
+          let c2 = String.unsafe_get s i in
+          let c = 100 * (Char.code c0 - 48) + 10 * (Char.code c1  - 48) + (Char.code c2 - 48) in
+          if c < 0 || c > 255 then InvalidDecimalEscape
+          else (
+            Buffer.add_char b (Char.unsafe_chr c);
+            parse Start (i + 1) 0
+          )
+        else
+          parse DecimalEscape (i + 1) (d + 1)
+      | OctalEscape ->
+        if d == 2 then
+          let c0 = String.unsafe_get s (i - 2) in
+          let c1 = String.unsafe_get s (i - 1) in
+          let c2 = String.unsafe_get s i in
+          let c = 64 * (Char.code c0 - 48) + 8 * (Char.code c1  - 48) + (Char.code c2 - 48) in
+          if c < 0 || c > 255 then InvalidOctalEscape
+          else (
+            Buffer.add_char b (Char.unsafe_chr c);
+            parse Start (i + 1) 0
+          )
+        else
+          parse OctalEscape (i + 1) (d + 1)
+      | EscapedLineBreak ->
+        (match c with
+        | ' ' | '\t' -> parse EscapedLineBreak (i + 1) d
+        | c -> Buffer.add_char b c; parse Start (i + 1) d)
     in
-    loop 0;
-    Buffer.contents b
-
+    let result = parse Start 0 0 in
+    if result = Success then
+      Buffer.contents b
+    else (
+      let m = match result with
+      | ExpectedHexDigits -> "Expected hex digits after \\x"
+      | InvalidHexEscape -> "Invalid hex escape sequence"
+      | ExpectedDecimalDigits -> "Expected a valid decimal escape sequence"
+      | InvalidDecimalEscape -> "Invalid decimal escape sequence"
+      | ExpectedOctalDigits -> "Expected octal digits after \\o"
+      | InvalidOctalEscape -> "Invalid octal escape sequence"
+      | Success -> assert false
+      in
+      Parser.err p (Diagnostics.message m);
+      s
+    )
 
 let rec parseLident p =
   let recoverLident p =
@@ -696,8 +658,8 @@ let parseHashIdent ~startPos p =
   Parser.expect Hash p;
   match p.token with
   | String text ->
+    let text = if p.mode = ParseForTypeChecker then parseStringLiteral p text else text in
     Parser.next p;
-    let text = if p.mode = ParseForTypeChecker then parseStringLiteral text else text in
     (text, mkLoc startPos p.prevEndPos)
   | Int {i; suffix} ->
     let () = match suffix with
@@ -939,7 +901,7 @@ let parseConstant p =
     Parsetree.Pconst_float (floatTxt, suffix)
   | String s ->
     let txt = if p.mode = ParseForTypeChecker then
-      parseStringLiteral s
+      parseStringLiteral p s
     else
       s
     in
@@ -1207,8 +1169,8 @@ let rec parsePattern ?(alias=true) ?(or_=true) p =
     ) else (
       let (ident, loc) = match p.token with
       | String text ->
+        let text = if p.mode = ParseForTypeChecker then parseStringLiteral p text else text in
         Parser.next p;
-        let text = if p.mode = ParseForTypeChecker then parseStringLiteral text else text in
         (text, mkLoc startPos p.prevEndPos)
       | Int {i; suffix} ->
         let () = match suffix with
@@ -1980,7 +1942,7 @@ and parseBracketAccess p expr startPos =
   let stringStart = p.startPos in
   match p.Parser.token with
   | String s ->
-    let s = if p.mode = ParseForTypeChecker then parseStringLiteral s else s in
+    let s = if p.mode = ParseForTypeChecker then parseStringLiteral p s else s in
     Parser.next p;
     let stringEnd = p.prevEndPos in
     Parser.expect Rbracket p;
@@ -2760,7 +2722,7 @@ and parseBracedOrRecordExpr  p =
     Parser.expect Rbrace p;
     expr
   | String s ->
-    let s = if p.mode = ParseForTypeChecker then parseStringLiteral s else s in
+    let s = if p.mode = ParseForTypeChecker then parseStringLiteral p s else s in
     let field =
       let loc = mkLoc p.startPos p.endPos in
       Parser.next p;

@@ -10,6 +10,16 @@
 
 
   Syntax error!
+  tests/parsing/errors/scanner/escapeSequence.res:1:9-12
+
+  1 │ let x = "\0"
+  2 │ 
+  3 │ let x = "\oAAA"
+
+  Expected a valid decimal escape sequence
+
+
+  Syntax error!
   tests/parsing/errors/scanner/escapeSequence.res:3:10-11
 
   1 │ let x = "\0"
@@ -19,5 +29,16 @@
 
   unknown escape sequence
 
+
+  Syntax error!
+  tests/parsing/errors/scanner/escapeSequence.res:3:9-15
+
+  1 │ let x = "\0"
+  2 │ 
+  3 │ let x = "\oAAA"
+  4 │ 
+
+  Invalid octal escape sequence
+
 let x = "\\0"
-let x = "\\0AAA"
+let x = "\\oAAA"
