@@ -921,6 +921,9 @@ let parseConstant p =
     if p.mode = ParseForTypeChecker then
       Pconst_char c
     else
+      (* Pconst_char char does not have enough information for formatting.
+       * When parsing for the printer, we encode the char contents as a string
+       * with a special prefix. *)
       Pconst_string (original, Some "INTERNAL_RES_CHAR_CONTENTS")
   | token ->
     Parser.err p (Diagnostics.unexpected token p.breadcrumbs);
