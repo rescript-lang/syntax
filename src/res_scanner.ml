@@ -451,7 +451,7 @@ let scanEscape scanner =
   let contents = (String.sub [@doesNotRaise]) scanner.src offset (scanner.offset - offset) in
   next scanner; (* Consume \' *)
   (* TODO: do we know it's \' ? *)
-  Token.Character {c = codepoint; original = contents}
+  Token.Codepoint {c = codepoint; original = contents}
 
 let scanSingleLineComment scanner =
   let startOff = scanner.offset in
@@ -664,7 +664,7 @@ let rec scan scanner =
     | ch, '\'' ->
       let offset = scanner.offset + 1 in
       next3 scanner;
-      Token.Character {c = ch; original = (String.sub [@doesNotRaise]) scanner.src offset 1}
+      Token.Codepoint {c = ch; original = (String.sub [@doesNotRaise]) scanner.src offset 1}
     | ch, _ ->
       next scanner;
       let offset = scanner.offset in
@@ -675,7 +675,7 @@ let rec scan scanner =
       if scanner.ch = '\'' then (
         let contents = (String.sub [@doesNotRaise]) scanner.src offset length in
         next scanner;
-        Token.Character {c = Obj.magic codepoint; original = contents}
+        Token.Codepoint {c = Obj.magic codepoint; original = contents}
       ) else (
         scanner.ch <- ch;
         scanner.offset <- offset;

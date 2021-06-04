@@ -917,7 +917,7 @@ let parseConstant p =
       s
     in
     Pconst_string(txt, None)
-  | Character {c; original} ->
+  | Codepoint {c; original} ->
     if p.mode = ParseForTypeChecker then
       Pconst_char c
     else
@@ -1113,7 +1113,7 @@ let rec parsePattern ?(alias=true) ?(or_=true) p =
     let loc = mkLoc startPos endPos in
     Ast_helper.Pat.construct ~loc
       (Location.mkloc (Longident.Lident (Token.toString token)) loc) None
-  | Int _ | String _ | Float _ | Character _ | Minus | Plus ->
+  | Int _ | String _ | Float _ | Codepoint _ | Minus | Plus ->
     let c = parseConstant p in
      begin match p.token with
       | DotDot ->
@@ -1858,7 +1858,7 @@ and parseAtomicExpr p =
       let loc = mkLoc startPos p.prevEndPos in
       Ast_helper.Exp.construct ~loc
         (Location.mkloc (Longident.Lident (Token.toString token)) loc) None
-    | Int _ | String _ | Float _ | Character _ ->
+    | Int _ | String _ | Float _ | Codepoint _ ->
       let c = parseConstant p in
       let loc = mkLoc startPos p.prevEndPos in
       Ast_helper.Exp.constant ~loc c
