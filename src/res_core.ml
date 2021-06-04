@@ -137,6 +137,14 @@ let ifLetAttr = (Location.mknoloc "ns.iflet", Parsetree.PStr [])
 let suppressFragileMatchWarningAttr = (Location.mknoloc "warning", Parsetree.PStr [Ast_helper.Str.eval (Ast_helper.Exp.constant (Pconst_string ("-4", None)))])
 let makeBracesAttr loc = (Location.mkloc "ns.braces" loc, Parsetree.PStr [])
 
+type stringLiteralState =
+  | Start
+  | Backslash
+  | HexEscape
+  | DecimalEscape
+  | OctalEscape
+  | EscapedLineBreak
+
 type typDefOrExt =
   | TypeDef of {recFlag: Asttypes.rec_flag; types: Parsetree.type_declaration list}
   | TypeExt of Parsetree.type_extension
@@ -484,40 +492,18 @@ let hexValue x =
     (Char.code x) - 97
   | _ -> 16
 
-let parseStringLiteral _p s =
+let parseStringLiteral s =
   let len = String.length s in
   let b = Buffer.create (String.length s) in
 
-  let module StringLiteral = struct
-    type state =
-      | Start
-      | Backslash
-      | HexEscape
-      | DecimalEscape
-      | OctalEscape
-      | EscapedLineBreak
-
-    type result =
-      | Success
-      | ExpectedHexDigits
-      | InvalidHexEscape
-      | ExpectedDecimalDigits
-      | InvalidDecimalEscape
-      | ExpectedOctalDigits
-      | InvalidOctalEscape
-  end in
-
-  let rec parse state i d :StringLiteral.result =
+  let rec parse state i d =
     if i = len then
-      (match (state : StringLiteral.state) with
-      | HexEscape -> ExpectedHexDigits
-      | DecimalEscape -> ExpectedDecimalDigits
-      | OctalEscape -> ExpectedOctalDigits
-      | _ -> Success
-      )
+      (match state with
+      | HexEscape | DecimalEscape | OctalEscape -> false
+      | _ -> true)
     else
       let c = String.unsafe_get s i in
-      match (state : StringLiteral.state) with
+      match state with
       | Start ->
         (match c with
         | '\\' -> parse Backslash (i + 1) d
@@ -539,7 +525,7 @@ let parseStringLiteral _p s =
           let c0 = String.unsafe_get s (i - 1) in
           let c1 = String.unsafe_get s i in
           let c = (16 * (hexValue c0)) + (hexValue c1) in
-          if c < 0 || c > 255 then InvalidHexEscape
+          if c < 0 || c > 255 then false
           else (
             Buffer.add_char b (Char.unsafe_chr c);
             parse Start (i + 1) 0
@@ -552,7 +538,7 @@ let parseStringLiteral _p s =
           let c1 = String.unsafe_get s (i - 1) in
           let c2 = String.unsafe_get s i in
           let c = 100 * (Char.code c0 - 48) + 10 * (Char.code c1  - 48) + (Char.code c2 - 48) in
-          if c < 0 || c > 255 then InvalidDecimalEscape
+          if c < 0 || c > 255 then false
           else (
             Buffer.add_char b (Char.unsafe_chr c);
             parse Start (i + 1) 0
@@ -565,7 +551,7 @@ let parseStringLiteral _p s =
           let c1 = String.unsafe_get s (i - 1) in
           let c2 = String.unsafe_get s i in
           let c = 64 * (Char.code c0 - 48) + 8 * (Char.code c1  - 48) + (Char.code c2 - 48) in
-          if c < 0 || c > 255 then InvalidOctalEscape
+          if c < 0 || c > 255 then false
           else (
             Buffer.add_char b (Char.unsafe_chr c);
             parse Start (i + 1) 0
@@ -577,22 +563,7 @@ let parseStringLiteral _p s =
         | ' ' | '\t' -> parse EscapedLineBreak (i + 1) d
         | c -> Buffer.add_char b c; parse Start (i + 1) d)
     in
-    let result = parse Start 0 0 in
-    if result = Success then
-      Buffer.contents b
-    else (
-      (* let m = match result with *)
-      (* | ExpectedHexDigits -> "Expected hex digits after \\x" *)
-      (* | InvalidHexEscape -> "Invalid hex escape sequence" *)
-      (* | ExpectedDecimalDigits -> "Expected a valid decimal escape sequence" *)
-      (* | InvalidDecimalEscape -> "Invalid decimal escape sequence" *)
-      (* | ExpectedOctalDigits -> "Expected octal digits after \\o" *)
-      (* | InvalidOctalEscape -> "Invalid octal escape sequence" *)
-      (* | Success -> assert false *)
-      (* in *)
-      (* Parser.err p (Diagnostics.message m); *)
-      s
-    )
+    if parse Start 0 0 then Buffer.contents b else s
 
 let rec parseLident p =
   let recoverLident p =
@@ -658,7 +629,7 @@ let parseHashIdent ~startPos p =
   Parser.expect Hash p;
   match p.token with
   | String text ->
-    let text = if p.mode = ParseForTypeChecker then parseStringLiteral p text else text in
+    let text = if p.mode = ParseForTypeChecker then parseStringLiteral text else text in
     Parser.next p;
     (text, mkLoc startPos p.prevEndPos)
   | Int {i; suffix} ->
@@ -901,7 +872,7 @@ let parseConstant p =
     Parsetree.Pconst_float (floatTxt, suffix)
   | String s ->
     let txt = if p.mode = ParseForTypeChecker then
-      parseStringLiteral p s
+      parseStringLiteral s
     else
       s
     in
@@ -1169,7 +1140,7 @@ let rec parsePattern ?(alias=true) ?(or_=true) p =
     ) else (
       let (ident, loc) = match p.token with
       | String text ->
-        let text = if p.mode = ParseForTypeChecker then parseStringLiteral p text else text in
+        let text = if p.mode = ParseForTypeChecker then parseStringLiteral text else text in
         Parser.next p;
         (text, mkLoc startPos p.prevEndPos)
       | Int {i; suffix} ->
@@ -1942,7 +1913,7 @@ and parseBracketAccess p expr startPos =
   let stringStart = p.startPos in
   match p.Parser.token with
   | String s ->
-    let s = if p.mode = ParseForTypeChecker then parseStringLiteral p s else s in
+    let s = if p.mode = ParseForTypeChecker then parseStringLiteral s else s in
     Parser.next p;
     let stringEnd = p.prevEndPos in
     Parser.expect Rbracket p;
@@ -2722,7 +2693,7 @@ and parseBracedOrRecordExpr  p =
     Parser.expect Rbrace p;
     expr
   | String s ->
-    let s = if p.mode = ParseForTypeChecker then parseStringLiteral p s else s in
+    let s = if p.mode = ParseForTypeChecker then parseStringLiteral s else s in
     let field =
       let loc = mkLoc p.startPos p.endPos in
       Parser.next p;
