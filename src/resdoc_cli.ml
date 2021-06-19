@@ -297,34 +297,40 @@ let extractDocstring (attrs: Parsetree.attributes) =
 module Signature = struct
   let fromSignatureItem item =
     Res_printer.printSignatureItem (drop_doc_attributes item) cmtTable |> Res_doc.toString ~width:80
+  let fromStructureItem item =
+    (* TODO drop_doc_attributes for structure_item *)
+    Res_printer.printStructure [item] cmtTable |> Res_doc.toString ~width:80
 end
 
-let rec extractSignatureDocItem (signatureItem: Parsetree.signature_item) : DocItem.t option =
-  match signatureItem.psig_desc with
-  | Psig_attribute  ({Asttypes.txt="ocaml.text"}, payload) ->
-    begin match payload with
-      | Parsetree.PStr [{pstr_desc = Pstr_eval ({pexp_desc = Pexp_constant (Pconst_string(str,_));_},_); _}]
-        -> Some (DocItem.Doc_text str)
-      | _ -> None
-    end
-  | Psig_value {pval_attributes; pval_name; _} ->
+let extractDocItem_attribute (attribute: Parsetree.attribute) = 
+  match attribute with
+    | ({Asttypes.txt="ocaml.text"}, payload) ->
+      begin match payload with
+        | Parsetree.PStr [{pstr_desc = Pstr_eval ({pexp_desc = Pexp_constant (Pconst_string(str,_));_},_); _}]
+          -> Some (DocItem.Doc_text str)
+        | _ -> None
+      end
+    | _ -> None
+
+let extractDocItem_value_description (value_description: Parsetree.value_description) signature = 
+  match value_description with
+  | {pval_attributes; pval_name; _} ->
     let docstring = match extractDocstring pval_attributes with
       | Some docstring -> docstring
       | None -> ""
     in
-    let signature = Signature.fromSignatureItem signatureItem in
     Some (DocItem.Doc_value({
         signature;
         name=pval_name.txt;
         docstring
       }))
-  | Psig_type (_, tdecls) ->
+
+let extractDocItem_type_declarations (tdecls: Parsetree.type_declaration list) signature = 
     (* Retrieve all the doc comments attached to variant constructors *)
     let (items: DocItem.t list) = 
       List.fold_right (fun (decl: Parsetree.type_declaration) acc -> 
           match decl.ptype_kind with
           | Ptype_variant cdecls ->
-            let signature = Signature.fromSignatureItem signatureItem in
             let docstring = match extractDocstring decl.ptype_attributes with
               | Some docstring -> docstring
               | None -> ""
@@ -338,7 +344,6 @@ let rec extractSignatureDocItem (signatureItem: Parsetree.signature_item) : DocI
             in
             acc @ [DocItem.Doc_variant {signature; constructorDocs; docstring}]
           | Ptype_record labelDecls ->
-            let signature = Signature.fromSignatureItem signatureItem in
             let docstring = match extractDocstring decl.ptype_attributes with
               | Some docstring -> docstring
               | None -> ""
@@ -356,7 +361,6 @@ let rec extractSignatureDocItem (signatureItem: Parsetree.signature_item) : DocI
               | Some str -> str
               | None -> ""
             in
-            let signature = Signature.fromSignatureItem signatureItem in
             acc @ [Doc_type {signature= signature; name=decl.ptype_name.txt; docstring=docstring}]
           | _ -> acc
         ) tdecls []
@@ -364,6 +368,12 @@ let rec extractSignatureDocItem (signatureItem: Parsetree.signature_item) : DocI
     (match items with
     | item :: _ -> Some item
     | _ -> None)
+
+let rec extractSignatureDocItem (signatureItem: Parsetree.signature_item) : DocItem.t option =
+  match signatureItem.psig_desc with
+  | Psig_attribute attribute -> extractDocItem_attribute attribute
+  | Psig_value value_description -> extractDocItem_value_description value_description (Signature.fromSignatureItem signatureItem)
+  | Psig_type (_, tdecls) -> extractDocItem_type_declarations tdecls (Signature.fromSignatureItem signatureItem)
   | Psig_module { pmd_attributes; pmd_name; pmd_type } ->
     (match pmd_type.pmty_desc with
      | Pmty_signature signature ->
@@ -387,8 +397,24 @@ let rec extractSignatureDocItem (signatureItem: Parsetree.signature_item) : DocI
     )
   | _ -> None
 
-let (* rec *) extractStructureDocItem (_structureItem: Parsetree.structure_item) : DocItem.t option = None
-(* TODO *)
+let (* rec *) extractStructureDocItem (structureItem: Parsetree.structure_item) : DocItem.t option =
+  match structureItem.pstr_desc with
+(*| Pstr_eval of Parsetree.expression * Parsetree.attributes *)
+(*| Pstr_value of Asttypes.rec_flag * Parsetree.value_binding list *)
+  | Pstr_primitive value_description -> extractDocItem_value_description value_description (Signature.fromStructureItem structureItem)
+  | Pstr_type (_, tdecls) -> extractDocItem_type_declarations tdecls (Signature.fromStructureItem structureItem)
+(*| Pstr_typext of Parsetree.type_extension *)
+(*| Pstr_exception of Parsetree.extension_constructor *)
+(*| Pstr_module of Parsetree.module_binding *)
+(*| Pstr_recmodule of Parsetree.module_binding list *)
+(*| Pstr_modtype of Parsetree.module_type_declaration *)
+(*| Pstr_open of Parsetree.open_description *)
+(*| Pstr_class of Parsetree.class_declaration list *)
+(*| Pstr_class_type of Parsetree.class_type_declaration list *)
+(*| Pstr_include of Parsetree.include_declaration *)
+  | Pstr_attribute attribute -> extractDocItem_attribute attribute
+(*| Pstr_extension of Parsetree.extension * Parsetree.attributes *)
+  | _ -> None
 
 let extract_signature_docs ~(filename: string) (signature : Parsetree.signature) =
   let name = Util.module_of_filename filename in
