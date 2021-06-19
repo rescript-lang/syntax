@@ -418,10 +418,18 @@ let extract_file filename =
   let parseResult = backend.parseInterface ~forPrinter:false ~filename in
   extract_signature_docs ~filename parseResult.parsetree
 
-let () =   
-  for i = 0 to Array.length Sys.argv - 1 do 
-    if Sys.argv.(i) = "-file" && i + 1 < Array.length Sys.argv then begin 
-      extract_file Sys.argv.(i+1);
+let usage cmd = begin
+  Printf.eprintf "Usage: %s -file <input.(ml|mli|resi)>\n" cmd;
+  exit 1
+end
+
+let () = match Sys.argv with
+  | [| _; "-file"; input_file |] -> begin
+    try
+      extract_file input_file;
       exit 0
+    with Syntaxerr.Error err ->
+      fprintf Format.err_formatter "@[%a@]@." Syntaxerr.report_error err;
+      exit 1
     end
-  done     
+  | _ -> usage Sys.argv.(0)
