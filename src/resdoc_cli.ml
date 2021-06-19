@@ -299,7 +299,7 @@ module Signature = struct
     Res_printer.printSignatureItem (drop_doc_attributes item) cmtTable |> Res_doc.toString ~width:80
 end
 
-let rec extractDocItem (signatureItem: Parsetree.signature_item) : DocItem.t option =
+let rec extractSignatureDocItem (signatureItem: Parsetree.signature_item) : DocItem.t option =
   match signatureItem.psig_desc with
   | Psig_attribute  ({Asttypes.txt="ocaml.text"}, payload) ->
     begin match payload with
@@ -367,7 +367,7 @@ let rec extractDocItem (signatureItem: Parsetree.signature_item) : DocItem.t opt
   | Psig_module { pmd_attributes; pmd_name; pmd_type } ->
     (match pmd_type.pmty_desc with
      | Pmty_signature signature ->
-       let items = Util.filter_map extractDocItem signature in
+       let items = Util.filter_map extractSignatureDocItem signature in
        let docstring =
          match extractDocstring pmd_attributes with
          | Some str -> str
@@ -387,9 +387,12 @@ let rec extractDocItem (signatureItem: Parsetree.signature_item) : DocItem.t opt
     )
   | _ -> None
 
+let (* rec *) extractStructureDocItem (_structureItem: Parsetree.structure_item) : DocItem.t option = None
+(* TODO *)
+
 let extract_signature_docs ~(filename: string) (signature : Parsetree.signature) =
   let name = Util.module_of_filename filename in
-  let items = Util.filter_map extractDocItem signature in
+  let items = Util.filter_map extractSignatureDocItem signature in
   let root = DocItem.Doc_module {
       name;
       items;
@@ -402,21 +405,44 @@ let extract_signature_docs ~(filename: string) (signature : Parsetree.signature)
     ]
   in
   json |> Json.stringifyPretty |> print_endline
-  
+
+let extract_structure_docs ~(filename: string) (signature : Parsetree.structure) =
+  let name = Util.module_of_filename filename in
+  let items = Util.filter_map extractStructureDocItem signature in
+  let root = DocItem.Doc_module {
+      name;
+      items;
+      docstring="";
+    } 
+  in
+  let json = Json.Object [
+      ("filename", String filename);
+      ("root", DocItem.toJson root);
+    ]
+  in
+  json |> Json.stringifyPretty |> print_endline
 
 exception Not_supported of string
 
 type backend = Parser: ('diagnostics) Res_driver.parsingEngine -> backend [@@unboxed]
 
-let extract_file filename =
-  let parsingEngine = match Filename.extension filename with
-    | ".mli" ->  Parser Res_driver_ml_parser.parsingEngine
-    | ".resi" -> Parser Res_driver.parsingEngine
-    | ext -> raise (Not_supported ("'" ^ ext ^ "' extension is not supported"))
-  in
+let extract_signature_file filename parsingEngine =
   let Parser backend = parsingEngine in
   let parseResult = backend.parseInterface ~forPrinter:false ~filename in
   extract_signature_docs ~filename parseResult.parsetree
+
+let extract_structure_file filename parsingEngine =
+  let Parser backend = parsingEngine in
+  let parseResult = backend.parseImplementation ~forPrinter:false ~filename in
+  extract_structure_docs ~filename parseResult.parsetree
+
+let extract_file filename =
+  match Filename.extension filename with
+    | ".mli" -> extract_signature_file filename (Parser Res_driver_ml_parser.parsingEngine)
+    | ".ml" -> extract_structure_file filename (Parser Res_driver_ml_parser.parsingEngine)
+    | ".res" -> extract_structure_file filename (Parser Res_driver.parsingEngine)
+    | ".resi" -> extract_signature_file filename (Parser Res_driver.parsingEngine)
+    | ext -> raise (Not_supported ("'" ^ ext ^ "' extension is not supported"))
 
 let usage cmd = begin
   Printf.eprintf "Usage: %s -file <input.(ml|mli|resi)>\n" cmd;
