@@ -369,13 +369,9 @@ let extractDocItem_type_declarations (tdecls: Parsetree.type_declaration list) s
     | item :: _ -> Some item
     | _ -> None)
 
-let rec extractSignatureDocItem (signatureItem: Parsetree.signature_item) : DocItem.t option =
-  match signatureItem.psig_desc with
-  | Psig_value value_description -> extractDocItem_value_description value_description (Signature.fromSignatureItem signatureItem)
-  | Psig_type (_, tdecls) -> extractDocItem_type_declarations tdecls (Signature.fromSignatureItem signatureItem)
-  | Psig_typext _ -> None (* TODO verify *)
-  | Psig_exception _ -> None (* TODO verify *)
-  | Psig_module { pmd_attributes; pmd_name; pmd_type } ->
+let rec extractDocItem_module_declaration (module_declaration: Parsetree.module_declaration) signature = 
+  match module_declaration with
+  | { pmd_attributes; pmd_name; pmd_type } ->
     (match pmd_type.pmty_desc with
      | Pmty_signature signature ->
        let items = Util.filter_map extractSignatureDocItem signature in
@@ -387,7 +383,6 @@ let rec extractSignatureDocItem (signatureItem: Parsetree.signature_item) : DocI
        Some (DocItem.Doc_module {name=pmd_name.txt; items; docstring; })
      | Pmty_alias {txt = Ldot _} ->
        (*print_endline str;*)
-       let signature = Signature.fromSignatureItem signatureItem in 
        let docstring =
          match extractDocstring pmd_attributes with
          | Some docstring -> docstring
@@ -396,6 +391,13 @@ let rec extractSignatureDocItem (signatureItem: Parsetree.signature_item) : DocI
        Some (DocItem.Doc_module_alias {name=pmd_name.txt; docstring; signature})
      | _ -> None
     )
+and extractSignatureDocItem (signatureItem: Parsetree.signature_item) : DocItem.t option =
+  match signatureItem.psig_desc with
+  | Psig_value value_description -> extractDocItem_value_description value_description (Signature.fromSignatureItem signatureItem)
+  | Psig_type (_, tdecls) -> extractDocItem_type_declarations tdecls (Signature.fromSignatureItem signatureItem)
+  | Psig_typext _ -> None (* TODO verify *)
+  | Psig_exception _ -> None (* TODO verify *)
+  | Psig_module module_declaration -> extractDocItem_module_declaration module_declaration (Signature.fromSignatureItem signatureItem)
   | Psig_recmodule _ -> None (* TODO verify *)
   | Psig_modtype _ -> None (* TODO verify *)
   | Psig_open _ -> None (* TODO verify *)
@@ -411,12 +413,12 @@ let (* rec *) extractStructureDocItem (structureItem: Parsetree.structure_item) 
 (*| Pstr_value of Asttypes.rec_flag * Parsetree.value_binding list *)
   | Pstr_primitive value_description -> extractDocItem_value_description value_description (Signature.fromStructureItem structureItem)
   | Pstr_type (_, tdecls) -> extractDocItem_type_declarations tdecls (Signature.fromStructureItem structureItem)
-(*| Pstr_typext of Parsetree.type_extension *)
-(*| Pstr_exception of Parsetree.extension_constructor *)
+  | Pstr_typext _ -> None (* TODO verify *)
+  | Pstr_exception _ -> None (* TODO verify *)
 (*| Pstr_module of Parsetree.module_binding *)
-(*| Pstr_recmodule of Parsetree.module_binding list *)
-(*| Pstr_modtype of Parsetree.module_type_declaration *)
-(*| Pstr_open of Parsetree.open_description *)
+  | Pstr_recmodule _ -> None (* TODO verify *)
+  | Pstr_modtype _ -> None (* TODO verify *)
+  | Pstr_open _ -> None (* TODO verify *)
 (*| Pstr_class of Parsetree.class_declaration list *)
 (*| Pstr_class_type of Parsetree.class_type_declaration list *)
 (*| Pstr_include of Parsetree.include_declaration *)
