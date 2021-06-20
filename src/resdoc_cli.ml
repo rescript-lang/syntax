@@ -232,55 +232,23 @@ end
 (* Used for the ReScript printer facilities *)
 let cmtTable = Res_comments_table.make ()
 
-let drop_doc_attributes (sigItem: Parsetree.signature_item) : Parsetree.signature_item =
-  let open Parsetree in
-  let filterDocAttrs ((id, _) : attribute) =
-    match id.txt with
-    | "ocaml.doc"
-    | "ocaml.txt" ->
-      false
-    | _ -> true
-  in
-  match sigItem.psig_desc with
-  | Psig_value ({pval_attributes; _} as desc) ->
-    let filteredAttrs = List.filter filterDocAttrs pval_attributes in
-    let desc = Psig_value ({ desc with pval_attributes = filteredAttrs }) in
-    { sigItem with psig_desc = desc }
-  | Psig_type (recFlag, tdecls) ->
-    let newDecls = tdecls |> List.map (fun declr ->
-        let newDeclr = match declr.ptype_kind with
-          | Ptype_variant cstrDecls ->
-            let newCstrDecls =
-              cstrDecls
-              |> List.map (fun cdeclr ->
-                  let filteredAttrs = List.filter filterDocAttrs cdeclr.pcd_attributes in
-                  { cdeclr with pcd_attributes = filteredAttrs }
-                )
-            in 
-            { declr with ptype_kind = Ptype_variant newCstrDecls }
-          | Ptype_record labelDecls ->
-            let newLabelDecls =
-              labelDecls
-              |> List.map (fun ldecl ->
-                  let filteredAttrs = List.filter filterDocAttrs ldecl.pld_attributes in
-                  { ldecl with pld_attributes = filteredAttrs }
-                )
-            in
-            { declr with ptype_kind = Ptype_record newLabelDecls }
-          | _ ->
-            declr
-        in
-        let filteredAttrs = List.filter filterDocAttrs newDeclr.ptype_attributes in
-        { newDeclr with ptype_attributes = filteredAttrs }
-      )
+module DropDocAttributes = struct
+  let mapper =
+    let filterDocAttrs ((id, _): Parsetree.attribute) =
+      match id.txt with
+      | "ocaml.doc" | "ocaml.txt" -> false
+      | _ -> true
     in
-    let desc = Psig_type (recFlag, newDecls) in
-    { sigItem with psig_desc = desc }
-  | Psig_module desc ->
-    let filteredAttrs = List.filter filterDocAttrs desc.pmd_attributes in
-    let newDesc = { desc with pmd_attributes = filteredAttrs } in
-    { sigItem with psig_desc = Psig_module newDesc }
-  | _ -> sigItem
+    let open Ast_mapper in
+    { default_mapper with
+      attributes = fun mapper attributes ->
+        let filteredAttrs = List.filter filterDocAttrs attributes in
+        default_mapper.attributes mapper filteredAttrs;
+    }
+
+  let signature item = mapper.signature_item mapper item
+  let structure item = mapper.structure_item mapper item
+end
 
 let extractDocstring (attrs: Parsetree.attributes) =
   let open Parsetree in
@@ -296,10 +264,9 @@ let extractDocstring (attrs: Parsetree.attributes) =
 
 module Signature = struct
   let fromSignatureItem item =
-    Res_printer.printSignatureItem (drop_doc_attributes item) cmtTable |> Res_doc.toString ~width:80
+    Res_printer.printSignatureItem (DropDocAttributes.signature item) cmtTable |> Res_doc.toString ~width:80
   let fromStructureItem item =
-    (* TODO drop_doc_attributes for structure_item *)
-    Res_printer.printStructure [item] cmtTable |> Res_doc.toString ~width:80
+    Res_printer.printStructure [DropDocAttributes.structure item] cmtTable |> Res_doc.toString ~width:80
 end
 
 let extractDocItem_attribute (attribute: Parsetree.attribute) = 
