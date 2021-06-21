@@ -284,28 +284,28 @@ module ExtractDocStrings = struct
         let signature = Signature.from_signature_item signature_item in
         signature_stack := signature :: !signature_stack;
         default_iterator.signature_item iterator signature_item;
-        signature_stack := List.tl !signature_stack
+        signature_stack := List.tl !signature_stack;
       end;
 
       structure_item = begin fun iterator structure_item ->
         let signature = Signature.from_structure_item structure_item in
         signature_stack := signature :: !signature_stack;
         default_iterator.structure_item iterator structure_item;
-        signature_stack := List.tl !signature_stack
+        signature_stack := List.tl !signature_stack;
       end;
 
       attribute = begin fun iterator attribute ->
-        default_iterator.attribute iterator attribute;
-        match attribute with
+        begin match attribute with
         | ( { Asttypes.txt="ocaml.text" },
             Parsetree.PStr [ { pstr_desc = Pstr_eval ( { pexp_desc = Pexp_constant (Pconst_string(str, _)); _ }, _); _ } ]
           ) -> DocItem.Doc_text str |> generate
         | _ -> ()
+        end;
+        default_iterator.attribute iterator attribute;
       end;
 
       value_description = begin fun iterator value_description ->
-        default_iterator.value_description iterator value_description;
-        match value_description with
+        begin match value_description with
         | {pval_attributes; pval_name; _} ->
           let signature = List.hd !signature_stack in
           let docstring = match from_attributes pval_attributes with
@@ -317,16 +317,17 @@ module ExtractDocStrings = struct
             name = pval_name.txt;
             docstring;
           }) |> generate
+        end;
+        default_iterator.value_description iterator value_description;
       end;
 
       type_declaration = begin fun iterator type_declaration ->
-        default_iterator.type_declaration iterator type_declaration;
         let signature = List.hd !signature_stack in
         let docstring = match from_attributes type_declaration.ptype_attributes with
           | Some docstring -> docstring
           | None -> ""
         in
-        match type_declaration.ptype_kind with
+        begin match type_declaration.ptype_kind with
         | Ptype_variant cdecls ->
           let constructorDocs = Util.filter_map (fun { Parsetree.pcd_attributes; pcd_name } ->
               (match from_attributes pcd_attributes with
@@ -358,6 +359,8 @@ module ExtractDocStrings = struct
             docstring;
           } |> generate
         | _ -> ()
+        end;
+        default_iterator.type_declaration iterator type_declaration;
       end;
 
       module_declaration = begin fun iterator module_declaration ->
@@ -373,13 +376,13 @@ module ExtractDocStrings = struct
             in
             DocItem.Doc_module {name=pmd_name.txt; items; docstring; } |> generate
           | Pmty_alias {txt = Ldot _} ->
-            default_iterator.module_declaration iterator module_declaration;
             let signature = List.hd !signature_stack in
             let docstring = match from_attributes pmd_attributes with
               | Some docstring -> docstring
               | None -> ""
             in
-            DocItem.Doc_module_alias {name=pmd_name.txt; docstring; signature} |> generate
+            DocItem.Doc_module_alias {name=pmd_name.txt; docstring; signature} |> generate;
+            default_iterator.module_declaration iterator module_declaration;
           | _ ->
             default_iterator.module_declaration iterator module_declaration;
       end;
@@ -392,12 +395,12 @@ module ExtractDocStrings = struct
   and from_signature signature =
     let (iterator, items) = make in
     iterator.signature iterator signature;
-    !items
+    List.rev !items
 
   and from_structure structure =
     let (iterator, items) = make in
     iterator.structure iterator structure;
-    !items
+    List.rev !items
 end
 
 exception Not_supported of string
