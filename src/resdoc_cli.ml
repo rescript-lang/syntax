@@ -431,7 +431,7 @@ let extract_file filename =
   json |> Json.stringifyPretty ~indent:0 |> print_endline
 
 let usage cmd = begin
-  Printf.eprintf "Usage: %s -file <input.(ml|mli|resi)>\n" cmd;
+  Printf.eprintf "Usage: %s -file <input.(res|resi|ml|mli)>\n" cmd;
   exit 1
 end
 
