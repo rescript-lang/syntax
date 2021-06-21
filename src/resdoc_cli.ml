@@ -1,7 +1,5 @@
 (* Parsetree docs: https://sanette.github.io/ocaml-api/4.06/Parsetree.html *)
 
-open Format
-
 module Util = struct
   let filter_map f =
     let rec aux accu = function
@@ -264,7 +262,7 @@ module ExtractDocStrings = struct
       match attrs with
       | [] -> None
       | ({Location.txt = "ocaml.doc"}, PStr [{pstr_desc = Pstr_eval ({pexp_desc = Pexp_constant (Pconst_string(a,_));_},_); _}]):: _ ->
-        let docstring = sprintf "@[<v>@ @[%s@]@]@." a in
+        let docstring = Format.sprintf "@[<v>@ @[%s@]@]@." a in
         Some docstring
       | _::attrs -> findFirstItem attrs
     in
@@ -387,7 +385,8 @@ module ExtractDocStrings = struct
             default_iterator.module_declaration iterator module_declaration;
       end;
 
-      (* TODO: add more iterator methods *)
+      (* TODO: add module_binding *)
+      (* TODO: add modtype *)
 
     } in
     (iterator, items)
@@ -405,24 +404,16 @@ end
 
 exception Not_supported of string
 
-type backend = Parser: ('diagnostics) Res_driver.parsingEngine -> backend [@@unboxed]
-
-let extract_signature_file filename parsingEngine =
-  let Parser backend = parsingEngine in
-  let parseResult = backend.parseInterface ~forPrinter:false ~filename in
-  ExtractDocStrings.from_signature parseResult.parsetree
-
-let extract_structure_file filename parsingEngine =
-  let Parser backend = parsingEngine in
-  let parseResult = backend.parseImplementation ~forPrinter:false ~filename in
-  ExtractDocStrings.from_structure parseResult.parsetree
-
 let extract_file filename =
   let items = match Filename.extension filename with
-    | ".mli" -> extract_signature_file filename (Parser Res_driver_ml_parser.parsingEngine)
-    | ".ml" -> extract_structure_file filename (Parser Res_driver_ml_parser.parsingEngine)
-    | ".res" -> extract_structure_file filename (Parser Res_driver.parsingEngine)
-    | ".resi" -> extract_signature_file filename (Parser Res_driver.parsingEngine)
+    | ".mli" -> ExtractDocStrings.from_signature
+      (Res_driver_ml_parser.parsingEngine.parseInterface ~forPrinter:false ~filename).parsetree
+    | ".ml" -> ExtractDocStrings.from_structure
+      (Res_driver_ml_parser.parsingEngine.parseImplementation ~forPrinter:false ~filename).parsetree
+    | ".resi" -> ExtractDocStrings.from_signature
+      (Res_driver.parsingEngine.parseInterface ~forPrinter:false ~filename).parsetree
+    | ".res" -> ExtractDocStrings.from_structure
+      (Res_driver.parsingEngine.parseImplementation ~forPrinter:false ~filename).parsetree
     | ext -> raise (Not_supported ("'" ^ ext ^ "' extension is not supported"))
   in
   let name = Util.module_of_filename filename in
@@ -449,8 +440,14 @@ let () = match Sys.argv with
     try
       extract_file input_file;
       exit 0
-    with Syntaxerr.Error err ->
-      fprintf Format.err_formatter "@[%a@]@." Syntaxerr.report_error err;
-      exit 1
+    with exn ->
+      begin match Location.error_of_exn exn with
+      | Some (`Ok error) -> begin
+          Location.report_error Format.err_formatter error;
+          Format.pp_print_newline Format.err_formatter ();
+        end;
+      | _ -> ()
+      end;
+      exit 1;
     end
   | _ -> usage Sys.argv.(0)
