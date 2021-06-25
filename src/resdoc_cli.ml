@@ -387,7 +387,30 @@ module ExtractDocStrings = struct
             default_iterator.module_declaration iterator module_declaration;
       end;
 
-      (* TODO: add module_binding *)
+      module_binding = begin fun iterator module_binding ->
+        match module_binding with
+        | { pmb_attributes; pmb_name; pmb_expr } ->
+          match pmb_expr.pmod_desc with
+          | Pmod_structure structure ->
+            (* recursive call; uses new iterator and does not recurse into this one *)
+            let items = from_structure structure in
+            let docstring = match from_attributes pmb_attributes with
+              | Some str -> str
+              | None -> ""
+            in
+            DocItem.Doc_module {name=pmb_name.txt; items; docstring; } |> generate
+          | Pmod_ident {txt = Ldot _} ->
+            let signature = List.hd !signature_stack in
+            let docstring = match from_attributes pmb_attributes with
+              | Some docstring -> docstring
+              | None -> ""
+            in
+            DocItem.Doc_module_alias {name=pmb_name.txt; docstring; signature} |> generate;
+            default_iterator.module_binding iterator module_binding;
+          | _ ->
+            default_iterator.module_binding iterator module_binding;
+      end;
+
       (* TODO: add modtype *)
 
     } in
