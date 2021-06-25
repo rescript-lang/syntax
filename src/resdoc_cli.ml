@@ -251,6 +251,7 @@ module Signature = struct
   let from_signature_item item =
     Res_printer.printSignatureItem (DropDocAttributes.signature_item item) cmtTable |> Res_doc.toString ~width:80
 
+  (* TODO: this prints the entire structure; it should extract the signature *)
   let from_structure_item item =
     Res_printer.printStructure [DropDocAttributes.structure_item item] cmtTable |> Res_doc.toString ~width:80
 end
@@ -327,12 +328,13 @@ module ExtractDocStrings = struct
         in
         begin match type_declaration.ptype_kind with
         | Ptype_variant cdecls ->
-          let constructorDocs = Util.filter_map (fun { Parsetree.pcd_attributes; pcd_name } ->
-              (match from_attributes pcd_attributes with
-                | Some docstring ->
-                  Some (pcd_name.txt, docstring)
-                | None -> None)
-            ) cdecls
+          let constructorDocs = Util.filter_map 
+            begin fun { Parsetree.pcd_attributes; pcd_name } ->
+              match from_attributes pcd_attributes with
+              | Some docstring -> Some (pcd_name.txt, docstring)
+              | None -> None
+            end
+            cdecls
           in
           DocItem.Doc_variant {signature; constructorDocs; docstring} |> generate
         | Ptype_record labelDecls ->
