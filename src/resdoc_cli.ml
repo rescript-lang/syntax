@@ -320,6 +320,27 @@ module ExtractDocStrings = struct
         default_iterator.value_description iterator value_description;
       end;
 
+      value_binding = begin fun iterator value_binding ->
+        begin match value_binding with
+        | {pvb_attributes; pvb_pat; _ } ->
+          let signature = List.hd !signature_stack in
+          let docstring = match from_attributes pvb_attributes with
+            | Some docstring -> docstring
+            | None -> ""
+          in
+          begin match pvb_pat.ppat_desc with
+          | Ppat_constraint({ ppat_desc = Ppat_var(name); _ }, _) ->
+            DocItem.Doc_value({
+              signature;
+              name = name.txt;
+              docstring;
+            }) |> generate
+          | _ -> ()
+          end;
+        end;
+        default_iterator.value_binding iterator value_binding;
+      end;
+
       type_declaration = begin fun iterator type_declaration ->
         let signature = List.hd !signature_stack in
         let docstring = match from_attributes type_declaration.ptype_attributes with
