@@ -329,6 +329,13 @@ module ExtractDocStrings = struct
             | None -> ""
           in
           begin match pvb_pat.ppat_desc with
+          | Ppat_var(name) ->
+            (* Example: let add = (a, b) => a + b *)
+            DocItem.Doc_value({
+              signature;
+              name = name.txt;
+              docstring;
+            }) |> generate
           | Ppat_constraint({ ppat_desc = Ppat_var(name); _ }, _) ->
             DocItem.Doc_value({
               signature;
