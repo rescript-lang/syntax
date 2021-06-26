@@ -270,10 +270,14 @@ module ExtractDocStrings = struct
     findFirstItem attrs
 
   let rec make =
+    (* Ast_iterator has no accumulator, so we use a reference to build a list of doc items. *)
     let items = ref [] in
     let generate item =
       items := item :: !items
     in
+    (* Keep a stack of the the signature of the most recently encountered signature_item /
+       structure_item so it can be attached to doc items deeper in the AST when they are
+       generated. *)
     let signature_stack = ref [] in
     let open Ast_iterator in
     let iterator = {
@@ -297,13 +301,16 @@ module ExtractDocStrings = struct
         begin match attribute with
         | ( { Asttypes.txt="ocaml.text" },
             Parsetree.PStr [ { pstr_desc = Pstr_eval ( { pexp_desc = Pexp_constant (Pconst_string(str, _)); _ }, _); _ } ]
-          ) -> DocItem.Doc_text str |> generate
+          ) ->
+            (* Standalone @@ocaml.text() attribute (not attached to anything). *)
+            DocItem.Doc_text str |> generate
         | _ -> ()
         end;
         default_iterator.attribute iterator attribute;
       end;
 
       value_description = begin fun iterator value_description ->
+        (* Example: let add: (int, int) => int *)
         begin match value_description with
         | {pval_attributes; pval_name; _} ->
           let signature = List.hd !signature_stack in
@@ -337,6 +344,7 @@ module ExtractDocStrings = struct
               docstring;
             }) |> generate
           | Ppat_constraint({ ppat_desc = Ppat_var(name); _ }, _) ->
+            (* Example: let add: (int, int) => int = (a, b) => a + b *)
             DocItem.Doc_value({
               signature;
               name = name.txt;
