@@ -74,3 +74,4 @@ let foo = 2
 let foo = f ()
 let foo = ((2)[@ns.braces ])
 let foo = (("foo")[@ns.braces ])
+let foo as x = ()
