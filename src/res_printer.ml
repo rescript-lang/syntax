@@ -1639,14 +1639,15 @@ and printTypExpr (typExpr : Parsetree.core_type) cmtTbl =
   | Ptyp_variant (rowFields, closedFlag, labelsOpt) ->
     let forceBreak = typExpr.ptyp_loc.Location.loc_start.pos_lnum < typExpr.ptyp_loc.loc_end.pos_lnum in
     let printRowField = function
-    | Parsetree.Rtag ({txt}, attrs, true, []) ->
-      Doc.group (
+    | Parsetree.Rtag ({txt; loc}, attrs, true, []) ->
+      let doc = Doc.group (
         Doc.concat [
           printAttributes attrs cmtTbl;
           Doc.concat [Doc.text "#"; printPolyVarIdent txt]
         ]
-      )
-    | Rtag ({txt}, attrs, truth, types) ->
+      ) in
+      printComments doc cmtTbl loc
+    | Rtag ({txt; loc}, attrs, truth, types) ->
       let doType t = match t.Parsetree.ptyp_desc with
       | Ptyp_tuple _ -> printTypExpr t cmtTbl
       | _ -> Doc.concat [ Doc.lparen; printTypExpr t cmtTbl; Doc.rparen ]
@@ -1654,13 +1655,14 @@ and printTypExpr (typExpr : Parsetree.core_type) cmtTbl =
       let printedTypes = List.map doType types in
       let cases = Doc.join ~sep:(Doc.concat [Doc.line; Doc.text "& "]) printedTypes in
       let cases = if truth then Doc.concat [Doc.line; Doc.text "& "; cases] else cases in
-      Doc.group (
+      let doc = Doc.group (
         Doc.concat [
           printAttributes attrs cmtTbl;
           Doc.concat [Doc.text "#"; printPolyVarIdent txt];
           cases
         ]
-      )
+      ) in
+      printComments doc cmtTbl loc
     | Rinherit coreType ->
       printTypExpr coreType cmtTbl
     in

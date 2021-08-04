@@ -1812,6 +1812,29 @@ and walkExprArgument (_argLabel, expr) t comments =
       attach t.trailing typexpr.ptyp_loc afterTyp
     | Ptyp_object (fields, _) ->
       walkTypObjectFields fields t comments
+    | Ptyp_variant (fields, _, _) ->
+      walkList
+        ~getLoc:(fun field -> match (field : Parsetree.row_field) with
+        | Rtag (labelLoc, _, _, types) ->
+          let endLoc = match List.rev types with
+          | typexpr::_ -> typexpr.ptyp_loc.loc_end
+          | [] -> labelLoc.loc.loc_end
+          in
+          {labelLoc.loc with loc_end = endLoc}
+
+        | Rinherit typexpr -> typexpr.ptyp_loc)
+        ~walkNode:(fun field t comments -> match (field : Parsetree.row_field) with
+        | Rtag _ -> ()
+        | Rinherit typexpr ->
+          let (beforeTyp, insideTyp, afterTyp) =
+            partitionByLoc comments typexpr.ptyp_loc in
+          attach t.leading typexpr.ptyp_loc beforeTyp;
+          walkTypExpr typexpr t insideTyp;
+          attach t.trailing typexpr.ptyp_loc afterTyp
+        )
+        fields
+        t
+        comments
     | _ -> ()
 
   and walkTypObjectFields fields t comments =
