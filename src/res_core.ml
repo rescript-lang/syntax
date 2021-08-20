@@ -136,6 +136,7 @@ let ternaryAttr = (Location.mknoloc "ns.ternary", Parsetree.PStr [])
 let ifLetAttr = (Location.mknoloc "ns.iflet", Parsetree.PStr [])
 let suppressFragileMatchWarningAttr = (Location.mknoloc "warning", Parsetree.PStr [Ast_helper.Str.eval (Ast_helper.Exp.constant (Pconst_string ("-4", None)))])
 let makeBracesAttr loc = (Location.mkloc "ns.braces" loc, Parsetree.PStr [])
+let templateLiteralAttr = (Location.mknoloc "res.template", Parsetree.PStr [])
 
 type stringLiteralState =
   | Start
@@ -911,12 +912,10 @@ let parseConstant p =
     let floatTxt = if isNegative then "-" ^ f else f in
     Parsetree.Pconst_float (floatTxt, suffix)
   | String s ->
-    let txt = if p.mode = ParseForTypeChecker then
-      parseStringLiteral s
+    if p.mode = ParseForTypeChecker then
+      Pconst_string (s, Some "js")
     else
-      s
-    in
-    Pconst_string(txt, None)
+      Pconst_string (s, None)
   | Codepoint {c; original} ->
     if p.mode = ParseForTypeChecker then
       Pconst_char c
@@ -1128,7 +1127,7 @@ let rec parsePattern ?(alias=true) ?(or_=true) p =
     end
   | Backtick ->
     let constant = parseTemplateConstant ~prefix:(Some "js") p in
-    Ast_helper.Pat.constant ~loc:(mkLoc startPos p.prevEndPos) constant
+    Ast_helper.Pat.constant ~attrs:[templateLiteralAttr] ~loc:(mkLoc startPos p.prevEndPos) constant
   | Lparen ->
     Parser.next p;
     begin match p.token with
@@ -2228,25 +2227,19 @@ and parseTemplateExpr ?(prefix="js") p =
     | TemplateTail txt ->
       Parser.next p;
       let loc = mkLoc startPos p.prevEndPos in
-      if String.length txt > 0 then
-        let txt = if p.mode = ParseForTypeChecker then parseTemplateStringLiteral txt else txt in
-        let str = Ast_helper.Exp.constant ~loc (Pconst_string(txt, Some prefix)) in
-        Ast_helper.Exp.apply ~loc hiddenOperator
-          [Nolabel, acc; Nolabel, str]
-      else
-        acc
+      let txt = if p.mode = ParseForTypeChecker then parseTemplateStringLiteral txt else txt in
+      let str = Ast_helper.Exp.constant ~attrs:[templateLiteralAttr] ~loc (Pconst_string(txt, Some prefix)) in
+      Ast_helper.Exp.apply ~attrs:[templateLiteralAttr] ~loc hiddenOperator
+        [Nolabel, acc; Nolabel, str]
     | TemplatePart txt ->
       Parser.next p;
       let loc = mkLoc startPos p.prevEndPos in
       let expr = parseExprBlock p in
       let fullLoc = mkLoc startPos p.prevEndPos in
       let txt = if p.mode = ParseForTypeChecker then parseTemplateStringLiteral txt else txt in
-      let str = Ast_helper.Exp.constant ~loc (Pconst_string(txt, Some prefix)) in
+      let str = Ast_helper.Exp.constant ~attrs:[templateLiteralAttr] ~loc (Pconst_string(txt, Some prefix)) in
       let next =
-        let a = if String.length txt > 0 then
-            Ast_helper.Exp.apply ~loc:fullLoc hiddenOperator [Nolabel, acc; Nolabel, str]
-          else acc
-        in
+        let a = Ast_helper.Exp.apply ~attrs:[templateLiteralAttr] ~loc:fullLoc hiddenOperator [Nolabel, acc; Nolabel, str] in
         Ast_helper.Exp.apply ~loc:fullLoc hiddenOperator
           [Nolabel, a; Nolabel, expr]
       in
@@ -2261,19 +2254,16 @@ and parseTemplateExpr ?(prefix="js") p =
   | TemplateTail txt ->
     Parser.next p;
     let txt = if p.mode = ParseForTypeChecker then parseTemplateStringLiteral txt else txt in
-    Ast_helper.Exp.constant ~loc:(mkLoc startPos p.prevEndPos) (Pconst_string(txt, Some prefix))
+    Ast_helper.Exp.constant ~attrs:[templateLiteralAttr] ~loc:(mkLoc startPos p.prevEndPos) (Pconst_string(txt, Some prefix))
   | TemplatePart txt ->
     Parser.next p;
     let constantLoc = mkLoc startPos p.prevEndPos in
     let expr = parseExprBlock p in
     let fullLoc = mkLoc startPos p.prevEndPos in
     let txt = if p.mode = ParseForTypeChecker then parseTemplateStringLiteral txt else txt in
-    let str = Ast_helper.Exp.constant ~loc:constantLoc (Pconst_string(txt, Some prefix)) in
+    let str = Ast_helper.Exp.constant ~attrs:[templateLiteralAttr] ~loc:constantLoc (Pconst_string(txt, Some prefix)) in
     let next =
-      if String.length txt > 0 then
-        Ast_helper.Exp.apply ~loc:fullLoc hiddenOperator [Nolabel, str; Nolabel, expr]
-      else
-        expr
+      Ast_helper.Exp.apply ~attrs:[templateLiteralAttr] ~loc:fullLoc hiddenOperator [Nolabel, str; Nolabel, expr]
     in
     parseParts next
  | token ->

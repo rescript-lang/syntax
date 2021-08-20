@@ -75,7 +75,7 @@ test: reanalyze build-native lib/test.exe
 	./lib/test.exe
 	./test.sh
 
-roundtrip-test: reanalyze bootstrap lib/test.exe
+roundtrip-test: reanalyze lib/test.exe
 	./lib/test.exe
 	ROUNDTRIP_TEST=1 ./test.sh
 
