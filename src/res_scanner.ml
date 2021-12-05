@@ -300,6 +300,11 @@ let scanExoticIdentifier scanner =
   (* TODO: do we really need to create a new buffer instead of substring once? *)
   Token.Lident (Buffer.contents buffer)
 
+let valid_dec x =
+  match x with 
+  | '0' .. '9' -> true 
+  | _ -> false
+
 let scanStringEscapeSequence ~startPos scanner =
   let scan ~n ~base ~max =
     let rec loop n x =
@@ -328,13 +333,17 @@ let scanStringEscapeSequence ~startPos scanner =
   (* \ already consumed *)
   | 'n' | 't' | 'b' | 'r' | '\\' | ' ' | '\'' | '"' ->
     next scanner
-  | '0'..'9' ->
-    (* decimal *)
-    scan ~n:3 ~base:10 ~max:255
-  | 'o' ->
-    (* octal *)
+  | '0' ->
     next scanner;
-    scan ~n:3 ~base:8 ~max:255
+    if (valid_dec scanner.ch) then
+      let pos = position scanner in
+      let msg = "The only valid numeric escape in strict mode is '\\0'" in
+      scanner.err ~startPos ~endPos:pos (Diagnostics.message msg)
+  | '1'..'9' ->
+    let pos = position scanner in
+    let msg = "The only valid numeric escape in strict mode is '\\0'" in
+    scanner.err ~startPos ~endPos:pos (Diagnostics.message msg);
+    next scanner
   | 'x' ->
     (* hex *)
     next scanner;

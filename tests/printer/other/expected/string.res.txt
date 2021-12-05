@@ -8,7 +8,7 @@ let s = "a double escaped \\ test"
 
 let s = "what happens here \\n"
 
-let s = "\123 \o111 \xA0"
+let s = "\0 \xA0"
 
 let heart = "\u2665"
 

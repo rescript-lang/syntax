@@ -2,22 +2,22 @@
   Syntax error!
   tests/parsing/errors/scanner/escapeSequence.res:1:10-11
 
-  1 │ let x = "\0"
+  1 │ let x = "\055"
   2 │ 
-  3 │ let x = "\oAAA"
+  3 │ let x = "\123"
 
-  unknown escape sequence
+  The only valid numeric escape in strict mode is '\0'
 
 
   Syntax error!
-  tests/parsing/errors/scanner/escapeSequence.res:3:10-11
+  tests/parsing/errors/scanner/escapeSequence.res:3:10
 
-  1 │ let x = "\0"
+  1 │ let x = "\055"
   2 │ 
-  3 │ let x = "\oAAA"
+  3 │ let x = "\123"
   4 │ 
 
-  unknown escape sequence
+  The only valid numeric escape in strict mode is '\0'
 
-let x = {js|\0|js}
-let x = {js|\oAAA|js}
+let x = {js|\055|js}
+let x = {js|\123|js}

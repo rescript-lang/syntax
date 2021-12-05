@@ -56,18 +56,15 @@ let x = '\t'
 let x = '\b'
 let x = '\r'
 let x = ' '
-let x = '\o021'
 let x = '\xAA'
-let x = '\179'
 
 let () = {
   getResult()
   -10
 }
 
-let x = "foo\010bar"
+let x = "foo\0bar"
 let x = "foo\x0Abar"
-let x = "foo\o012bar"
 let x = "\\abc"
 let x = "\'bar"
 let x = "\nbar"
@@ -81,13 +78,13 @@ let x = "\u2665"
 let a = "\u{000000000061}"
 let x = "\u{00A9}"
 let x = "\u{00a9}"
+let x = "\oAAA" // same as "oAAA" since \o is not a valid escape
+let x = "\m" // same as "m" since \m is not a valid escape
 let smile = "\u{1F600}"
 let smile = "\u{1f600}"
-let smile = "\240\159\152\128"
 
 // represent the same thing
 let u = "日本語" 
 let u = "\u65e5\u672c\u8a9e"
 let u = "\u{000065e5}\u{0000672c}\u{00008a9e}"
 let u = "\xe6\x97\xa5\xe6\x9c\xac\xe8\xaa\x9e"
-let u = "\230\151\165\230\156\172\232\170\158"
