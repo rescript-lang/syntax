@@ -10,6 +10,8 @@ let s = "what happens here \\n"
 
 let s = "\0 \xA0"
 
+let s = "an unknown escape \m111"
+
 let heart = "\u2665"
 
 let smile = "emoji: \u{1F600}"
