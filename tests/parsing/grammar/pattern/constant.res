@@ -7,6 +7,10 @@ switch x {
 | "stringPattern" => ()
 | "stringPattern" as s => ()
 | ("stringPattern" : string) as s => ()
+| "\xff" => ()
+| "\u2212" => ()
+| "\0" => ()
+| "\o123" => ()
 }
 
 for "stringPattern" in 0 to 10 { () }

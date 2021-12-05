@@ -1,7 +1,10 @@
+let zero = 0
+
 let x = {"age": 30}
 let y = {"age": 30,}
 let y = {"age": 30, "name": "steve"}
 let y = {"age": 30, "name": "steve",}
+let z = {"\xff": 1, "\u2212": "two", "\0": zero, "\o123": "o123"}
 
 // don't confuse with start of block expr
 let x = {"age"}

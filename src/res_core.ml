@@ -142,8 +142,6 @@ type stringLiteralState =
   | Start
   | Backslash
   | HexEscape
-  | DecimalEscape
-  | OctalEscape
   | UnicodeEscape
   | UnicodeCodePointEscape
   | UnicodeEscapeStart
@@ -500,7 +498,7 @@ let parseStringLiteral s =
   let rec parse state i d =
     if i = len then
       (match state with
-      | HexEscape | DecimalEscape | OctalEscape | UnicodeEscape | UnicodeCodePointEscape -> false
+      | HexEscape | UnicodeEscape | UnicodeCodePointEscape -> false
       | _ -> true)
     else
       let c = String.unsafe_get s i in
@@ -515,11 +513,10 @@ let parseStringLiteral s =
         | 'r' -> Buffer.add_char b '\r'; parse Start (i + 1) d
         | 'b' -> Buffer.add_char b '\008'; parse Start (i + 1) d
         | 't' -> Buffer.add_char b '\009'; parse Start (i + 1) d
+        | '0' -> Buffer.add_char b '\000'; parse Start (i + 1) d
         | ('\\' | ' ' | '\'' | '"') as c -> Buffer.add_char b c; parse Start (i + 1) d
         | 'x' -> parse HexEscape (i + 1) 0
-        | 'o' -> parse OctalEscape (i + 1) 0
         | 'u' -> parse UnicodeEscapeStart (i + 1) 0
-        | '0' .. '9' -> parse DecimalEscape i 0
         | '\010' | '\013' -> parse EscapedLineBreak (i + 1) d
         | c -> Buffer.add_char b '\\'; Buffer.add_char b c; parse Start (i + 1) d)
       | HexEscape ->
@@ -534,32 +531,6 @@ let parseStringLiteral s =
           )
         else
           parse HexEscape (i + 1) (d + 1)
-      | DecimalEscape ->
-        if d == 2 then
-          let c0 = String.unsafe_get s (i - 2) in
-          let c1 = String.unsafe_get s (i - 1) in
-          let c2 = String.unsafe_get s i in
-          let c = 100 * (Char.code c0 - 48) + 10 * (Char.code c1  - 48) + (Char.code c2 - 48) in
-          if c < 0 || c > 255 then false
-          else (
-            Buffer.add_char b (Char.unsafe_chr c);
-            parse Start (i + 1) 0
-          )
-        else
-          parse DecimalEscape (i + 1) (d + 1)
-      | OctalEscape ->
-        if d == 2 then
-          let c0 = String.unsafe_get s (i - 2) in
-          let c1 = String.unsafe_get s (i - 1) in
-          let c2 = String.unsafe_get s i in
-          let c = 64 * (Char.code c0 - 48) + 8 * (Char.code c1  - 48) + (Char.code c2 - 48) in
-          if c < 0 || c > 255 then false
-          else (
-            Buffer.add_char b (Char.unsafe_chr c);
-            parse Start (i + 1) 0
-          )
-        else
-          parse OctalEscape (i + 1) (d + 1)
       | UnicodeEscapeStart ->
         (match c with
         | '{' -> parse UnicodeCodePointEscape (i + 1) 0
