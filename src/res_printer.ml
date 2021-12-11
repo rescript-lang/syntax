@@ -500,6 +500,7 @@ let convertDecEscape s =
   let c2 = Array.get hexTable (intNum land 15) in
   "\\x" ^ String.concat "" [ String.make 1 c1; String.make 1 c2 ]
 
+(* TODO: convert octal escapes as well *)
 let printStringContents txt =
   let regex = Str.regexp "\\\\[0-9][0-9][0-9]" in
   let rep = Str.global_substitute regex convertDecEscape txt in
