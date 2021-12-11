@@ -46,7 +46,7 @@ TEST_FILES = $(API_FILES) tests/res_utf8_test.cmx tests/res_test.cmx
 .DEFAULT_GOAL := build-native
 
 lib/rescript.exe: $(CLI_FILES)
-	$(OCAMLOPT) $(OCAMLFLAGS) -O2 -o ./lib/rescript.exe -I +compiler-libs ocamlcommon.cmxa  -I src $(CLI_FILES)
+	$(OCAMLOPT) $(OCAMLFLAGS) -O2 -o ./lib/rescript.exe -I +compiler-libs ocamlcommon.cmxa str.cmxa  -I src $(CLI_FILES)
 
 build-native: lib/refmt.exe lib/rescript.exe depend
 
@@ -69,7 +69,7 @@ benchmarks/refmt_main3b.cmx: benchmarks/refmt_main3b.ml
 	$(OCAMLOPT) -c -O2 -I +compiler-libs ocamlcommon.cmxa benchmarks/refmt_main3b.ml
 
 lib/test.exe: $(TEST_FILES)
-	$(OCAMLOPT) $(OCAMLFLAGS) -O2 -o ./lib/test.exe -bin-annot -I +compiler-libs ocamlcommon.cmxa -I src -I tests $(TEST_FILES)
+	$(OCAMLOPT) $(OCAMLFLAGS) -O2 -o ./lib/test.exe -bin-annot -I +compiler-libs ocamlcommon.cmxa str.cmxa -I src -I tests $(TEST_FILES)
 
 test: reanalyze build-native lib/test.exe
 	./lib/test.exe

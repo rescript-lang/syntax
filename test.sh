@@ -23,6 +23,7 @@ done
 
 # printing
 for file in tests/{printer,conversion}/**/*.(res|resi|ml|mli); do
+  # NOTE: this results in .ml(i) files being printed using .res(i) syntax
   lib/rescript.exe $file &> $(exp $file) & maybeWait
 done
 for file in tests/{printer,conversion}/**/*.re; do
