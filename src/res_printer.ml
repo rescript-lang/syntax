@@ -3399,6 +3399,46 @@ and printTemplateLiteral expr cmtTbl =
     Doc.text "`"
   ]
 
+and printTaggedTemplateLiteral callExpr args cmtTbl =
+  let (stringsList, valuesList) = match args with
+  | [
+    (_, {Parsetree.pexp_desc = Pexp_array strings});
+    (_, {Parsetree.pexp_desc = Pexp_array values})
+  ] -> (strings, values)
+  | _ -> assert false
+  in
+
+  let strings = List.map (
+    fun x -> match x with
+    | {Parsetree.pexp_desc = Pexp_constant (Pconst_string (txt, _))} -> 
+      printStringContents txt
+    | _ -> assert false
+  ) stringsList in
+
+  let values = List.map (fun x -> 
+    Doc.concat [
+      Doc.text "${";
+      printExpressionWithComments x cmtTbl;
+      Doc.text "}"
+    ]) valuesList in
+
+  let rec process first second =
+    match first, second with
+    | [], [] -> Doc.text ""
+    | a_head :: a_rest, b -> Doc.concat [a_head; process b a_rest]
+    | _ -> assert false
+  in
+
+  let content = process strings values in
+
+  let tag = printExpressionWithComments callExpr cmtTbl in
+  Doc.concat [
+    tag;
+    Doc.text "`";
+    content;
+    Doc.text "`";
+  ]
+
 and printUnaryExpression expr cmtTbl =
   let printUnaryOperator op = Doc.text (
     match op with
@@ -3821,6 +3861,9 @@ and printPexpApply expr cmtTbl =
       args
     ) when ParsetreeViewer.isJsxExpression expr ->
     printJsxExpression lident args cmtTbl
+  | Pexp_apply (callExpr, args) 
+    when ParsetreeViewer.hasTaggedTemplateLiteralAttr expr.pexp_attributes ->
+    printTaggedTemplateLiteral callExpr args cmtTbl
   | Pexp_apply (callExpr, args) ->
     let args = List.map (fun (lbl, arg) ->
       (lbl, ParsetreeViewer.rewriteUnderscoreApply arg)

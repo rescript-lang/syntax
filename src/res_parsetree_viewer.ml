@@ -516,6 +516,10 @@ let hasTemplateLiteralAttr attrs = List.exists (fun attr -> match attr with
 | ({Location.txt = "res.template"}, _) -> true
 | _ -> false) attrs
 
+let hasTaggedTemplateLiteralAttr attrs = List.exists (fun attr -> match attr with
+| ({Location.txt = "res.taggedTemplate"}, _) -> true
+| _ -> false) attrs
+
 let isTemplateLiteral expr =
   match expr.pexp_desc with
   | Pexp_apply (
