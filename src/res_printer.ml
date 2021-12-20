@@ -2853,11 +2853,13 @@ and printExpression (e : Parsetree.expression) cmtTbl =
     | extension ->
       printExtension ~atModuleLvl:false extension cmtTbl
     end
-  | Pexp_apply _ ->
+  | Pexp_apply (callExpr, args) ->
     if ParsetreeViewer.isUnaryExpression e then
       printUnaryExpression e cmtTbl
     else if ParsetreeViewer.isTemplateLiteral e then
       printTemplateLiteral e cmtTbl
+    else if ParsetreeViewer.isTaggedTemplateLiteral e then
+      printTaggedTemplateLiteral callExpr args cmtTbl
     else if ParsetreeViewer.isBinaryExpression e then
       printBinaryExpression e cmtTbl
     else
@@ -3861,9 +3863,6 @@ and printPexpApply expr cmtTbl =
       args
     ) when ParsetreeViewer.isJsxExpression expr ->
     printJsxExpression lident args cmtTbl
-  | Pexp_apply (callExpr, args) 
-    when ParsetreeViewer.hasTaggedTemplateLiteralAttr expr.pexp_attributes ->
-    printTaggedTemplateLiteral callExpr args cmtTbl
   | Pexp_apply (callExpr, args) ->
     let args = List.map (fun (lbl, arg) ->
       (lbl, ParsetreeViewer.rewriteUnderscoreApply arg)

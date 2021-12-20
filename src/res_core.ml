@@ -2250,8 +2250,7 @@ and parseTemplateExpr ?(prefix="js") p =
         Ast_helper.Exp.apply ~loc:fullLoc hiddenOperator
           [Nolabel, a; Nolabel, expr]
       in *)
-      let next = parseParts p in
-      (str, Some(expr)) :: next
+      (str, Some(expr)) :: parseParts p
    | token ->
      Parser.err p (Diagnostics.unexpected token p.breadcrumbs);
      (* Ast_helper.Exp.constant (Pconst_string("", None)) *)
@@ -2272,27 +2271,27 @@ and parseTemplateExpr ?(prefix="js") p =
       [(Nolabel, strings_array); (Nolabel, values_array)]
   in
 
+  let loc = Location.none in
   let hiddenOperator =
     let op = Location.mknoloc (Longident.Lident "^") in
     Ast_helper.Exp.ident op
   in
   let genInterpolatedString () =
-    let fn acc part =
-      let (str, value) = part in
-      let loc = Location.none in
-      let next = match acc with
-        | Some(expr) -> Ast_helper.Exp.apply ~attrs:[templateLiteralAttr] ~loc hiddenOperator
-          [Nolabel, expr; Nolabel, str]  
-        | None -> str
-      in
-      let result = match value with
-        | Some(expr) -> Ast_helper.Exp.apply ~attrs:[templateLiteralAttr] ~loc hiddenOperator
-            [Nolabel, next; Nolabel, expr]
-        | None -> next
-      in
-      Some(result)
-    in
-    List.fold_left fn None parts 
+    let subparts = List.flatten (
+      List.map (fun part -> 
+        match part with
+        | (s, Some(v)) -> [s; v]
+        | (s, None) -> [s]
+      ) 
+    parts) in
+    List.fold_left (fun acc subpart -> 
+      match acc with
+      | Some(expr) -> Some(
+          Ast_helper.Exp.apply ~attrs:[templateLiteralAttr] ~loc hiddenOperator
+          [Nolabel, expr; Nolabel, subpart]
+        )
+      | None -> Some(subpart)
+    ) None subparts 
   in
 
   if prefix = "js" || prefix = "j" then

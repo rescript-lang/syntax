@@ -530,6 +530,11 @@ let isTemplateLiteral expr =
   | Pexp_constant _ when hasTemplateLiteralAttr expr.pexp_attributes -> true
   | _ -> false
 
+let isTaggedTemplateLiteral expr =
+    match expr with
+    | {pexp_desc = Pexp_apply _; pexp_attributes = attrs} -> hasTaggedTemplateLiteralAttr attrs
+    | _ -> false
+
 (* Blue | Red | Green -> [Blue; Red; Green] *)
 let collectOrPatternChain pat =
   let rec loop pattern chain =
