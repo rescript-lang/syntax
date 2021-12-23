@@ -2300,12 +2300,13 @@ and parseTemplateExpr ?(prefix="js") p =
     ) None subparts 
   in
 
-  if prefix = "js" || prefix = "j" then
+  match prefix with
+  | "js" | "j" -> begin
     match genInterpolatedString () with
     | Some(expr) -> expr
     | None -> Ast_helper.Exp.constant (Pconst_string("", None))
-  else
-    genTaggedTemplateCall ();
+    end
+  | _ -> genTaggedTemplateCall ()
 
 (* Overparse: let f = a : int => a + 1, is it (a : int) => or (a): int =>
  * Also overparse constraints:
