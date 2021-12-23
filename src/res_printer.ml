@@ -3424,14 +3424,17 @@ and printTaggedTemplateLiteral callExpr args cmtTbl =
       Doc.text "}"
     ]) valuesList in
 
-  let rec process first second =
-    match first, second with
-    | [], [] -> Doc.text ""
-    | a_head :: a_rest, b -> Doc.concat [a_head; process b a_rest]
-    | _ -> assert false
+  let process strings values = 
+    let rec aux acc = function
+      | [], [] -> acc
+      | a_head :: a_rest, b -> 
+        aux (Doc.concat [acc; a_head]) (b, a_rest)
+      | _ -> assert false
+    in
+    aux Doc.nil (strings, values) 
   in
 
-  let content = process strings values in
+  let content: Doc.t = process strings values in
 
   let tag = printExpressionWithComments callExpr cmtTbl in
   Doc.concat [
