@@ -1999,11 +1999,12 @@ and printValueBinding ~recFlag vb cmtTbl i =
             pexp_desc = Pexp_ifthenelse (ifExpr, _, _)
           }  ->
           ParsetreeViewer.isBinaryExpression ifExpr || ParsetreeViewer.hasAttributes ifExpr.pexp_attributes
-      | { pexp_desc = Pexp_newtype _} -> false
-      | e ->
-          ParsetreeViewer.hasAttributes e.pexp_attributes ||
-          ParsetreeViewer.isArrayAccess e
-        )
+        | { pexp_desc = Pexp_newtype _} -> false
+        | { pexp_attributes = [({Location.txt="res.taggedTemplate"}, _)] } -> false
+        | e ->
+            ParsetreeViewer.hasAttributes e.pexp_attributes ||
+            ParsetreeViewer.isArrayAccess e
+          )
     in
     Doc.group (
       Doc.concat [

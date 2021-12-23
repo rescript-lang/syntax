@@ -73,8 +73,7 @@ module X = %graphql("
   }
 ")
 
-let cn =
-  css`
+let cn = css`
   display: block;
   color: ${Color.text};
   background-color: ${Color.bg};
@@ -92,8 +91,7 @@ let cn =
   padding: ${Size.md + 1 - 2.3 * pad / 4}px;
 `
 
-let box =
-  css`
+let box = css`
   margin: ${ten()}px;
   padding: ${pad}px;
   border: 6px solid ${Color.Border.bg->Polished.lighten(0.3)};
