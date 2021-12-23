@@ -2307,62 +2307,6 @@ and parseTemplateExpr ?(prefix="js") p =
   else
     genTaggedTemplateCall ();
 
-(* TODO: Use Res_doc.debug to determine why the old implementation doesn't have an extra space *)
-(* and parseTemplateExpr ?(prefix="js") p =
-  let hiddenOperator =
-    let op = Location.mknoloc (Longident.Lident "^") in
-    Ast_helper.Exp.ident op
-  in
-  let rec parseParts acc =
-    let startPos = p.Parser.startPos in
-    Parser.nextTemplateLiteralToken p;
-    match p.token with
-    | TemplateTail txt ->
-      Parser.next p;
-      let loc = mkLoc startPos p.prevEndPos in
-      let txt = if p.mode = ParseForTypeChecker then parseTemplateStringLiteral txt else txt in
-      let str = Ast_helper.Exp.constant ~attrs:[templateLiteralAttr] ~loc (Pconst_string(txt, Some prefix)) in
-      Ast_helper.Exp.apply ~attrs:[templateLiteralAttr] ~loc hiddenOperator
-        [Nolabel, acc; Nolabel, str]
-    | TemplatePart txt ->
-      Parser.next p;
-      let loc = mkLoc startPos p.prevEndPos in
-      let expr = parseExprBlock p in
-      let fullLoc = mkLoc startPos p.prevEndPos in
-      let txt = if p.mode = ParseForTypeChecker then parseTemplateStringLiteral txt else txt in
-      let str = Ast_helper.Exp.constant ~attrs:[templateLiteralAttr] ~loc (Pconst_string(txt, Some prefix)) in
-      let next =
-        let a = Ast_helper.Exp.apply ~attrs:[templateLiteralAttr] ~loc:fullLoc hiddenOperator [Nolabel, acc; Nolabel, str] in
-        Ast_helper.Exp.apply ~loc:fullLoc hiddenOperator
-          [Nolabel, a; Nolabel, expr]
-      in
-      parseParts next
-   | token ->
-     Parser.err p (Diagnostics.unexpected token p.breadcrumbs);
-     Ast_helper.Exp.constant (Pconst_string("", None))
-  in
-  let startPos = p.startPos in
-  Parser.nextTemplateLiteralToken p;
-  match p.token with
-  | TemplateTail txt ->
-    Parser.next p;
-    let txt = if p.mode = ParseForTypeChecker then parseTemplateStringLiteral txt else txt in
-    Ast_helper.Exp.constant ~attrs:[templateLiteralAttr] ~loc:(mkLoc startPos p.prevEndPos) (Pconst_string(txt, Some prefix))
-  | TemplatePart txt ->
-    Parser.next p;
-    let constantLoc = mkLoc startPos p.prevEndPos in
-    let expr = parseExprBlock p in
-    let fullLoc = mkLoc startPos p.prevEndPos in
-    let txt = if p.mode = ParseForTypeChecker then parseTemplateStringLiteral txt else txt in
-    let str = Ast_helper.Exp.constant ~attrs:[templateLiteralAttr] ~loc:constantLoc (Pconst_string(txt, Some prefix)) in
-    let next =
-      Ast_helper.Exp.apply ~attrs:[templateLiteralAttr] ~loc:fullLoc hiddenOperator [Nolabel, str; Nolabel, expr]
-    in
-    parseParts next
- | token ->
-   Parser.err p (Diagnostics.unexpected token p.breadcrumbs);
-   Ast_helper.Exp.constant (Pconst_string("", None)) *)
-
 (* Overparse: let f = a : int => a + 1, is it (a : int) => or (a): int =>
  * Also overparse constraints:
  *  let x = {
