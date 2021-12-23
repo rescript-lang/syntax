@@ -2284,28 +2284,30 @@ and parseTemplateExpr ?(prefix="js") p =
         | (s, Some(v)) -> [s; v]
         | (s, None) -> [s]
       ) 
-    parts) in
-    List.fold_left (fun acc subpart -> 
-      match acc with
-      | Some(expr) ->
-        let loc = (mkLoc
-          (expr.Parsetree.pexp_loc.Location.loc_start)
-          (subpart.Parsetree.pexp_loc.Location.loc_end)
-        ) in
+      parts)
+    in
+    let exprOption = List.fold_left (
+      fun acc subpart -> 
         Some(
-          Ast_helper.Exp.apply ~attrs:[templateLiteralAttr] ~loc hiddenOperator
-          [Nolabel, expr; Nolabel, subpart]
+          match acc with
+          | Some(expr) ->
+            let loc = (mkLoc
+              (expr.Parsetree.pexp_loc.Location.loc_start)
+              (subpart.Parsetree.pexp_loc.Location.loc_end)
+            ) in
+            Ast_helper.Exp.apply
+              ~attrs:[templateLiteralAttr] ~loc hiddenOperator [Nolabel, expr; Nolabel, subpart]
+          | None -> subpart
         )
-      | None -> Some(subpart)
-    ) None subparts 
+      )
+      None subparts
+    in match exprOption with
+    | Some(expr) -> expr
+    | None -> Ast_helper.Exp.constant (Pconst_string("", None))
   in
 
   match prefix with
-  | "js" | "j" -> begin
-    match genInterpolatedString () with
-    | Some(expr) -> expr
-    | None -> Ast_helper.Exp.constant (Pconst_string("", None))
-    end
+  | "js" | "j" -> genInterpolatedString ()
   | _ -> genTaggedTemplateCall ()
 
 (* Overparse: let f = a : int => a + 1, is it (a : int) => or (a): int =>
