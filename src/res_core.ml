@@ -2226,6 +2226,7 @@ and parseBinaryExpr ?(context=OrdinaryExpr) ?a p prec =
 and parseTemplateExpr ?(prefix="js") p =
   (* TODO: include the location in the parts *)
   let partPrefix = if prefix = "js" || prefix = "j" then Some(prefix) else None in
+  let startPos = p.Parser.startPos in
 
   let rec parseParts p =
     let startPos = p.Parser.startPos in
@@ -2259,6 +2260,7 @@ and parseTemplateExpr ?(prefix="js") p =
   let parts = parseParts p in
   let strings = List.map fst parts in
   let values = filter_map parts snd in
+  let endPos = p.Parser.endPos in
 
   let genTaggedTemplateCall () =
     let lident = Longident.Lident prefix in
@@ -2267,11 +2269,10 @@ and parseTemplateExpr ?(prefix="js") p =
     let values_array = Ast_helper.Exp.array ~attrs:[] ~loc:Location.none values in
     Ast_helper.Exp.apply
       ~attrs:[taggedTemplateLiteralAttr]
-      ~loc:Location.none ident
-      [(Nolabel, strings_array); (Nolabel, values_array)]
+      ~loc:(mkLoc startPos endPos)
+      ident [(Nolabel, strings_array); (Nolabel, values_array)]
   in
 
-  let loc = Location.none in
   let hiddenOperator =
     let op = Location.mknoloc (Longident.Lident "^") in
     Ast_helper.Exp.ident op
@@ -2286,7 +2287,12 @@ and parseTemplateExpr ?(prefix="js") p =
     parts) in
     List.fold_left (fun acc subpart -> 
       match acc with
-      | Some(expr) -> Some(
+      | Some(expr) ->
+        let loc = (mkLoc
+          (expr.Parsetree.pexp_loc.Location.loc_start)
+          (subpart.Parsetree.pexp_loc.Location.loc_end)
+        ) in
+        Some(
           Ast_helper.Exp.apply ~attrs:[templateLiteralAttr] ~loc hiddenOperator
           [Nolabel, expr; Nolabel, subpart]
         )
@@ -2301,6 +2307,7 @@ and parseTemplateExpr ?(prefix="js") p =
   else
     genTaggedTemplateCall ();
 
+(* TODO: Use Res_doc.debug to determine why the old implementation doesn't have an extra space *)
 (* and parseTemplateExpr ?(prefix="js") p =
   let hiddenOperator =
     let op = Location.mknoloc (Longident.Lident "^") in

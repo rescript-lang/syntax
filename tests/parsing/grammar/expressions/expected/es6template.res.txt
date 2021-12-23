@@ -91,6 +91,11 @@ let s =
   [@res.template ])
 let s = (({js|$dollar without $braces $interpolation|js})[@res.template ])
 let s = ((json [|(("null")[@res.template ])|] [||])[@res.taggedTemplate ])
+let x =
+  ((sql
+      [|(("select ")[@res.template ]);((" from ")[@res.template ]);(("")
+        [@res.template ])|] [|column;table|])
+  [@res.taggedTemplate ])
 let x = (({js|foo`bar$\foo|js})[@res.template ])
 let x =
   (((((((((({js|foo`bar$\foo|js})[@res.template ]) ^ a)[@res.template ]) ^

@@ -43,6 +43,8 @@ let s = `$dollar without $braces $interpolation`
 
 let s = json`null`
 
+let x =  sql`select ${column} from ${table}`
+
 let x = `foo\`bar\$\\foo`
 let x = `foo\`bar\$\\foo${a} \` ${b} \` xx`
 
