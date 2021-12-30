@@ -459,7 +459,13 @@ let printPolyVarIdent txt =
         Doc.text txt;
         Doc.text"\""
       ]
-    | NormalIdent -> Doc.text txt
+    | NormalIdent -> match txt with
+      | "" -> Doc.concat [
+        Doc.text "\"";
+        Doc.text txt;
+        Doc.text"\""
+      ]
+      | _ -> Doc.text txt
 
 
 let printLident l = match l with
