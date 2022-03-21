@@ -2,8 +2,8 @@ let r = { a = expr }
 let r = { a = expr }
 let r = { Parsetree.pexp_attributes = [||]; Parsetree.loc = loc }
 let r = { a; b; c }
-let r = { Parsetree.pexp_attributes; Parsetree.loc }
-let r = { Parsetree.pexp_attributes; Parsetree.loc }
+let r = { Parsetree.pexp_attributes = pexp_attributes; Parsetree.loc = loc }
+let r = { Parsetree.pexp_attributes = pexp_attributes; Parsetree.loc = loc }
 let r = { a = (expr : int); b = (x : string) }
 let r = { expr with pexp_attributes = [||] }
 let r = { expr with pexp_attributes = [||]; pexp_loc = loc }

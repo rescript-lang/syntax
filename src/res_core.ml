@@ -2711,6 +2711,11 @@ and parseJsxChildren p =
     (true, [parsePrimaryExpr ~operand:(parseAtomicExpr p) ~noCall:true p])
   | _ -> (false, loop p [])
 
+and removeModuleNameFromPunnedFieldValue exp =
+  match exp.Parsetree.pexp_desc with
+  | Pexp_ident pathIdent -> {exp with pexp_desc = Pexp_ident { pathIdent with txt = Lident (Longident.last pathIdent.txt) }} 
+  | _ -> exp
+
 and parseBracedOrRecordExpr  p =
   let startPos = p.Parser.startPos in
   Parser.expect Lbrace p;
@@ -2778,7 +2783,7 @@ and parseBracedOrRecordExpr  p =
       begin match p.Parser.token with
       | Comma ->
         Parser.next p;
-        let expr = parseRecordExpr ~startPos [(pathIdent, valueOrConstructor)] p in
+        let expr = parseRecordExpr ~startPos [(pathIdent, removeModuleNameFromPunnedFieldValue valueOrConstructor)] p in
         Parser.expect Rbrace p;
         expr
       | Colon ->
@@ -2946,7 +2951,7 @@ and parseRecordRow p =
       let fieldExpr = parseExpr p in
       Some (field, fieldExpr)
     | _ ->
-      Some (field, Ast_helper.Exp.ident ~loc:field.loc  field)
+      Some (field, removeModuleNameFromPunnedFieldValue (Ast_helper.Exp.ident ~loc:field.loc field))
     end
   | _ -> None
 
