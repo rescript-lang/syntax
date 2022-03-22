@@ -787,7 +787,7 @@ and printModType modType cmtTbl =
                     {lbl.Asttypes.loc with loc_end = modType.Parsetree.pmty_loc.loc_end}
                   in
                   let attrs = printAttributes attrs cmtTbl in
-                  let lblDoc = if lbl.Location.txt = "_" then Doc.nil
+                  let lblDoc = if lbl.Location.txt = "_" || lbl.txt = "*" then Doc.nil
                     else
                       let doc = Doc.text lbl.txt in
                       printComments doc cmtTbl lbl.loc
