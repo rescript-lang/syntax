@@ -493,6 +493,12 @@ let hexValue ch =
   | 'A'..'F' -> (Char.code ch) + 32 - (Char.code 'a') + 10
   | _ -> 16 (* larger than any legal value *)
 
+(* Transform A.a into a. For use with punned record fields as in {A.a, b}. *)
+let removeModuleNameFromPunnedFieldValue exp =
+  match exp.Parsetree.pexp_desc with
+  | Pexp_ident pathIdent -> {exp with pexp_desc = Pexp_ident { pathIdent with txt = Lident (Longident.last pathIdent.txt) }} 
+  | _ -> exp
+
 let parseStringLiteral s =
   let len = String.length s in
   let b = Buffer.create (String.length s) in
@@ -2710,11 +2716,6 @@ and parseJsxChildren p =
     Parser.next p;
     (true, [parsePrimaryExpr ~operand:(parseAtomicExpr p) ~noCall:true p])
   | _ -> (false, loop p [])
-
-and removeModuleNameFromPunnedFieldValue exp =
-  match exp.Parsetree.pexp_desc with
-  | Pexp_ident pathIdent -> {exp with pexp_desc = Pexp_ident { pathIdent with txt = Lident (Longident.last pathIdent.txt) }} 
-  | _ -> exp
 
 and parseBracedOrRecordExpr  p =
   let startPos = p.Parser.startPos in
