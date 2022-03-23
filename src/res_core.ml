@@ -2783,7 +2783,11 @@ and parseBracedOrRecordExpr  p =
       let identEndPos = p.prevEndPos in
       begin match p.Parser.token with
       | Comma ->
-        Parser.next p;
+        let valueOrConstructor = match p.token with
+        | Uident _ -> removeModuleNameFromPunnedFieldValue(valueOrConstructor)
+        | _ -> valueOrConstructor
+        in
+        Parser.next p;    
         let expr = parseRecordExpr ~startPos [(pathIdent, removeModuleNameFromPunnedFieldValue valueOrConstructor)] p in
         Parser.expect Rbrace p;
         expr
@@ -2943,7 +2947,9 @@ and parseRecordRow p =
     Parser.next p;
   | _ -> ()
   in
-  match p.Parser.token with
+  let startToken = p.Parser.token
+  in
+  match startToken with
   | Lident _ | Uident _ ->
     let field = parseValuePath p in
     begin match p.Parser.token with
@@ -2952,7 +2958,13 @@ and parseRecordRow p =
       let fieldExpr = parseExpr p in
       Some (field, fieldExpr)
     | _ ->
-      Some (field, removeModuleNameFromPunnedFieldValue (Ast_helper.Exp.ident ~loc:field.loc field))
+      let value = Ast_helper.Exp.ident ~loc:field.loc field
+      in
+      let value = match startToken with
+      | Uident _ -> removeModuleNameFromPunnedFieldValue(value)
+      | _ -> value
+      in
+      Some (field, value)
     end
   | _ -> None
 
