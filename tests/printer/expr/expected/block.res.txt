@@ -60,7 +60,7 @@ React.useEffect0(() => {
     switch videoContainerRect {
     | Some(videoContainerRect) =>
       let newChapter = ({startTime: percent *. duration}: Video.chapter)
-      {a: a, b: b}->onChange
+      {a, b}->onChange
     | _ => ()
     }
   }}
