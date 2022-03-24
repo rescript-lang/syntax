@@ -493,6 +493,12 @@ let hexValue ch =
   | 'A'..'F' -> (Char.code ch) + 32 - (Char.code 'a') + 10
   | _ -> 16 (* larger than any legal value *)
 
+(* Transform A.a into a. For use with punned record fields as in {A.a, b}. *)
+let removeModuleNameFromPunnedFieldValue exp =
+  match exp.Parsetree.pexp_desc with
+  | Pexp_ident pathIdent -> {exp with pexp_desc = Pexp_ident { pathIdent with txt = Lident (Longident.last pathIdent.txt) }} 
+  | _ -> exp
+
 let parseStringLiteral s =
   let len = String.length s in
   let b = Buffer.create (String.length s) in
@@ -2771,6 +2777,7 @@ and parseBracedOrRecordExpr  p =
       end
     end
   | Uident _ | Lident _ ->
+    let startToken = p.token in
     let valueOrConstructor = parseValueOrConstructor p in
     begin match valueOrConstructor.pexp_desc with
     | Pexp_ident pathIdent ->
@@ -2778,6 +2785,10 @@ and parseBracedOrRecordExpr  p =
       begin match p.Parser.token with
       | Comma ->
         Parser.next p;
+        let valueOrConstructor = match startToken with
+        | Uident _ -> removeModuleNameFromPunnedFieldValue(valueOrConstructor)
+        | _ -> valueOrConstructor
+        in
         let expr = parseRecordExpr ~startPos [(pathIdent, valueOrConstructor)] p in
         Parser.expect Rbrace p;
         expr
@@ -2939,6 +2950,7 @@ and parseRecordRow p =
   in
   match p.Parser.token with
   | Lident _ | Uident _ ->
+    let startToken = p.token in
     let field = parseValuePath p in
     begin match p.Parser.token with
     | Colon ->
@@ -2946,7 +2958,12 @@ and parseRecordRow p =
       let fieldExpr = parseExpr p in
       Some (field, fieldExpr)
     | _ ->
-      Some (field, Ast_helper.Exp.ident ~loc:field.loc  field)
+      let value = Ast_helper.Exp.ident ~loc:field.loc field in
+      let value = match startToken with
+      | Uident _ -> removeModuleNameFromPunnedFieldValue(value)
+      | _ -> value
+      in
+      Some (field, value)
     end
   | _ -> None
 
