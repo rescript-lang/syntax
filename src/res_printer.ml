@@ -2807,9 +2807,9 @@ and printExpression (e : Parsetree.expression) cmtTbl =
     let forceBreak =
       e.pexp_loc.loc_start.pos_lnum < e.pexp_loc.loc_end.pos_lnum
     in
-    let punningAllowed = match spreadExpr with
-    | Some(_) -> true
-    | None -> List.length rows > 1
+    let punningAllowed = match spreadExpr, rows with
+    | (None, [_]) -> false (* disallow punning for single-element records *)
+    | _ -> true
     in
     Doc.breakableGroup ~forceBreak (
       Doc.concat([
