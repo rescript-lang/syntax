@@ -48,3 +48,26 @@ let r = {A.a, b}
 let r = {A.a: a, b}
 let r = {a: a, b}
 let r = {a, b: b}
+
+// Punning + comments
+let r = {
+  // a
+  a,
+  // b
+  b,
+}
+let r = {
+  a, // a
+  b, // b
+}
+let r = {
+  /* a */
+  a,
+  /* b */
+  b,
+}
+let r = {
+  a /* a */,
+  b /* b */,
+}
+let r = {a /* a */, b /* b */}
