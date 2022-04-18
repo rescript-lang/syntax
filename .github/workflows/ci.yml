@@ -13,6 +13,8 @@ jobs:
     steps:
     - uses: actions/checkout@v2.3.4
 
+    - run: rm -rf ~/.opam
+
     - name: Cache OCaml's opam
       uses: actions/cache@v2.1.5
       with:
