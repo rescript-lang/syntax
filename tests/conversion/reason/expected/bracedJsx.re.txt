@@ -91,7 +91,7 @@ let make = () => {
           ],
         ),
       }
-    | SetValue(input) => {...state, input: input}
+    | SetValue(input) => {...state, input}
     }
   , {history: [], input: ""})
 

@@ -2807,6 +2807,10 @@ and printExpression (e : Parsetree.expression) cmtTbl =
     let forceBreak =
       e.pexp_loc.loc_start.pos_lnum < e.pexp_loc.loc_end.pos_lnum
     in
+    let punningAllowed = match spreadExpr, rows with
+    | (None, [_]) -> false (* disallow punning for single-element records *)
+    | _ -> true
+    in
     Doc.breakableGroup ~forceBreak (
       Doc.concat([
         Doc.lbrace;
@@ -2815,7 +2819,7 @@ and printExpression (e : Parsetree.expression) cmtTbl =
             Doc.softLine;
             spread;
             Doc.join ~sep:(Doc.concat [Doc.text ","; Doc.line])
-              (List.map (fun row -> printRecordRow row cmtTbl) rows)
+              (List.map (fun row -> printRecordRow row cmtTbl punningAllowed) rows)
           ]
         );
         Doc.trailingComma;
@@ -4818,17 +4822,28 @@ and printDirectionFlag flag = match flag with
   | Asttypes.Downto -> Doc.text " downto "
   | Asttypes.Upto -> Doc.text " to "
 
-and printRecordRow (lbl, expr) cmtTbl =
+and printRecordRow (lbl, expr) cmtTbl punningAllowed =
   let cmtLoc = {lbl.loc with loc_end = expr.pexp_loc.loc_end} in
-  let doc = Doc.group (Doc.concat [
-    printLidentPath lbl cmtTbl;
-    Doc.text ": ";
-    (let doc = printExpressionWithComments expr cmtTbl in
-    match Parens.expr expr with
-    | Parens.Parenthesized -> addParens doc
-    | Braced braces -> printBraces doc expr braces
-    | Nothing -> doc);
-  ]) in
+  let doc = Doc.group (
+    match expr.pexp_desc with
+    | Pexp_ident({txt = Lident key; loc = keyLoc}) when (
+      punningAllowed && 
+      Longident.last lbl.txt = key &&
+      lbl.loc.loc_start.pos_cnum == keyLoc.loc_start.pos_cnum
+    ) ->
+      (* print punned field *)
+      printLidentPath lbl cmtTbl;
+    | _ ->
+      Doc.concat [
+      printLidentPath lbl cmtTbl;
+      Doc.text ": ";
+      (let doc = printExpressionWithComments expr cmtTbl in
+      match Parens.expr expr with
+      | Parens.Parenthesized -> addParens doc
+      | Braced braces -> printBraces doc expr braces
+      | Nothing -> doc);
+    ]
+  ) in
   printComments doc cmtTbl cmtLoc
 
 and printBsObjectRow (lbl, expr) cmtTbl =
