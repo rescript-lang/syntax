@@ -13,14 +13,14 @@ jobs:
     steps:
     - uses: actions/checkout@v2.3.4
 
-    - name: Cache OCaml's opam
-      uses: actions/cache@v2.1.5
-      with:
-        path: ~/.opam
-        key: macos-latest-ocaml-4.06.1
+    # - name: Cache OCaml's opam
+      # uses: actions/cache@v2.1.5
+      # with:
+        # path: ~/.opam
+        # key: macos-latest-ocaml-4.06.1
 
     - name: Use OCaml
-      uses: ocaml/setup-ocaml@v2
+      uses: ocaml/setup-ocaml@v1
       with:
         ocaml-version: 4.06.1
 
