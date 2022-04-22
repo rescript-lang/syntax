@@ -699,18 +699,27 @@ let parseValuePath p =
     | Lident ident -> Longident.Ldot(path, ident)
     | Uident uident ->
       Parser.next p;
-      Parser.expect Dot p;
-      aux p (Ldot (path, uident))
+      if p.Parser.token = Dot then (
+        Parser.expect Dot p;
+        aux p (Ldot (path, uident))  
+      ) else (
+        Parser.err p (Diagnostics.unexpected p.Parser.token p.breadcrumbs);
+        path
+      )
     | token ->
       Parser.err p (Diagnostics.unexpected token p.breadcrumbs);
-      Longident.Lident "_"
+      Longident.Ldot (path, "_")
   in
   let ident = match p.Parser.token with
   | Lident ident -> Longident.Lident ident
   | Uident ident ->
-    Parser.next p;
-    Parser.expect Dot p;
-    aux p (Lident ident)
+    if p.Parser.token = Dot then (
+      Parser.expect Dot p;
+      aux p (Lident ident)  
+    ) else (
+      Parser.err p (Diagnostics.unexpected p.Parser.token p.breadcrumbs);
+      Longident.Lident ident
+    )
   | token ->
     Parser.err p (Diagnostics.unexpected token p.breadcrumbs);
     Longident.Lident "_"
@@ -730,7 +739,7 @@ let parseValuePathTail p startPos ident =
       loop p (Longident.Ldot (path, ident))
     | token ->
       Parser.err p (Diagnostics.unexpected token p.breadcrumbs);
-      Location.mknoloc path
+      Location.mkloc (Longident.Ldot (path, "_")) (mkLoc startPos p.prevEndPos)
   in
   loop p ident
 
@@ -753,7 +762,7 @@ let parseModuleLongIdentTail ~lowercase p startPos ident =
       end
     | t ->
       Parser.err p (Diagnostics.uident t);
-      Location.mkloc acc (mkLoc startPos p.prevEndPos)
+      Location.mkloc (Longident.Ldot (acc, "_")) (mkLoc startPos p.prevEndPos)
   in
   loop p ident
 
@@ -3582,8 +3591,10 @@ and parseValueOrConstructor p =
       Ast_helper.Exp.ident ~loc (Location.mkloc lident loc)
     | token ->
       Parser.next p;
+      let loc = mkLoc startPos p.prevEndPos in
       Parser.err p (Diagnostics.unexpected token p.breadcrumbs);
-      Recover.defaultExpr()
+      let lident = buildLongident ("_"::acc) in
+      Ast_helper.Exp.ident ~loc (Location.mkloc lident loc)
   in
   aux p []
 
