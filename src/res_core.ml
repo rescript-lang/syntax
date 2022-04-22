@@ -713,6 +713,7 @@ let parseValuePath p =
   let ident = match p.Parser.token with
   | Lident ident -> Longident.Lident ident
   | Uident ident ->
+    Parser.next p;
     if p.Parser.token = Dot then (
       Parser.expect Dot p;
       aux p (Lident ident)  
