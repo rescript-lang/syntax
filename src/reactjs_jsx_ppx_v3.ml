@@ -506,6 +506,8 @@ let jsxMapper () =
                     spelunkForFunExpression innerFunctionExpression
                 | { pexp_desc = Pexp_sequence (_wrapperExpression, innerFunctionExpression) } ->
                     spelunkForFunExpression innerFunctionExpression
+                | { pexp_desc = Pexp_newtype (_label, innerFunctionExpression) } ->
+                    spelunkForFunExpression innerFunctionExpression
                 | _ ->
                     raise
                       (Invalid_argument
