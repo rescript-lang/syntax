@@ -93,9 +93,10 @@ let otherAttrsPure (loc, _) = loc.txt <> "react.component"
 let hasAttrOnBinding { pvb_attributes } = find_opt hasAttr pvb_attributes <> None
 
 (* Finds the name of the variable the binding is assigned to, otherwise raises Invalid_argument *)
-let getFnName binding =
+let rec getFnName binding =
   match binding with
-  | { pvb_pat = { ppat_desc = Ppat_var { txt } } } -> txt
+  | { ppat_desc = Ppat_var { txt } } -> txt
+  | { ppat_desc = Ppat_constraint (pat, _) } -> getFnName pat
   | _ -> raise (Invalid_argument "react.component calls cannot be destructured.")
   [@@raises Invalid_argument]
 
@@ -232,6 +233,44 @@ let makeExternalDecl fnName loc namedArgListWithKeyAndRef namedTypeList =
     (makePropsType ~loc namedTypeList)
   [@@raises Invalid_argument]
 
+let rec newtypeToVar newtype typ =
+  let traverse = newtypeToVar newtype in
+  { typ with ptyp_desc =
+    match typ.ptyp_desc with
+    | Ptyp_constr ({ txt = Lident name }, _) when name = newtype -> Ptyp_var newtype
+    | Ptyp_constr (ident, args) -> Ptyp_constr (ident, List.map traverse args)
+    | Ptyp_arrow (label, typ, rest) -> Ptyp_arrow (label, traverse typ, traverse rest)
+    | Ptyp_tuple (types) -> Ptyp_tuple (List.map traverse types)
+    | Ptyp_class (ident, args) -> Ptyp_class (ident, List.map traverse args)
+    | Ptyp_alias (typ, alias) -> Ptyp_alias (traverse typ, alias)
+    | Ptyp_poly (vars, rest) -> Ptyp_poly (vars, traverse rest)
+    | Ptyp_variant (fields, flag, labels) ->
+      let fields =
+        List.map (function
+          | Rtag (label, attrs, flag, args) -> Rtag (label, attrs, flag,  List.map traverse args)
+          | Rinherit typ -> Rinherit (traverse typ))
+          fields
+      in
+      Ptyp_variant (fields, flag, labels)
+    | Ptyp_object (fields, flag) ->
+      let fields =
+        List.map (function
+          | Otag (label, attrs, typ) -> Otag (label, attrs, traverse typ)
+          | Oinherit typ -> Oinherit (traverse typ))
+          fields
+      in
+      Ptyp_object (fields, flag)
+    | Ptyp_package (ident, substitutions) ->
+      let substitutions =
+        List.map
+          (fun (ident, typ) -> (ident, traverse typ))
+          substitutions
+      in
+      Ptyp_package (ident, substitutions)
+    | Ptyp_extension _ -> Location.raise_errorf "extensions are not allowed in @react.component definitions"
+    | (Ptyp_any | Ptyp_var _) as typ -> typ
+  }
+
 (* TODO: some line number might still be wrong *)
 let jsxMapper () =
   let jsxVersion = ref None in
@@ -334,7 +373,7 @@ let jsxMapper () =
     [@@raises Invalid_argument]
   in
 
-  let rec recursivelyTransformNamedArgsForMake mapper expr list =
+  let rec recursivelyTransformNamedArgsForMake mapper expr args newtypes =
     let expr = mapper.expr mapper expr in
     match expr.pexp_desc with
     (* TODO: make this show up with a loc. *)
@@ -375,19 +414,23 @@ let jsxMapper () =
         let type_ = match pattern with { ppat_desc = Ppat_constraint (_, type_) } -> Some type_ | _ -> None in
 
         recursivelyTransformNamedArgsForMake mapper expression
-          ((arg, default, pattern, alias, pattern.ppat_loc, type_) :: list)
+          ((arg, default, pattern, alias, pattern.ppat_loc, type_) :: args) newtypes
     | Pexp_fun (Nolabel, _, { ppat_desc = Ppat_construct ({ txt = Lident "()" }, _) | Ppat_any }, _expression) ->
-        (list, None)
+        (args, newtypes, None)
     | Pexp_fun
         ( Nolabel,
           _,
           { ppat_desc = Ppat_var { txt } | Ppat_constraint ({ ppat_desc = Ppat_var { txt } }, _) },
           _expression ) ->
-        (list, Some txt)
+        (args, newtypes, Some txt)
     | Pexp_fun (Nolabel, _, pattern, _expression) ->
         Location.raise_errorf ~loc:pattern.ppat_loc
           "React: react.component refs only support plain arguments and type annotations."
-    | _ -> (list, None)
+    | Pexp_newtype (label, expression) ->
+        recursivelyTransformNamedArgsForMake mapper expression args (label :: newtypes)
+    | Pexp_constraint (expression, _typ) ->
+        recursivelyTransformNamedArgsForMake mapper expression args newtypes
+    | _ -> (args, newtypes, None)
     [@@raises Invalid_argument]
   in
 
@@ -487,7 +530,7 @@ let jsxMapper () =
             let bindingLoc = binding.pvb_loc in
             let bindingPatLoc = binding.pvb_pat.ppat_loc in
             let binding = { binding with pvb_pat = { binding.pvb_pat with ppat_loc = emptyLoc }; pvb_loc = emptyLoc } in
-            let fnName = getFnName binding in
+            let fnName = getFnName binding.pvb_pat in
             let internalFnName = fnName ^ "$Internal" in
             let fullModuleName = makeModuleName fileName !nestedModules fnName in
             let modifiedBindingOld binding =
@@ -496,7 +539,8 @@ let jsxMapper () =
               let rec spelunkForFunExpression expression =
                 match expression with
                 (* let make = (~prop) => ... *)
-                | { pexp_desc = Pexp_fun _ } -> expression
+                | { pexp_desc = Pexp_fun _ }
+                | { pexp_desc = Pexp_newtype _ } -> expression
                 (* let make = {let foo = bar in (~prop) => ...} *)
                 | { pexp_desc = Pexp_let (_recursive, _vbs, returnExpression) } ->
                     (* here's where we spelunk! *)
@@ -505,6 +549,8 @@ let jsxMapper () =
                 | { pexp_desc = Pexp_apply (_wrapperExpression, [ (Nolabel, innerFunctionExpression) ]) } ->
                     spelunkForFunExpression innerFunctionExpression
                 | { pexp_desc = Pexp_sequence (_wrapperExpression, innerFunctionExpression) } ->
+                    spelunkForFunExpression innerFunctionExpression
+                | { pexp_desc = Pexp_constraint (innerFunctionExpression, _typ) } ->
                     spelunkForFunExpression innerFunctionExpression
                 | _ ->
                     raise
@@ -594,8 +640,8 @@ let jsxMapper () =
             in
             let props = getPropsAttr payload in
             (* do stuff here! *)
-            let namedArgList, forwardRef =
-              recursivelyTransformNamedArgsForMake mapper (modifiedBindingOld binding) []
+            let namedArgList, newtypes, forwardRef =
+              recursivelyTransformNamedArgsForMake mapper (modifiedBindingOld binding) [] []
             in
             let namedArgListWithKeyAndRef =
               (optional "key", None, Pat.var { txt = "key"; loc = emptyLoc }, "key", emptyLoc, Some (keyType emptyLoc))
@@ -630,7 +676,25 @@ let jsxMapper () =
             in
             let namedTypeList = List.fold_left argToType [] namedArgList in
             let loc = emptyLoc in
-            let externalDecl = makeExternalDecl fnName loc namedArgListWithKeyAndRef namedTypeList in
+            let externalArgs = (* translate newtypes to type variables *)
+              List.fold_left
+                (fun args newtype ->
+                   List.map (fun (a, b, c, d, e, maybeTyp) ->
+                       match maybeTyp with
+                       | Some typ -> (a, b, c, d, e, Some (newtypeToVar newtype.txt typ))
+                       | None -> (a, b, c, d, e, None))
+                     args)
+                namedArgListWithKeyAndRef
+                newtypes
+            in
+            let externalTypes = (* translate newtypes to type variables *)
+              List.fold_left
+                (fun args newtype ->
+                   List.map (fun (a, b, typ) -> (a, b, newtypeToVar newtype.txt typ)) args)
+                namedTypeList
+                newtypes
+            in
+            let externalDecl = makeExternalDecl fnName loc externalArgs externalTypes in
             let innerExpressionArgs =
               List.map pluckArg namedArgListWithKeyAndRefForNew
               @ if hasUnit then [ (Nolabel, Exp.construct { loc; txt = Lident "()" } None) ] else []
@@ -660,7 +724,7 @@ let jsxMapper () =
                 {
                   ppat_desc =
                     Ppat_constraint
-                      (makePropsName ~loc:emptyLoc props.propsName, makePropsType ~loc:emptyLoc namedTypeList);
+                      (makePropsName ~loc:emptyLoc props.propsName, makePropsType ~loc:emptyLoc externalTypes);
                   ppat_loc = emptyLoc;
                   ppat_attributes = [];
                 }
