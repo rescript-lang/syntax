@@ -93,9 +93,10 @@ let otherAttrsPure (loc, _) = loc.txt <> "react.component"
 let hasAttrOnBinding { pvb_attributes } = find_opt hasAttr pvb_attributes <> None
 
 (* Finds the name of the variable the binding is assigned to, otherwise raises Invalid_argument *)
-let getFnName binding =
+let rec getFnName binding =
   match binding with
-  | { pvb_pat = { ppat_desc = Ppat_var { txt } } } -> txt
+  | { ppat_desc = Ppat_var { txt } } -> txt
+  | { ppat_desc = Ppat_constraint (pat, _) } -> getFnName pat
   | _ -> raise (Invalid_argument "react.component calls cannot be destructured.")
   [@@raises Invalid_argument]
 
@@ -487,7 +488,7 @@ let jsxMapper () =
             let bindingLoc = binding.pvb_loc in
             let bindingPatLoc = binding.pvb_pat.ppat_loc in
             let binding = { binding with pvb_pat = { binding.pvb_pat with ppat_loc = emptyLoc }; pvb_loc = emptyLoc } in
-            let fnName = getFnName binding in
+            let fnName = getFnName binding.pvb_pat in
             let internalFnName = fnName ^ "$Internal" in
             let fullModuleName = makeModuleName fileName !nestedModules fnName in
             let modifiedBindingOld binding =
@@ -505,6 +506,10 @@ let jsxMapper () =
                 | { pexp_desc = Pexp_apply (_wrapperExpression, [ (Nolabel, innerFunctionExpression) ]) } ->
                     spelunkForFunExpression innerFunctionExpression
                 | { pexp_desc = Pexp_sequence (_wrapperExpression, innerFunctionExpression) } ->
+                    spelunkForFunExpression innerFunctionExpression
+                | { pexp_desc = Pexp_newtype (_label, innerFunctionExpression) } ->
+                    spelunkForFunExpression innerFunctionExpression
+                | { pexp_desc = Pexp_constraint (innerFunctionExpression, _typ) } ->
                     spelunkForFunExpression innerFunctionExpression
                 | _ ->
                     raise
