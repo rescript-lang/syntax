@@ -234,10 +234,11 @@ let makeExternalDecl fnName loc namedArgListWithKeyAndRef namedTypeList =
   [@@raises Invalid_argument]
 
 let newtypeToVar newtype type_ =
+  let var_desc = Ptyp_var ("type-" ^ newtype) in
   let typ (mapper : Ast_mapper.mapper) typ =
     match typ.ptyp_desc with
     | Ptyp_constr ({txt = Lident name}, _) when name = newtype ->
-      {typ with ptyp_desc = Ptyp_var newtype}
+      {typ with ptyp_desc = var_desc}
     | _ -> Ast_mapper.default_mapper.typ mapper typ
   in
   let mapper = {Ast_mapper.default_mapper with typ} in
