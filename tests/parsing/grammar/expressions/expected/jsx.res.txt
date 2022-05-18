@@ -491,24 +491,24 @@ let _ =
   ((button ?id:((id)[@ns.namedArgLoc ])
       ~className:((Cn.make [|{js|button|js};{js|is-fullwidth|js}|])
       [@ns.namedArgLoc ][@ns.braces ]) ~onClick:((onClick)[@ns.namedArgLoc ])
-      ~children:[(("Submit" |> ste)[@ns.braces ])] ())
+      ~children:[(({js|Submit|js} |> ste)[@ns.braces ])] ())
   [@JSX ])
 let _ =
   ((button ?id:((id)[@ns.namedArgLoc ])
       ~className:((Cn.make [{js|button|js}; {js|is-fullwidth|js}])
       [@ns.namedArgLoc ][@ns.braces ]) ~onClick:((onClick)[@ns.namedArgLoc ])
-      ~children:[(("Submit" |> ste)[@ns.braces ])] ())
+      ~children:[(({js|Submit|js} |> ste)[@ns.braces ])] ())
   [@JSX ])
 let _ =
   ((button ?id:((id)[@ns.namedArgLoc ])
       ~className:((Cn.make ({js|button|js}, {js|is-fullwidth|js}))
       [@ns.namedArgLoc ][@ns.braces ]) ~onClick:((onClick)[@ns.namedArgLoc ])
-      ~children:[(("Submit" |> ste)[@ns.braces ])] ())
+      ~children:[(({js|Submit|js} |> ste)[@ns.braces ])] ())
   [@JSX ])
 let _ =
   ((button ?id:((id)[@ns.namedArgLoc ]) ~className:((Cn.make { a = b })
       [@ns.namedArgLoc ][@ns.braces ]) ~onClick:((onClick)[@ns.namedArgLoc ])
-      ~children:[(("Submit" |> ste)[@ns.braces ])] ())
+      ~children:[(({js|Submit|js} |> ste)[@ns.braces ])] ())
   [@JSX ])
 let _ =
   ((X.createElement ~y:((z |. (Belt.Option.getWithDefault {js||js}))
