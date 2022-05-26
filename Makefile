@@ -48,7 +48,7 @@ TEST_FILES = $(API_FILES) tests/res_utf8_test.cmx tests/res_test.cmx
 lib/rescript.exe: $(CLI_FILES)
 	$(OCAMLOPT) $(OCAMLFLAGS) -O2 -o ./lib/rescript.exe -I +compiler-libs ocamlcommon.cmxa  -I src $(CLI_FILES)
 
-build-native: lib/refmt.exe lib/rescript.exe depend
+build-native: lib/rescript.exe depend
 
 bootstrap: build-native
 	# pack and parse the whole codebase using the compiler itself. Kind of a test
@@ -56,17 +56,11 @@ bootstrap: build-native
 	./lib/rescript.exe ./lib/rescript.ml > ./lib/rescript.res
 	$(OCAMLOPT) -w a -pp "./lib/rescript.exe -print binary" -O2 -o ./lib/rescript.exe -I +compiler-libs ocamlcommon.cmxa -I lib -impl ./lib/rescript.res
 
-lib/refmt.exe: vendor/refmt_main3.ml
-	$(OCAMLOPT) -w a -O2 -I vendor -I +compiler-libs ocamlcommon.cmxa -o lib/refmt.exe vendor/refmt_main3.ml
-
 bench: lib/bench.exe
 	./lib/bench.exe
 
-lib/bench.exe: benchmarks/refmt_main3b.cmx benchmarks/Benchmark.ml $(API_FILES)
-	$(OCAMLOPT) $(OCAMLFLAGS) -O2 -o ./lib/bench.exe -bin-annot -I +compiler-libs ocamlcommon.cmxa benchmarks/mac_osx_time.c -I benchmarks -I src $(API_FILES) benchmarks/refmt_main3b.cmx benchmarks/Benchmark.ml
-
-benchmarks/refmt_main3b.cmx: benchmarks/refmt_main3b.ml
-	$(OCAMLOPT) -c -O2 -I +compiler-libs ocamlcommon.cmxa benchmarks/refmt_main3b.ml
+lib/bench.exe: benchmarks/Benchmark.ml $(API_FILES)
+	$(OCAMLOPT) $(OCAMLFLAGS) -O2 -o ./lib/bench.exe -bin-annot -I +compiler-libs ocamlcommon.cmxa benchmarks/mac_osx_time.c -I benchmarks -I src $(API_FILES) benchmarks/Benchmark.ml
 
 lib/test.exe: $(TEST_FILES)
 	$(OCAMLOPT) $(OCAMLFLAGS) -O2 -o ./lib/test.exe -bin-annot -I +compiler-libs ocamlcommon.cmxa -I src -I tests $(TEST_FILES)

@@ -25,12 +25,6 @@ done
 for file in tests/{printer,conversion}/**/*.(res|resi|ml|mli); do
   lib/rescript.exe $file &> $(exp $file) & maybeWait
 done
-for file in tests/{printer,conversion}/**/*.re; do
-  lib/refmt.exe --parse re --print binary $file | lib/rescript.exe -parse reasonBinary &> $(exp $file) & maybeWait
-done
-for file in tests/{printer,conversion}/**/*.rei; do
-  lib/refmt.exe --parse re --print binary --interface true $file | lib/rescript.exe -parse reasonBinary -interface &> $(exp $file) & maybeWait
-done
 
 # printing with ppx
 for file in tests/ppx/react/*.(res|resi); do
@@ -66,26 +60,14 @@ if [[ $ROUNDTRIP_TEST = 1 ]]; then
     rescript2=temp/$file.2.res
 
     case $file in
-      *.re   ) class="re" ; refmtIntf=false; resIntf=""         ;;
-      *.rei  ) class="re" ; refmtIntf=true ; resIntf=-interface ;;
-      *.ml   ) class="ml" ; refmtIntf=false; resIntf=""         ;;
-      *.mli  ) class="ml" ; refmtIntf=true ; resIntf=-interface ;;
-      *.res  ) class="res"; refmtIntf=false; resIntf=""         ;;
-      *.resi ) class="res"; refmtIntf=true ; resIntf=-interface ;;
+      *.ml   ) class="ml" ; resIntf=""         ;;
+      *.mli  ) class="ml" ; resIntf=-interface ;;
+      *.res  ) class="res"; resIntf=""         ;;
+      *.resi ) class="res"; resIntf=-interface ;;
     esac
-    case $file in
-      *.re  ) ;&
-      *.rei )
-        reasonBinary=temp/$file.reasonBinary
-        lib/refmt.exe --parse $class --print binary --interface $refmtIntf $file > $reasonBinary
-        lib/rescript.exe $resIntf -parse reasonBinary -print sexp $reasonBinary > $sexpAst1
-        lib/rescript.exe $resIntf -parse reasonBinary -print res $reasonBinary > $rescript1
-        ;;
-      * )
-        lib/rescript.exe $resIntf -parse $class -print sexp $file > $sexpAst1
-        lib/rescript.exe $resIntf -parse $class -print res $file > $rescript1
-        ;;
-    esac
+
+    lib/rescript.exe $resIntf -parse $class -print sexp $file > $sexpAst1
+    lib/rescript.exe $resIntf -parse $class -print res $file > $rescript1
 
     lib/rescript.exe $resIntf -print sexp $rescript1 > $sexpAst2
     lib/rescript.exe $resIntf -print res $rescript1 > $rescript2

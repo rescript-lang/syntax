@@ -26,34 +26,6 @@ let x: int
 |}
   )
 
-let refmtBinaryPath = "./lib/refmt.exe"
-
-(* test printing of reason .re file *)
-let () =
-  let filename = "./tests/api/reasonSyntax.re" in
-  let prettySource = Res_multi_printer.print (`refmt refmtBinaryPath) ~input:filename in
-  assert (
-    prettySource = {|// test .re file
-let \"+++" = (a, b) => a + b
-
-let unicode = "🙈 😅 🙌"
-
-let d = `Sehr Schön` /* test */
-
-let () = print_endline("foo")
-|}
-  )
-
-(* test printing of reason .rei file *)
-let () =
-  let filename = "./tests/api/reiSyntax.rei" in
-  let prettySource = Res_multi_printer.print (`refmt refmtBinaryPath) ~input:filename in
-  assert (
-    prettySource = {|// test .rei file
-let x: int
-|}
-  )
-
 (* test printing of ocaml .ml file *)
 let () =
   let filename = "./tests/api/mlSyntax.ml" in

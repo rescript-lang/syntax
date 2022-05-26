@@ -36,8 +36,6 @@ make # or: make -j9 for faster build
 
 This will produce the final binary `lib/rescript.exe` used for testing.
 
-First build is super slow because we're also building our vendored `refmt` (only used for the conversion tool). Subsequent builds should be <2s. If not, please file an issue (build speed is a priority).
-
 We only build production binary, even in dev mode. No need for a separate dev binary when the build is fast enough. Plus, this encourages proper benchmarking of the (production) binary each diff.
 
 After you make a change:
