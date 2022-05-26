@@ -36,7 +36,7 @@ src/res_driver_ml_parser.cmi : src/res_driver.cmi src/res_comment.cmi
 src/res_driver_reason_binary.cmx : src/res_scanner.cmx src/res_io.cmx \
     src/res_driver.cmx src/res_comment.cmx src/res_ast_conversion.cmx \
     src/res_driver_reason_binary.cmi
-src/res_driver_reason_binary.cmi : src/res_token.cmx src/res_driver.cmi
+src/res_driver_reason_binary.cmi : src/res_driver.cmi
 src/res_grammar.cmx : src/res_token.cmx
 src/res_io.cmx : src/res_io.cmi
 src/res_io.cmi :
