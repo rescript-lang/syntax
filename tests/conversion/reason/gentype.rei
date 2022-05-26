@@ -1,2 +1,0 @@
-[@genType]
-let x : int
