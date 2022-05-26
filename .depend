@@ -43,10 +43,8 @@ src/res_io.cmi :
 src/res_js_ffi.cmx :
 src/res_minibuffer.cmx : src/res_minibuffer.cmi
 src/res_minibuffer.cmi :
-src/res_multi_printer.cmx : src/res_printer.cmx src/res_io.cmx \
-    src/res_driver_reason_binary.cmx src/res_driver_ml_parser.cmx \
-    src/res_driver.cmx src/res_diagnostics.cmx src/res_ast_conversion.cmx \
-    src/res_multi_printer.cmi
+src/res_multi_printer.cmx : src/res_printer.cmx src/res_driver_ml_parser.cmx \
+    src/res_driver.cmx src/res_diagnostics.cmx src/res_multi_printer.cmi
 src/res_multi_printer.cmi :
 src/res_outcome_printer.cmx : src/res_token.cmx src/res_doc.cmx \
     src/res_outcome_printer.cmi
