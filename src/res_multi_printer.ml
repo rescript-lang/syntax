@@ -58,4 +58,4 @@ let print language ~input =
   match language with
   | `res -> printRes ~isInterface ~filename:input
   | `ml -> printMl ~isInterface ~filename:input
-[@@raises Sys_error, exit]
+[@@raises exit]
