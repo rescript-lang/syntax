@@ -181,22 +181,15 @@ end = struct
    | Print -> "printer"
 
   (* TODO: we could at Reason here *)
-  type lang = Ocaml | Rescript | Reason
+  type lang = Ocaml | Rescript
   let string_of_lang lang = match lang with
     | Ocaml -> "ocaml"
     | Rescript -> "rescript"
-    | Reason -> "reason"
 
   let parseOcaml src filename =
     let lexbuf = Lexing.from_string src in
     Location.init lexbuf filename;
     Parse.implementation lexbuf
-
-  let parseReason src filename =
-    let lexbuf = Lexing.from_string src in
-    let reasonLexer = Refmt_main3b.Reason_lexer.init lexbuf in
-    Location.init lexbuf filename;
-    Refmt_main3b.Reason_toolchain_reason.implementation reasonLexer
 
   let parseRescript src filename =
     let p = Parser.make src filename in
@@ -215,9 +208,6 @@ end = struct
       )
     | (Ocaml, Parse) -> (fun _ ->
         let _ = Sys.opaque_identity (parseOcaml src filename) in ()
-      )
-    | (Reason, Parse) -> (fun _ ->
-        let _ = Sys.opaque_identity (parseReason src filename) in ()
       )
     | (Rescript, Print) ->
       let p = Parser.make src filename in
@@ -239,16 +229,13 @@ end = struct
   let run () =
     benchmark "./benchmarks/data/RedBlackTree.res" Rescript Parse;
     benchmark "./benchmarks/data/RedBlackTree.ml" Ocaml Parse;
-    benchmark "./benchmarks/data/RedBlackTree.re" Reason Parse;
     benchmark "./benchmarks/data/RedBlackTree.res" Rescript Print;
     benchmark "./benchmarks/data/RedBlackTreeNoComments.res" Rescript Print;
     benchmark "./benchmarks/data/Napkinscript.res" Rescript Parse;
     benchmark "./benchmarks/data/Napkinscript.ml" Ocaml Parse;
-    benchmark "./benchmarks/data/Napkinscript.re" Reason Parse;
     benchmark "./benchmarks/data/Napkinscript.res" Rescript Print;
     benchmark "./benchmarks/data/HeroGraphic.res" Rescript Parse;
     benchmark "./benchmarks/data/HeroGraphic.ml" Ocaml Parse;
-    benchmark "./benchmarks/data/HeroGraphic.re" Reason Parse;
     benchmark "./benchmarks/data/HeroGraphic.res" Rescript Print;
 end
 
