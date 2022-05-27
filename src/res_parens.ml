@@ -126,12 +126,8 @@ type kind = Parenthesized | Braced of Location.t | Nothing
             Pexp_lazy _
           | Pexp_assert _
         } when isLhs -> Parenthesized
-      | {Parsetree.pexp_attributes = (_::_) as attrs} ->
-        begin match ParsetreeViewer.filterPrintableAttributes attrs with
-        | [] -> Nothing
-        | _ -> Parenthesized
-        end
-      | _ -> Nothing
+      | {Parsetree.pexp_attributes = attrs} ->
+        if ParsetreeViewer.hasPrintableAttributes attrs then Parenthesized else Nothing
       end
 
   let subBinaryExprOperand parentOperator childOperator =
