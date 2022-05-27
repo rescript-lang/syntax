@@ -3494,7 +3494,10 @@ and printBinaryExpression (expr : Parsetree.expression) cmtTbl =
               let printeableAttrs =
                 ParsetreeViewer.filterPrinteableAttributes right.pexp_attributes
               in
-              Doc.concat [printAttributes printeableAttrs cmtTbl; doc]
+              let doc = Doc.concat [printAttributes printeableAttrs cmtTbl; doc] in
+              match printeableAttrs with
+              | [] -> doc
+              | _ -> addParens doc
             in
             let doc = Doc.concat [
               leftPrinted;
@@ -4827,7 +4830,7 @@ and printRecordRow (lbl, expr) cmtTbl punningAllowed =
   let doc = Doc.group (
     match expr.pexp_desc with
     | Pexp_ident({txt = Lident key; loc = keyLoc}) when (
-      punningAllowed && 
+      punningAllowed &&
       Longident.last lbl.txt = key &&
       lbl.loc.loc_start.pos_cnum == keyLoc.loc_start.pos_cnum
     ) ->

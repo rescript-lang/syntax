@@ -5,7 +5,7 @@ Element.querySelectorAll(selector, element)
 ->Array.keepMap(Element.ofNode)
 ->Array.getBy(node => node->Element.textContent === content)
 
-let x = @attr (@attr2 a->f(b)->c(d))
+let x = @attr ((@attr2 a)->f(b)->c(d))
 
 5->doStuff(3, _, 7)
 
