@@ -126,6 +126,11 @@ type kind = Parenthesized | Braced of Location.t | Nothing
             Pexp_lazy _
           | Pexp_assert _
         } when isLhs -> Parenthesized
+      | {Parsetree.pexp_attributes = (_::_) as attrs} ->
+        begin match ParsetreeViewer.filterPrinteableAttributes attrs with
+        | [] -> Nothing
+        | _ -> Parenthesized
+        end
       | _ -> Nothing
       end
 
