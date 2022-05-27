@@ -81,8 +81,8 @@ val hasJsxAttribute: Parsetree.attributes -> bool
 
 val shouldIndentBinaryExpr: Parsetree.expression -> bool
 val shouldInlineRhsBinaryExpr: Parsetree.expression -> bool
-val filterPrinteableAttributes: Parsetree.attributes -> Parsetree.attributes
-val partitionPrinteableAttributes: Parsetree.attributes -> (Parsetree.attributes * Parsetree.attributes)
+val filterPrintableAttributes: Parsetree.attributes -> Parsetree.attributes
+val partitionPrintableAttributes: Parsetree.attributes -> (Parsetree.attributes * Parsetree.attributes)
 
 val requiresSpecialCallbackPrintingLastArg: (Asttypes.arg_label * Parsetree.expression) list -> bool
 val requiresSpecialCallbackPrintingFirstArg: (Asttypes.arg_label * Parsetree.expression) list -> bool

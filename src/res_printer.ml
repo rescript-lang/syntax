@@ -3479,7 +3479,7 @@ and printBinaryExpression (expr : Parsetree.expression) cmtTbl =
             let leftPrinted = flatten ~isLhs:true left operator in
             let rightPrinted =
               let (_, rightAttrs) =
-                ParsetreeViewer.partitionPrinteableAttributes right.pexp_attributes
+                ParsetreeViewer.partitionPrintableAttributes right.pexp_attributes
               in
               let doc =
                 printExpressionWithComments
@@ -3491,11 +3491,11 @@ and printBinaryExpression (expr : Parsetree.expression) cmtTbl =
               else
                 doc
               in
-              let printeableAttrs =
-                ParsetreeViewer.filterPrinteableAttributes right.pexp_attributes
+              let printableAttrs =
+                ParsetreeViewer.filterPrintableAttributes right.pexp_attributes
               in
-              let doc = Doc.concat [printAttributes printeableAttrs cmtTbl; doc] in
-              match printeableAttrs with
+              let doc = Doc.concat [printAttributes printableAttrs cmtTbl; doc] in
+              match printableAttrs with
               | [] -> doc
               | _ -> addParens doc
             in
