@@ -105,8 +105,8 @@ module M: {
 }
 let y: string
 type rgbw = [#Blue | #Green | #Red | #White]
-let id: [> #Blue | #Green | #Red] as 'a => 'a
-let id: [> rgb] as 'a => 'a
+let id: ([> #Blue | #Green | #Red] as 'a) => 'a
+let id: ([> rgb] as 'a) => 'a
 type point = [#Point(float, float)]
 type shape = [#Circle(point, float) | #Rectangle(point, point)]
 let pi: float
@@ -199,8 +199,8 @@ module Js: {
     type arity22<'a> = {i22: 'a}
   }
 }
-type arity0 = (.) => unit
-type arity0b = (.) => int
+type arity0 = (. ()) => unit
+type arity0b = (. ()) => int
 type arity0c = (.) => (.) => array<int>
 type arity0d = (.) => unit => unit
 type arity1 = (. int) => int
@@ -465,8 +465,8 @@ type dotdotObjectCoordinate<'a> = 'a
 type permissions = [#644 | #777]
 type numericPolyVarWithPayload = [#1(string) | #2(int, string)]
 let numericPolyVarMatch: [> #1(string) | #2(int, string)]
-let sort: (module(Set.S with elt = 'a), list<'a>) => list<'a>
-let make_set: (('a, 'a) => int) => module(Set.S with elt = 'a)
+let sort: (module(Set.S with type elt = 'a), list<'a>) => list<'a>
+let make_set: (('a, 'a) => int) => module(Set.S with type elt = 'a)
 type picture = string
 module type DEVICE = {
   let draw: picture => unit
