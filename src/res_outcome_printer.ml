@@ -233,9 +233,11 @@ let printPolyVarIdent txt =
        )
      | Otyp_alias (typ, aliasTxt) ->
        Doc.concat [
+         Doc.lparen;
          printOutTypeDoc typ;
          Doc.text " as '";
-         Doc.text aliasTxt
+         Doc.text aliasTxt;
+         Doc.rparen
        ]
      | Otyp_constr (
         Oide_dot (Oide_dot (Oide_ident "Js", "Fn") , "arity0"), (* Js.Fn.arity0 *)
