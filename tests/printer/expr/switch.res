@@ -19,3 +19,7 @@ let rec updateSum = (node, ~delta) =>
 let x = @attr switch x {
 | Universe => ()
 }
+
+switch count {
+| 1 => { "one" }
+}
