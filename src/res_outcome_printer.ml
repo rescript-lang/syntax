@@ -243,7 +243,7 @@ let printPolyVarIdent txt =
        ) ->
         (* Js.Fn.arity0<t> -> (.) => t *)
         Doc.concat [
-          Doc.text "(.) => ";
+          Doc.text "(. ()) => ";
           printOutTypeDoc typ;
         ]
      | Otyp_constr (
