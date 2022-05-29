@@ -21,3 +21,7 @@ let x =
   switch x {
   | Universe => ()
   }
+
+switch count {
+| 1 => "one"
+}

@@ -2772,7 +2772,8 @@ and parseBracedOrRecordExpr  p =
       Parser.expect Rbrace p;
       expr
     | _ ->
-      let constant = Ast_helper.Exp.constant ~loc:field.loc (Parsetree.Pconst_string(s, Some("js"))) in
+      let tag = if p.mode = ParseForTypeChecker then Some "js" else None in
+      let constant = Ast_helper.Exp.constant ~loc:field.loc (Parsetree.Pconst_string(s, tag)) in
       let a = parsePrimaryExpr ~operand:constant p in
       let e = parseBinaryExpr ~a p 1 in
       let e = parseTernaryExpr e p in
