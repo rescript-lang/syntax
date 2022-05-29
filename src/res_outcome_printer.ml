@@ -350,7 +350,7 @@ let printPolyVarIdent txt =
         let i = ref 0 in
         let package = Doc.join ~sep:Doc.line ((List.map2 [@doesNotRaise]) (fun lbl typ ->
           Doc.concat [
-            Doc.text (if i.contents > 0 then "and " else "with ");
+            Doc.text (if i.contents > 0 then "and type " else "with type ");
             Doc.text lbl;
             Doc.text " = ";
             printOutTypeDoc typ;
