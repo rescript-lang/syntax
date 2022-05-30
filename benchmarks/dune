@@ -1,0 +1,11 @@
+(executable
+ (name benchmark)
+ (public_name bench)
+ (enabled_if
+  (= %{system} macosx))
+ (flags
+  (-open Syntax))
+ (foreign_stubs
+  (language c)
+  (names mac_osx_time))
+ (libraries syntax compiler-libs.common))

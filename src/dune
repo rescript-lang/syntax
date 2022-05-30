@@ -1,0 +1,3 @@
+(library
+ (name syntax)
+ (libraries compiler-libs.common))
