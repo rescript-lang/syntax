@@ -6,29 +6,40 @@ on:
   pull_request:
     branches: [ master ]
 
+env:
+  OCAML_VERSION: 4.06.1
+  
 jobs:
   test:
-    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
 
+    runs-on: ${{matrix.os}}
+    
     steps:
-    - uses: actions/checkout@v2.3.4
+    - uses: actions/checkout@v3
 
     - name: Cache OCaml's opam
       uses: actions/cache@v2.1.5
       with:
         path: ~/.opam
-        key: macos-latest-ocaml-4.06.1
+        key: ${{matrix.os}}-ocaml-${{env.OCAML_VERSION}}
 
-    - name: Use OCaml
-      uses: ocaml/setup-ocaml@v2
+    - name: Use OCaml ${{env.OCAML_VERSION}}
+      uses: ocaml/setup-ocaml@v2.0.3
       with:
-        ocaml-compiler: 4.06.1
+        ocaml-compiler: ${{env.OCAML_VERSION}}
+        opam-pin: false
+        opam-depext: false
 
-    - name: Use Node.js
-      uses: actions/setup-node@v2.1.5
-      with:
-        node-version: 16
+    - name: Install dependencies
+      run: opam install dune reanalyze
 
-    - run: npm ci
+    - name: Build executables
+      run: opam exec -- dune build
 
-    - run: eval $(opam env) && make roundtrip-test
+    - name: Run roundtrip tests
+      if: runner.os == 'macOS'
+      run: opam exec -- make roundtrip-test

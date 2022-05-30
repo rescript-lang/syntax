@@ -15,20 +15,20 @@ function maybeWait {
 
 # parsing
 for file in tests/parsing/{errors,infiniteLoops,recovery}/**/*.(res|resi); do
-  lib/rescript.exe -recover -print ml $file &> $(exp $file) & maybeWait
+  rescript -recover -print ml $file &> $(exp $file) & maybeWait
 done
 for file in tests/parsing/{grammar,other}/**/*.(res|resi); do
-  lib/rescript.exe -print ml $file &> $(exp $file) & maybeWait
+  rescript -print ml $file &> $(exp $file) & maybeWait
 done
 
 # printing
 for file in tests/{printer,conversion}/**/*.(res|resi|ml|mli); do
-  lib/rescript.exe $file &> $(exp $file) & maybeWait
+  rescript $file &> $(exp $file) & maybeWait
 done
 
 # printing with ppx
 for file in tests/ppx/react/*.(res|resi); do
-  lib/rescript.exe -ppx jsx $file &> $(exp $file) & maybeWait
+  rescript -ppx jsx $file &> $(exp $file) & maybeWait
 done
 
 wait
@@ -66,11 +66,11 @@ if [[ $ROUNDTRIP_TEST = 1 ]]; then
       *.resi ) class="res"; resIntf=-interface ;;
     esac
 
-    lib/rescript.exe $resIntf -parse $class -print sexp $file > $sexpAst1
-    lib/rescript.exe $resIntf -parse $class -print res $file > $rescript1
+    rescript $resIntf -parse $class -print sexp $file > $sexpAst1
+    rescript $resIntf -parse $class -print res $file > $rescript1
 
-    lib/rescript.exe $resIntf -print sexp $rescript1 > $sexpAst2
-    lib/rescript.exe $resIntf -print res $rescript1 > $rescript2
+    rescript $resIntf -print sexp $rescript1 > $sexpAst2
+    rescript $resIntf -print res $rescript1 > $rescript2
 
     diff --unified $sexpAst1 $sexpAst2
     [[ "$?" = 1 ]] && echo 1 > $roundtripTestsResult
