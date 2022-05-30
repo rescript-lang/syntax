@@ -4434,12 +4434,7 @@ and printCases (cases: Parsetree.case list) cmtTbl =
         Doc.concat [
           Doc.line;
           printList
-            ~getLoc:(fun n -> {n.Parsetree.pc_lhs.ppat_loc with
-              loc_end =
-                match ParsetreeViewer.processBracesAttr n.Parsetree.pc_rhs with
-                | (None, _) -> n.pc_rhs.pexp_loc.loc_end
-                | (Some ({loc}, _), _) -> loc.Location.loc_end
-            })
+            ~getLoc:(fun n -> {n.Parsetree.pc_lhs.ppat_loc with loc_end = n.pc_rhs.pexp_loc.loc_end})
             ~print:printCase
             ~nodes:cases
             cmtTbl
