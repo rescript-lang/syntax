@@ -22,33 +22,39 @@ J. Blow.
 ### Setup & Usage (For Repo Devs Only)
 
 Required:
-- [NodeJS](https://nodejs.org/)
-- Ocaml 4.06.1
-- OS: Mac
+
+- OCaml 4.06.1
+- Dune
+- Reanalyze
+- OS: macOS, Linux or Windows (tests will currently run on macOS only)
 
 ```sh
-opam switch create 4.06.1 && eval $(opam env)
+opam switch create 4.06.1 # Note: on macOS ARM, do "arch -x86_64 zsh" first
+eval $(opam env)
+opam install dune reanalyze
 git clone https://github.com/rescript-lang/syntax.git
 cd syntax
-npm install
-make # or: make -j9 for faster build
+make # or "dune build"
 ```
 
-This will produce the final binary `lib/rescript.exe` used for testing.
+This will produce the three binaries `rescript`, `tests` and `bench` (with `.exe` extension on Windows).
 
-We only build production binary, even in dev mode. No need for a separate dev binary when the build is fast enough. Plus, this encourages proper benchmarking of the (production) binary each diff.
+We only build production binaries, even in dev mode. No need for a separate dev binary when the build is fast enough. Plus, this encourages proper benchmarking of the (production) binary each diff.
 
 After you make a change:
+
 ```sh
 make
 ```
 
 Run the core tests:
+
 ```sh
 make test
 ```
 
 Run the extended tests:
+
 ```sh
 make roundtrip-test
 ```
@@ -56,20 +62,23 @@ make roundtrip-test
 Those will tell you whether you've got a test output difference. If it's intentional, check them in.
 
 Debug a file:
+
 ```sh
 # write code in test.res
-./lib/rescript.exe test.res # test printer
-./lib/rescript.exe -print ast test.res # print ast
-./lib/rescript.exe -print ml test.res # show ocaml code
-./lib/rescript.exe -print res -width 80 test.res # test printer and change default print width
+dune exec -- rescript test.res # test printer
+dune exec -- rescript -print ast test.res # print ast
+dune exec -- rescript -print ml test.res # show ocaml code
+dune exec -- rescript -print res -width 80 test.res # test printer and change default print width
 ```
 
 Benchmark:
+
 ```sh
 make bench
 ```
 
 Enable stack trace:
+
 ```sh
 # Before you run the binary
 export OCAMLRUNPARAM="b"
@@ -79,7 +88,10 @@ This is likely a known knowledge: add the above line into your shell rc file so 
 
 ### Development Docs
 
-`src/syntax` contains all the source code. Don't change folder structure without notice; ReScript uses this repo as a submodule and assumes `src/syntax`.
+#### Folder Structure
+
+- `src` contains all the parser/printer source code. Don't change folder structure without notice; The [rescript-compiler](https://github.com/rescript-lang/rescript-compiler) repo uses this repo as a submodule and assumes `src`.
+- `benchmarks`, `cli` and `tests` contain the source code for the executables used for testing/benchmarking. These are not used by the [rescript-compiler](https://github.com/rescript-lang/rescript-compiler) repo.
 
 #### Error Reporting Logic
 
@@ -97,8 +109,8 @@ Right now, ReScript's compiler's error reporting mechanism, for architectural re
 In a random project of yours:
 
 ```sh
-node_modules/.bin/bsrefmt --print=binary myFile.re | your/path/to/rescript.exe -parse reasonBinary -print ns > myFile.res
-node_modules/.bin/bsrefmt --print=binary --interface=true myFile.rei | your/path/to/rescript.exe -parse reasonBinary -print ns -interface > myFile.resi
+node_modules/.bin/bsrefmt --print=binary myFile.re | your/path/to/rescript -parse reasonBinary -print ns > myFile.res
+node_modules/.bin/bsrefmt --print=binary --interface=true myFile.rei | your/path/to/rescript -parse reasonBinary -print ns -interface > myFile.resi
 mv myFile.re myFile.re.backup # random backup name. Could be anything
 ```
 
