@@ -239,12 +239,12 @@ let printPolyVarIdent txt =
        ]
      | Otyp_constr (
         Oide_dot (Oide_dot (Oide_ident "Js", "Fn") , "arity0"), (* Js.Fn.arity0 *)
-        [Otyp_constr (Oide_ident ident, [])] (* int or unit or string *)
+        [typ] 
        ) ->
-        (* Js.Fn.arity0<int> -> (.) => int*)
+        (* Js.Fn.arity0<t> -> (.) => t *)
         Doc.concat [
           Doc.text "(.) => ";
-          Doc.text ident;
+          printOutTypeDoc typ;
         ]
      | Otyp_constr (
         Oide_dot (Oide_dot (Oide_ident "Js", "Fn") , ident), (* Js.Fn.arity2 *)
