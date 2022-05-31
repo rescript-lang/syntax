@@ -232,6 +232,8 @@ module Js = {
 
 type arity0 = Js.Fn.arity0<unit>
 type arity0b = Js.Fn.arity0<int>
+type arity0c = Js.Fn.arity0<Js.Fn.arity0<array<int>>>
+type arity0d = Js.Fn.arity0<unit => unit>
 type arity1 = Js.Fn.arity1<(int) => int>
 type arity2 = Js.Fn.arity2<(int, int) => int>
 type arity3 = Js.Fn.arity3<(int, int, int) => int>
@@ -340,3 +342,4 @@ let f = (~x=?, ~y as _) => x
 type call = CleanStart
 
 let f = (~a=1) => 1
+

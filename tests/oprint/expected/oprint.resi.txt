@@ -179,6 +179,8 @@ module Js: {
 }
 type arity0 = (.) => unit
 type arity0b = (.) => int
+type arity0c = Js.Fn.arity0<Js.Fn.arity0<array<int>>>
+type arity0d = (. unit) => unit
 type arity1 = (. int) => int
 type arity2 = (. int, int) => int
 type arity3 = (. int, int, int) => int
