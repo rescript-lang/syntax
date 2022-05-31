@@ -104,16 +104,6 @@ Right now, ReScript's compiler's error reporting mechanism, for architectural re
 - The errors are reported by the parser [here](https://github.com/rescript-lang/syntax/blob/ec5cefb23b659b0a7be170ae0ad26f3fe8a05456/src/res_diagnostics.ml#L146).
 - Our editor plugin parses the error report from the compiler and from the syntax [here](https://github.com/rescript-lang/rescript-vscode/blob/0dbf2eb9cdb0bd6d95be1aee88b73830feecb5cc/server/src/utils.ts#L129-L329).
 
-### Example File Conversion
-
-In a random project of yours:
-
-```sh
-node_modules/.bin/bsrefmt --print=binary myFile.re | your/path/to/rescript -parse reasonBinary -print ns > myFile.res
-node_modules/.bin/bsrefmt --print=binary --interface=true myFile.rei | your/path/to/rescript -parse reasonBinary -print ns -interface > myFile.resi
-mv myFile.re myFile.re.backup # random backup name. Could be anything
-```
-
 ### Example API usage
 
 ```ocaml
