@@ -5329,11 +5329,6 @@ and parseExceptionDef ~attrs p =
   let loc = mkLoc startPos p.prevEndPos in
   Ast_helper.Te.constructor ~loc ~attrs name kind
 
-(* module structure on the file level *)
-and parseImplementation p : Parsetree.structure =
-  parseRegion p ~grammar:Grammar.Implementation ~f:parseStructureItemRegion
-  [@@progress (Parser.next, Parser.expect, Parser.checkProgress)]
-
 and parseNewlineOrSemicolonStructure p =
   match p.Parser.token with
   | Semicolon ->
@@ -6070,11 +6065,6 @@ and parseModuleTypeOf p =
   let moduleExpr = parseModuleExpr p in
   Ast_helper.Mty.typeof_ ~loc:(mkLoc startPos p.prevEndPos) moduleExpr
 
-(* module signature on the file level *)
-and parseSpecification p =
-  parseRegion ~grammar:Grammar.Specification ~f:parseSignatureItemRegion p
-  [@@progress (Parser.next, Parser.expect, Parser.checkProgress)]
-
 and parseNewlineOrSemicolonSignature p =
   match p.Parser.token with
   | Semicolon ->
@@ -6452,3 +6442,13 @@ and parseExtension ?(moduleLanguage=false) p =
   let attrId = parseAttributeId ~startPos p in
   let payload = parsePayload p in
   (attrId, payload)
+
+(* module signature on the file level *)
+let parseSpecification p : Parsetree.signature =
+  parseRegion p ~grammar:Grammar.Specification ~f:parseSignatureItemRegion
+  [@@progress (Parser.next, Parser.expect, Parser.checkProgress)]
+
+(* module structure on the file level *)
+let parseImplementation p : Parsetree.structure =
+  parseRegion p ~grammar:Grammar.Implementation ~f:parseStructureItemRegion
+  [@@progress (Parser.next, Parser.expect, Parser.checkProgress)]
