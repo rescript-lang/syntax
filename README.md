@@ -107,27 +107,20 @@ Right now, ReScript's compiler's error reporting mechanism, for architectural re
 ### Example API usage
 
 ```ocaml
-module Parser = ResCore.Parser
-module Diagnostics = ResCore.Diagnostics
-
 let filename = "foo.res"
 let src = FS.readFile filename
 
 let p =
   (* intended for ocaml compiler *)
-  let mode = Parser.ParseForTypeChecker in
-  (* if you want to target the printer use: let mode = Parser.Default in*)
-  Parser.make ~mode src filename
+  let mode = Res_parser.ParseForTypeChecker in
+  (* if you want to target the printer use: let mode = Res_parser.Default in*)
+  Res_parser.make ~mode src filename
 
-let structure = ResParser.parseImplementation p
-let signature = ResParser.parseInterface p
+let structure = Res_core.parseImplementation p
+let signature = Res_core.parseSpecification p
 
-let () = match p.Parser.diagnostics with
+let () = match p.diagnostics with
 | [] -> () (* no problems *)
 | diagnostics -> (* parser contains problems *)
-  prerr_string (
-    Diagnostics.stringOfReport
-      ~style:Diagnostics.Pretty
-      diagnostics src
-  )
+  Res_diagnostics.printReport diagnostics src
 ```
