@@ -281,11 +281,11 @@ module CliArgProcessor = struct
         in
         printEngine.printImplementation
           ~width ~filename ~comments:parseResult.comments parsetree
-  [@@raises Invalid_argument, Failure, exit]
+  [@@raises exit]
 end
 
 
-let [@raises Invalid_argument, Failure, exit] () =
+let [@raises exit] () =
   if not !Sys.interactive then begin
     ResClflags.parse ();
     CliArgProcessor.processFile
