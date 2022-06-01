@@ -5433,6 +5433,7 @@ and parseStructureItemRegion p =
     | _ ->
       None
     end
+  [@@progress (Parser.next, Parser.expect, Parser.checkProgress)]
 
 and parseJsImport ~startPos ~attrs p =
   Parser.expect Token.Import p;
@@ -6187,6 +6188,7 @@ and parseSignatureItemRegion p =
     | _ ->
      None
     end
+  [@@progress (Parser.next, Parser.expect, Parser.checkProgress)]
 
 (* module rec module-name :  module-type  { and module-name:  module-type } *)
 and parseRecModuleSpec ~attrs ~startPos p =
@@ -6446,9 +6448,7 @@ and parseExtension ?(moduleLanguage=false) p =
 (* module signature on the file level *)
 let parseSpecification p : Parsetree.signature =
   parseRegion p ~grammar:Grammar.Specification ~f:parseSignatureItemRegion
-  [@@progress (Parser.next, Parser.expect, Parser.checkProgress)]
 
 (* module structure on the file level *)
 let parseImplementation p : Parsetree.structure =
   parseRegion p ~grammar:Grammar.Implementation ~f:parseStructureItemRegion
-  [@@progress (Parser.next, Parser.expect, Parser.checkProgress)]
