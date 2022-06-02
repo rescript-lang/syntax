@@ -8,3 +8,6 @@ lib/*
 
 # Dune
 _build
+
+# Merlin
+.merlin
