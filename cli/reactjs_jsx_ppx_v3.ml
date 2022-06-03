@@ -873,6 +873,7 @@ let jsxMapper () =
         (* no JSX attribute *)
         | [], _ -> default_mapper.expr mapper expression
         | _, nonJSXAttributes ->
+            let loc = {loc with loc_ghost= true} in
             let fragment = Exp.ident ~loc { loc; txt = Ldot (Lident "ReasonReact", "fragment") } in
             let childrenExpr = transformChildrenIfList ~loc ~mapper listItems in
             let args =
