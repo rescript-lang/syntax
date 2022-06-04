@@ -9,6 +9,10 @@ let s = `multi
 string
 `
 
+let s = `a \ b`
+let s = `a \\ b`
+let s = `a \\\ b`
+
 let s = `${foo}`
 
 let s = `before${foo}`
