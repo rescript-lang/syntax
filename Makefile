@@ -7,11 +7,11 @@ bootstrap: build
 bench: build
 	dune exec -- bench
 
-test: reanalyze
+test:
 	dune exec -- tests
 	dune exec -- ./test.sh
 
-roundtrip-test: reanalyze
+roundtrip-test:
 	dune exec -- tests
 	ROUNDTRIP_TEST=1 dune exec -- ./test.sh
 

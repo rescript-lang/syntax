@@ -35,7 +35,7 @@ jobs:
         opam-depext: false
 
     - name: Install dependencies
-      run: opam install dune reanalyze
+      run: opam install dune
 
     - name: Build executables
       run: opam exec -- dune build
