@@ -11,3 +11,6 @@ _build
 
 # Merlin
 .merlin
+
+# Output dir for bootstrap script
+bootstrap/
