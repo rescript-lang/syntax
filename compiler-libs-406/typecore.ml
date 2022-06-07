@@ -2925,7 +2925,7 @@ and type_application env funct (sargs : sargs) : targs * Types.type_expr =
                 Location.prerr_warning sarg1.pexp_loc Warnings.Unused_argument;
               unify env ty_fun (newty (Tarrow(l1,t1,t2,Clink(ref Cunknown))));
               (t1, t2)
-          | Tarrow (l,t1,t2,_) when Asttypes.same_arg_label l l1
+          | Tarrow (l,t1,t2,_) when l = l1
             ->
               (t1, t2)
           | td ->
@@ -2988,8 +2988,8 @@ and type_application env funct (sargs : sargs) : targs * Types.type_expr =
   let () =  
     let ls, tvar = list_labels env funct.exp_type in
     if not tvar then
-    let labels = Ext_list.filter ls (fun l -> not (is_optional l)) in
-    if Ext_list.same_length labels sargs &&
+    let labels = List.filter (fun l -> not (is_optional l)) ls in
+    if List.length labels = List.length sargs &&
        List.for_all (fun (l,_) -> l = Nolabel) sargs &&
        List.exists (fun l -> l <> Nolabel) labels then
         raise 
@@ -2997,7 +2997,7 @@ and type_application env funct (sargs : sargs) : targs * Types.type_expr =
           funct.exp_loc, env,
           (Labels_omitted
             (List.map Printtyp.string_of_label
-                      (Ext_list.filter labels (fun x -> x <> Nolabel))))))  
+                      (List.filter (fun x -> x <> Nolabel) labels)))))  
   in
   match sargs with
     (* Special case for ignore: avoid discarding warning *)
