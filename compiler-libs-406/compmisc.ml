@@ -43,13 +43,13 @@ let init_path ?(dir="") native =
 (* Note: do not do init_path() in initial_env, this breaks
    toplevel initialization (PR#1775) *)
 
-(* let open_implicit_module m env =
+let open_implicit_module m env =
   let open Asttypes in
   let lid = {loc = Location.in_file "command line";
              txt = Longident.parse m } in
-  snd (Typemod.type_open_ Override env lid.loc lid) *)
+  snd (Typemod.type_open_ Override env lid.loc lid)
 
-(* let initial_env () =
+let initial_env () =
   Ident.reinit();
   let initial =
     if Config.safe_string then Env.initial_safe_string
@@ -62,7 +62,7 @@ let init_path ?(dir="") native =
   in
   List.fold_left (fun env m ->
     open_implicit_module m env
-  ) env (!implicit_modules @ List.rev !Clflags.open_modules) *)
+  ) env (!implicit_modules @ List.rev !Clflags.open_modules)
 
 
 (* let read_color_env ppf =
