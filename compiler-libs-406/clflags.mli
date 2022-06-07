@@ -151,3 +151,7 @@ val ccobjs : string list ref
 val dllibs : string list ref
 val pic_code : bool ref
 val profile_columns : Profile.column list ref
+val all_ccopts : string list ref
+val make_package : bool ref
+val std_include_flag : string -> string
+val make_archive : bool ref

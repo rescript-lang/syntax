@@ -13,7 +13,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* val module_of_filename : Format.formatter -> string -> string -> string
+val module_of_filename : Format.formatter -> string -> string -> string
 
 val output_prefix : string -> string
 val extract_output : string option -> string
@@ -25,12 +25,12 @@ val print_standard_library : unit -> 'a
 val fatal : string -> 'a
 
 val first_ccopts : string list ref
-val first_ppx : string list ref *)
+val first_ppx : string list ref
 val first_include_dirs : string list ref
 val last_include_dirs : string list ref
 val implicit_modules : string list ref
 
-(* function to call on plugin=XXX
+(* function to call on plugin=XXX *)
 val load_plugin : (string -> unit) ref
 
 (* return the list of objfiles, after OCAMLPARAM and List.rev *)
@@ -75,4 +75,4 @@ val process_deferred_actions :
   (Format.formatter -> string -> string -> unit) * (* compile interface *)
   string * (* ocaml module extension *)
   string -> (* ocaml library extension *)
-  unit *)
+  unit

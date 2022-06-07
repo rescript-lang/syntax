@@ -158,7 +158,7 @@ let int_option_setter ppf name option s =
       (Warnings.Bad_env_variable
          ("OCAMLPARAM", Printf.sprintf "non-integer parameter for \"%s\"" name))
 
-
+(*
 let float_setter ppf name option s =
   try
     option := float_of_string s
@@ -166,7 +166,7 @@ let float_setter ppf name option s =
     Location.print_warning Location.none ppf
       (Warnings.Bad_env_variable
          ("OCAMLPARAM", Printf.sprintf "non-float parameter for \"%s\"" name))
-
+*)
 
 let load_plugin = ref (fun _ -> ())
 
@@ -418,7 +418,7 @@ let read_one_param ppf position name v =
         name
     end
 
-(* let read_OCAMLPARAM ppf position =
+let read_OCAMLPARAM ppf position =
   try
     let s = Sys.getenv "OCAMLPARAM" in
     let (before, after) =
@@ -433,7 +433,7 @@ let read_one_param ppf position name v =
       (match position with
          Before_args -> before
        | Before_compile _ | Before_link -> after)
-  with Not_found -> () *)
+  with Not_found -> ()
 
 (* OCAMLPARAM passed as file *)
 
@@ -502,7 +502,7 @@ let matching_filename filename { pattern } =
     let pattern = String.lowercase_ascii pattern in
     filename = pattern
 
-(* let apply_config_file ppf position =
+let apply_config_file ppf position =
   let config_file =
     Filename.concat Config.standard_library "ocaml_compiler_internal_params"
   in
@@ -520,9 +520,9 @@ let matching_filename filename { pattern } =
       List.filter (fun { pattern } -> pattern = Any) config
   in
   List.iter (fun { name; value } -> read_one_param ppf position name value)
-    config *)
+    config
 
-(* let readenv ppf position =
+let readenv ppf position =
   last_include_dirs := [];
   last_ccopts := [];
   last_ppx := [];
@@ -537,7 +537,7 @@ let get_objfiles ~with_ocamlparam =
     List.rev (!last_objfiles @ !objfiles @ !first_objfiles)
   else
     List.rev !objfiles
- *)
+
 
 
 
@@ -551,10 +551,10 @@ type deferred_action =
   | ProcessObjects of string list
   | ProcessDLLs of string list
 
-(* let c_object_of_filename name =
-  Filename.chop_suffix (Filename.basename name) ".c" ^ Config.ext_obj *)
+let c_object_of_filename name =
+  Filename.chop_suffix (Filename.basename name) ".c" ^ Config.ext_obj
 
-(* let process_action
+let process_action
     (ppf, implementation, interface, ocaml_mod_ext, ocaml_lib_ext) action =
   match action with
   | ProcessImplementation name ->
@@ -589,7 +589,7 @@ type deferred_action =
         dllibs := name :: !dllibs
       else
         raise(Arg.Bad("don't know what to do with " ^ name))
- *)
+
 
 let action_of_file name =
   if Filename.check_suffix name ".ml"
@@ -610,7 +610,7 @@ let anonymous filename = defer (action_of_file filename)
 let impl filename = defer (ProcessImplementation filename)
 let intf filename = defer (ProcessInterface filename)
 
-(* let process_deferred_actions env =
+let process_deferred_actions env =
   let final_output_name = !output_name in
   (* Make sure the intermediate products don't clash with the final one
      when we're invoked like: ocamlopt -o foo bar.c baz.ml. *)
@@ -637,4 +637,4 @@ let intf filename = defer (ProcessInterface filename)
       | _ -> false) !deferred_actions then
     fatal "Option -a cannot be used with .cmxa input files.";
   List.iter (process_action env) (List.rev !deferred_actions);
-  output_name := final_output_name; *)
+  output_name := final_output_name;

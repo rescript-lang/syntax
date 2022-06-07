@@ -57,3 +57,37 @@ let max_tag = 243
 let flat_float_array = true
 let flambda = false
 let architecture = "arm64"
+let ext_obj = ".o"
+let ccomp_type = "cc"
+let ocamlopt_cflags = "-O2 -fno-strict-aliasing -fwrapv -pthread  "
+let ocamlopt_cppflags = "-D_FILE_OFFSET_BITS=64 "
+let ocamlc_cflags = "-O2 -fno-strict-aliasing -fwrapv -pthread  "
+let ocamlc_cppflags = "-D_FILE_OFFSET_BITS=64 "
+let c_compiler = "gcc"
+let c_output_obj = "-o "
+let ar = "ar"
+let ext_lib = ".a"
+let ranlib = "ranlib"
+let system = "macosx"
+let native_pack_linker = "ld -r -o "
+let supports_shared_libraries = true
+let mkdll, mkexe, mkmaindll =
+  (* @@DRA Cygwin - but only if shared libraries are enabled, which we
+     should be able to detect? *)
+  if Sys.win32 || Sys.cygwin && supports_shared_libraries then
+    try
+      let flexlink =
+        let flexlink = Sys.getenv "OCAML_FLEXLINK" in
+        let f i =
+          let c = flexlink.[i] in
+          if c = '/' && Sys.win32 then '\\' else c in
+        (String.init (String.length flexlink) f) ^ " " in
+      flexlink ^ "",
+      flexlink ^ " -exe",
+      flexlink ^ " -maindll"
+    with Not_found ->
+      "gcc -shared                    -flat_namespace -undefined suppress -Wl,-no_compact_unwind                    ", "gcc -O2 -fno-strict-aliasing -fwrapv -pthread -Wall -Wdeclaration-after-statement -Werror -fno-common    -Wl,-no_compact_unwind", "gcc -shared                    -flat_namespace -undefined suppress -Wl,-no_compact_unwind                    "
+  else
+    "gcc -shared                    -flat_namespace -undefined suppress -Wl,-no_compact_unwind                    ", "gcc -O2 -fno-strict-aliasing -fwrapv -pthread -Wall -Wdeclaration-after-statement -Werror -fno-common    -Wl,-no_compact_unwind", "gcc -shared                    -flat_namespace -undefined suppress -Wl,-no_compact_unwind                    "
+  let cc_profile = "-pg"
+  let ext_dll = ".so"

@@ -57,3 +57,21 @@ val flat_float_array : bool
 val flambda : bool
 val architecture: string
         (* Name of processor type for the native-code compiler *)
+val ext_obj: string
+val ccomp_type: string
+val ocamlopt_cflags : string
+val ocamlopt_cppflags : string
+val ocamlc_cflags : string
+val ocamlc_cppflags : string
+val c_compiler: string
+val c_output_obj: string
+val ar: string
+val ext_lib: string
+val ranlib: string
+val system: string
+val native_pack_linker: string
+val mkdll: string
+val mkexe: string
+val mkmaindll: string
+val cc_profile : string
+val ext_dll: string

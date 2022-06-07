@@ -309,3 +309,10 @@ let pic_code = ref (match Config.architecture with (* -fPIC *)
                      | "amd64" -> true
                      | _       -> false)
 let profile_columns : Profile.column list ref = ref [] (* -dprofile/-dtimings *)
+and all_ccopts = ref ([] : string list)     (* -ccopt *)
+and make_package = ref false            (* -pack *)
+let std_include_flag prefix =
+  if !no_std_include then ""
+  else (prefix ^ (Filename.quote Config.standard_library))
+;;
+let make_archive = ref false            (* -a *)
