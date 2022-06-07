@@ -55,3 +55,5 @@ let afl_instrument = false
 
 let max_tag = 243
 let flat_float_array = true
+let flambda = false
+let architecture = "arm64"

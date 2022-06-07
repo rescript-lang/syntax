@@ -77,13 +77,13 @@ let is_unit_name name =
   with Exit -> false
 ;;
 
-(* let check_unit_name ppf filename name =
+let check_unit_name ppf filename name =
   if not (is_unit_name name) then
     Location.print_warning (Location.in_file filename) ppf
-      (Warnings.Bad_module_name name);; *)
+      (Warnings.Bad_module_name name);;
 
 (* Compute name of module from output file name *)
-(* let module_of_filename ppf inputfile outputprefix =
+let module_of_filename ppf inputfile outputprefix =
   let basename = Filename.basename outputprefix in
   let name =
     try
@@ -94,7 +94,7 @@ let is_unit_name name =
   let name = String.capitalize_ascii name in
   check_unit_name ppf inputfile name;
   name
-;; *)
+;;
 
 type filename = string
 
@@ -158,7 +158,7 @@ let int_option_setter ppf name option s =
       (Warnings.Bad_env_variable
          ("OCAMLPARAM", Printf.sprintf "non-integer parameter for \"%s\"" name))
 
-(*
+
 let float_setter ppf name option s =
   try
     option := float_of_string s
@@ -166,7 +166,7 @@ let float_setter ppf name option s =
     Location.print_warning Location.none ppf
       (Warnings.Bad_env_variable
          ("OCAMLPARAM", Printf.sprintf "non-float parameter for \"%s\"" name))
-*)
+
 
 let load_plugin = ref (fun _ -> ())
 
@@ -184,7 +184,7 @@ let check_bool ppf name s =
    because they are not understood by some versions of OCaml. *)
 let can_discard = ref []
 
-(* let read_one_param ppf position name v =
+let read_one_param ppf position name v =
   let set name options s =  setter ppf (fun b -> b) name options s in
   let clear name options s = setter ppf (fun b -> not b) name options s in
   match name with
@@ -416,7 +416,7 @@ let can_discard = ref []
       Printf.eprintf
         "Warning: discarding value of variable %S in OCAMLPARAM\n%!"
         name
-    end *)
+    end
 
 (* let read_OCAMLPARAM ppf position =
   try

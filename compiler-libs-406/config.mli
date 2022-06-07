@@ -54,3 +54,6 @@ val default_safe_string : bool
 val afl_instrument : bool
 val max_tag : int
 val flat_float_array : bool
+val flambda : bool
+val architecture: string
+        (* Name of processor type for the native-code compiler *)
