@@ -52,3 +52,4 @@ val unsafe_string : bool ref
 val gprofile : bool ref
 val afl_instrument : bool ref
 val recursive_types : bool ref
+val opaque : bool ref                 (* -opaque *)
