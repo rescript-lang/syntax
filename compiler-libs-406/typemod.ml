@@ -35,9 +35,7 @@ type error =
   | With_cannot_remove_constrained_type
   | Repeated_name of string * string
   | Non_generalizable of type_expr
-  | Non_generalizable_class of Ident.t * class_declaration
   | Non_generalizable_module of module_type
-  | Implementation_is_required of string
   | Interface_not_compiled of string
   | Not_allowed_in_functor_body
   | Not_a_packed_module of type_expr
@@ -50,13 +48,20 @@ type error =
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
 
-module ImplementationHooks = Misc.MakeHooks(struct
-    type t = Typedtree.structure * Typedtree.module_coercion
-  end)
-module InterfaceHooks = Misc.MakeHooks(struct
-    type t = Typedtree.signature
-  end)
 
+
+let rescript_hide_attributes (x : Typedtree.attributes) = 
+  match x with 
+  | [] -> false
+  | ({txt = "internal.local";_},_) :: _ -> true
+  | _ :: rest -> 
+    List.exists (fun (x,_) -> x.txt = "internal.local") rest
+
+let rescript_hide (x : Typedtree.structure_item_desc) = 
+  match x with 
+  | Tstr_module {mb_attributes} -> rescript_hide_attributes mb_attributes
+  | _ -> false
+  
 open Typedtree
 
 let fst3 (x,_,_) = x
@@ -572,7 +577,7 @@ and approx_sig env ssg =
               (extract_sig env smty.pmty_loc mty) in
           let newenv = Env.add_signature sg env in
           sg @ approx_sig newenv srem
-      | Psig_class sdecls | Psig_class_type sdecls ->
+      | Psig_class_type sdecls ->
           let decls = Typeclass.approx_class_declarations env sdecls in
           let rem = approx_sig env srem in
           List.flatten
@@ -583,6 +588,7 @@ and approx_sig env ssg =
                    Sig_type(decl.clsty_obj_id, decl.clsty_obj_abbr, rs);
                    Sig_type(decl.clsty_typesharp_id, decl.clsty_abbr, rs)])
               decls [rem])
+      | Psig_class () -> assert false               
       | _ ->
           approx_sig env srem
 
@@ -871,26 +877,7 @@ and transl_signature env sg =
             mksig (Tsig_include incl) env loc :: trem,
             sg @ rem,
             final_env
-        | Psig_class cl ->
-            List.iter
-              (fun {pci_name} -> check_name check_type names pci_name)
-              cl;
-            let (classes, newenv) = Typeclass.class_descriptions env cl in
-            let (trem, rem, final_env) = transl_sig newenv srem in
-            mksig (Tsig_class
-                     (List.map (fun decr ->
-                          decr.Typeclass.cls_info) classes)) env loc
-            :: trem,
-            List.flatten
-              (map_rec
-                 (fun rs cls ->
-                    let open Typeclass in
-                    [Sig_class(cls.cls_id, cls.cls_decl, rs);
-                     Sig_class_type(cls.cls_ty_id, cls.cls_ty_decl, rs);
-                     Sig_type(cls.cls_obj_id, cls.cls_obj_abbr, rs);
-                     Sig_type(cls.cls_typesharp_id, cls.cls_abbr, rs)])
-                 classes [rem]),
-            final_env
+        | Psig_class _ -> assert false        
         | Psig_class_type cl ->
             List.iter
               (fun {pci_name} -> check_name check_type names pci_name)
@@ -1221,8 +1208,8 @@ let modtype_of_package env loc p nl tl =
 let package_subtype env p1 nl1 tl1 p2 nl2 tl2 =
   let mkmty p nl tl =
     let ntl =
-      List.filter (fun (_n,t) -> Ctype.free_variables t = [])
-        (List.combine nl tl) in
+      List.filter (fun (_n,t) -> Ctype.free_variables t = []) (List.combine nl tl)
+    in
     let (nl, tl) = List.split ntl in
     modtype_of_package env Location.none p nl tl
   in
@@ -1264,7 +1251,7 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
       let aliasable = not (Env.is_functor_arg path env) in
       let md =
         if alias && aliasable then
-          (Env.add_required_global (Path.head path); md)
+          md
         else match (Env.find_module path env).md_type with
           Mty_alias(_, p1) when not alias ->
             let p1 = Env.normalize_path (Some smod.pmod_loc) env p1 in
@@ -1363,23 +1350,13 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
          }
 
   | Pmod_unpack sexp ->
-      if !Clflags.principal then Ctype.begin_def ();
       let exp = Typecore.type_exp env sexp in
-      if !Clflags.principal then begin
-        Ctype.end_def ();
-        Ctype.generalize_structure exp.exp_type
-      end;
       let mty =
         match Ctype.expand_head env exp.exp_type with
           {desc = Tpackage (p, nl, tl)} ->
             if List.exists (fun t -> Ctype.free_variables t <> []) tl then
               raise (Error (smod.pmod_loc, env,
                             Incomplete_packed_module exp.exp_type));
-            if !Clflags.principal &&
-              not (Typecore.generalizable (Btype.generic_level-1) exp.exp_type)
-            then
-              Location.prerr_warning smod.pmod_loc
-                (Warnings.Not_principal "this module unpacking");
             modtype_of_package env smod.pmod_loc p nl tl
         | {desc = Tvar _} ->
             raise (Typecore.Error
@@ -1425,7 +1402,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         let (defs, newenv) =
           Typecore.type_binding env rec_flag sdefs scope in
         let () = if rec_flag = Recursive then
-          Typecore.check_recursive_bindings env defs
+          Rec_check.check_recursive_bindings defs
         in
         (* Note: Env.find_value does not trigger the value_used event. Values
            will be marked as being used during the signature inclusion test. *)
@@ -1568,33 +1545,8 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
     | Pstr_open sod ->
         let (_path, newenv, od) = type_open ~toplevel env sod in
         Tstr_open od, [], newenv
-    | Pstr_class cl ->
-        List.iter
-          (fun {pci_name} -> check_name check_type names pci_name)
-          cl;
-        let (classes, new_env) = Typeclass.class_declarations env cl in
-        Tstr_class
-          (List.map (fun cls ->
-               (cls.Typeclass.cls_info,
-                cls.Typeclass.cls_pub_methods)) classes),
-(* TODO: check with Jacques why this is here
-      Tstr_class_type
-          (List.map (fun (_,_, i, d, _,_,_,_,_,_,c) -> (i, c)) classes) ::
-      Tstr_type
-          (List.map (fun (_,_,_,_, i, d, _,_,_,_,_) -> (i, d)) classes) ::
-      Tstr_type
-          (List.map (fun (_,_,_,_,_,_, i, d, _,_,_) -> (i, d)) classes) ::
-*)
-        List.flatten
-          (map_rec
-            (fun rs cls ->
-              let open Typeclass in
-              [Sig_class(cls.cls_id, cls.cls_decl, rs);
-               Sig_class_type(cls.cls_ty_id, cls.cls_ty_decl, rs);
-               Sig_type(cls.cls_obj_id, cls.cls_obj_abbr, rs);
-               Sig_type(cls.cls_typesharp_id, cls.cls_abbr, rs)])
-             classes []),
-        new_env
+    | Pstr_class () ->
+      assert false
     | Pstr_class_type cl ->
         List.iter
           (fun {pci_name} -> check_name check_type names pci_name)
@@ -1655,7 +1607,11 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         Cmt_format.set_saved_types (Cmt_format.Partial_structure_item str
                                     :: previous_saved_types);
         let (str_rem, sig_rem, final_env) = type_struct new_env srem in
-        (str :: str_rem, sg @ sig_rem, final_env)
+        let new_sg = 
+          if rescript_hide desc then sig_rem 
+          else 
+            sg @ sig_rem in 
+        (str :: str_rem, new_sg, final_env)
   in
   if !Clflags.annotations then
     (* moved to genannot *)
@@ -1672,13 +1628,8 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
   else Builtin_attributes.warning_scope [] run
 
 let type_toplevel_phrase env s =
-  Env.reset_required_globals ();
-  let (str, sg, env) =
-    type_structure ~toplevel:true false None env s Location.none in
-  let (str, _coerce) = ImplementationHooks.apply_hooks
-      { Misc.sourcefile = "//toplevel//" } (str, Tcoerce_none)
-  in
-  (str, sg, env)
+  type_structure ~toplevel:true false None env s Location.none
+
 
 let type_module_alias = type_module ~alias:true true false None
 let type_module = type_module true false None
@@ -1777,25 +1728,18 @@ let () =
 
 (* Typecheck an implementation file *)
 
-let type_implementation sourcefile outputprefix modulename initial_env ast =
+let type_implementation_more ?check_exists sourcefile outputprefix modulename initial_env ast =
   Cmt_format.clear ();
   try
-  Typecore.reset_delayed_checks ();
-  Env.reset_required_globals ();
-  if !Clflags.print_types then (* #7656 *)
-    Warnings.parse_options false "-32-34-37-38-60";
+  Delayed_checks.reset_delayed_checks ();
   let (str, sg, finalenv) =
     type_structure initial_env ast (Location.in_file sourcefile) in
   let simple_sg = simplify_signature sg in
-  if !Clflags.print_types then begin
-    Typecore.force_delayed_checks ();
-    Printtyp.wrap_printing_env initial_env
-      (fun () -> fprintf std_formatter "%a@." Printtyp.signature simple_sg);
-    (str, Tcoerce_none)   (* result is ignored by Compile.implementation *)
-  end else begin
+  begin
     let sourceintf =
       Filename.remove_extension sourcefile ^ !Config.interface_suffix in
-    if Sys.file_exists sourceintf then begin
+    let mli_status = !Clflags.assume_no_mli in 
+    if mli_status = Clflags.Mli_exists then begin
       let intf_file =
         try
           find_in_path_uncap !Config.load_path (modulename ^ ".cmi")
@@ -1805,20 +1749,21 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
       let dclsig = Env.read_signature modulename intf_file in
       let coercion =
         Includemod.compunit initial_env sourcefile sg intf_file dclsig in
-      Typecore.force_delayed_checks ();
+      Delayed_checks.force_delayed_checks ();
       (* It is important to run these checks after the inclusion test above,
          so that value declarations which are not used internally but exported
          are not reported as being unused. *)
       Cmt_format.save_cmt (outputprefix ^ ".cmt") modulename
         (Cmt_format.Implementation str) (Some sourcefile) initial_env None;
-      (str, coercion)
+      (str, coercion, finalenv, dclsig)
+        (* identifier is useless might read from serialized cmi files*)      
     end else begin
       let coercion =
         Includemod.compunit initial_env sourcefile sg
                             "(inferred signature)" simple_sg in
       check_nongen_schemes finalenv simple_sg;
       normalize_signature finalenv simple_sg;
-      Typecore.force_delayed_checks ();
+      Delayed_checks.force_delayed_checks ();
       (* See comment above. Here the target signature contains all
          the value being exported. We can still capture unused
          declarations like "let x = true;; let x = 1;;", because in this
@@ -1826,14 +1771,14 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
       if not !Clflags.dont_write_files then begin
         let deprecated = Builtin_attributes.deprecated_of_str ast in
         let cmi =
-          Env.save_signature ~deprecated
+          Env.save_signature ?check_exists ~deprecated
             simple_sg modulename (outputprefix ^ ".cmi")
         in
         Cmt_format.save_cmt  (outputprefix ^ ".cmt") modulename
           (Cmt_format.Implementation str)
           (Some sourcefile) initial_env (Some cmi);
       end;
-      (str, coercion)
+      (str, coercion, finalenv, simple_sg)
     end
     end
   with e ->
@@ -1844,80 +1789,19 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
     raise e
 
 let type_implementation sourcefile outputprefix modulename initial_env ast =
-  ImplementationHooks.apply_hooks { Misc.sourcefile }
-    (type_implementation sourcefile outputprefix modulename initial_env ast)
+  let (a,b,_,_) = 
+    type_implementation_more sourcefile outputprefix modulename initial_env ast in 
+  a,b    
+
 
 let save_signature modname tsg outputprefix source_file initial_env cmi =
   Cmt_format.save_cmt  (outputprefix ^ ".cmti") modname
     (Cmt_format.Interface tsg) (Some source_file) initial_env (Some cmi)
 
-let type_interface sourcefile env ast =
-  InterfaceHooks.apply_hooks { Misc.sourcefile } (transl_signature env ast)
 
 (* "Packaging" of several compilation units into one unit
    having them as sub-modules.  *)
 
-let rec package_signatures subst = function
-    [] -> []
-  | (name, sg) :: rem ->
-      let sg' = Subst.signature subst sg in
-      let oldid = Ident.create_persistent name
-      and newid = Ident.create name in
-      Sig_module(newid, {md_type=Mty_signature sg';
-                         md_attributes=[];
-                         md_loc=Location.none;
-                        },
-                 Trec_not) ::
-      package_signatures (Subst.add_module oldid (Pident newid) subst) rem
-
-let package_units initial_env objfiles cmifile modulename =
-  (* Read the signatures of the units *)
-  let units =
-    List.map
-      (fun f ->
-         let pref = chop_extensions f in
-         let modname = String.capitalize_ascii(Filename.basename pref) in
-         let sg = Env.read_signature modname (pref ^ ".cmi") in
-         if Filename.check_suffix f ".cmi" &&
-            not(Mtype.no_code_needed_sig Env.initial_safe_string sg)
-         then raise(Error(Location.none, Env.empty,
-                          Implementation_is_required f));
-         (modname, Env.read_signature modname (pref ^ ".cmi")))
-      objfiles in
-  (* Compute signature of packaged unit *)
-  Ident.reinit();
-  let sg = package_signatures Subst.identity units in
-  (* See if explicit interface is provided *)
-  let prefix = Filename.remove_extension cmifile in
-  let mlifile = prefix ^ !Config.interface_suffix in
-  if Sys.file_exists mlifile then begin
-    if not (Sys.file_exists cmifile) then begin
-      raise(Error(Location.in_file mlifile, Env.empty,
-                  Interface_not_compiled mlifile))
-    end;
-    let dclsig = Env.read_signature modulename cmifile in
-    Cmt_format.save_cmt  (prefix ^ ".cmt") modulename
-      (Cmt_format.Packed (sg, objfiles)) None initial_env  None ;
-    Includemod.compunit initial_env "(obtained by packing)" sg mlifile dclsig
-  end else begin
-    (* Determine imports *)
-    let unit_names = List.map fst units in
-    let imports =
-      List.filter
-        (fun (name, _crc) -> not (List.mem name unit_names))
-        (Env.imports()) in
-    (* Write packaged signature *)
-    if not !Clflags.dont_write_files then begin
-      let cmi =
-        Env.save_signature_with_imports ~deprecated:None
-          sg modulename
-          (prefix ^ ".cmi") imports
-      in
-      Cmt_format.save_cmt (prefix ^ ".cmt")  modulename
-        (Cmt_format.Packed (cmi.Cmi_format.cmi_sign, objfiles)) None initial_env (Some cmi)
-    end;
-    Tcoerce_none
-  end
 
 (* Error report *)
 
@@ -1977,20 +1861,10 @@ let report_error ppf = function
       fprintf ppf
         "@[The type of this expression,@ %a,@ \
            contains type variables that cannot be generalized@]" type_scheme typ
-  | Non_generalizable_class (id, desc) ->
-      fprintf ppf
-        "@[The type of this class,@ %a,@ \
-           contains type variables that cannot be generalized@]"
-        (class_declaration id) desc
   | Non_generalizable_module mty ->
       fprintf ppf
         "@[The type of this module,@ %a,@ \
            contains type variables that cannot be generalized@]" modtype mty
-  | Implementation_is_required intf_name ->
-      fprintf ppf
-        "@[The interface %a@ declares values, not just types.@ \
-           An implementation must be provided.@]"
-        Location.print_filename intf_name
   | Interface_not_compiled intf_name ->
       fprintf ppf
         "@[Could not find the .cmi file for interface@ %a.@]"
@@ -2020,6 +1894,10 @@ let report_error ppf = function
       fprintf ppf
         "This is an alias for module %a, which is missing"
         path p
+
+
+let super_report_error_no_wrap_printing_env = report_error
+
 
 let report_error env ppf err =
   Printtyp.wrap_printing_env env (fun () -> report_error ppf err)
