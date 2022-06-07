@@ -27,7 +27,6 @@ type native_repr_kind = Unboxed | Untagged
 type error =
     Repeated_parameter
   | Duplicate_constructor of string
-  | Too_many_constructors
   | Duplicate_label of string
   | Recursive_abbrev of string
   | Cycle_in_def of string * type_expr
@@ -37,7 +36,6 @@ type error =
   | Type_clash of Env.t * (type_expr * type_expr) list
   | Parameters_differ of Path.t * type_expr * type_expr
   | Null_arity_external
-  | Missing_native_external
   | Unbound_type_var of type_expr * type_declaration
   | Cannot_extend_private_type of Path.t
   | Not_extensible_type of Path.t
@@ -51,12 +49,8 @@ type error =
   | Unbound_type_var_ext of type_expr * extension_constructor
   | Varying_anonymous
   | Val_in_structure
-  | Multiple_native_repr_attributes
-  | Cannot_unbox_or_untag_type of native_repr_kind
-  | Deep_unbox_or_untag_attribute of native_repr_kind
   | Bad_immediate_attribute
   | Bad_unboxed_attribute of string
-  | Wrong_unboxed_type_float
   | Boxed_and_unboxed
   | Nonrec_gadt
 
@@ -152,11 +146,6 @@ let get_unboxed_type_representation env ty =
   get_unboxed_type_representation env ty 100
 ;;
 
-(* Determine if a type's values are represented by floats at run-time. *)
-let is_float env ty =
-  match get_unboxed_type_representation env ty with
-    Some {desc = Tconstr(p, _, _); _} -> Path.same p Predef.path_float
-  | _ -> false
 
 (* Determine if a type definition defines a fixed type. (PW) *)
 let is_fixed_type sd =
@@ -218,13 +207,18 @@ let make_params env params =
 
 let transl_labels env closed lbls =
   assert (lbls <> []);
+  if !Config.bs_only then 
+    match !Builtin_attributes.check_duplicated_labels lbls with 
+    | None -> ()
+    | Some {loc;txt=name} -> raise (Error(loc,Duplicate_label name))
+  else (
   let all_labels = ref StringSet.empty in
   List.iter
     (fun {pld_name = {txt=name; loc}} ->
        if StringSet.mem name !all_labels then
          raise(Error(loc, Duplicate_label name));
        all_labels := StringSet.add name !all_labels)
-    lbls;
+    lbls);
   let mk {pld_name=name;pld_mutable=mut;pld_type=arg;pld_loc=loc;
           pld_attributes=attrs} =
     Builtin_attributes.warning_scope attrs
@@ -289,80 +283,13 @@ let make_constructor env type_path type_params sargs sret_type =
       widen z;
       targs, Some tret_type, args, Some ret_type, params
 
-(* Check that the variable [id] is present in the [univ] list. *)
-let check_type_var loc univ id =
-  let f t = (Btype.repr t).id = id in
-  if not (List.exists f univ) then raise (Error (loc, Wrong_unboxed_type_float))
 
 (* Check that all the variables found in [ty] are in [univ].
    Because [ty] is the argument to an abstract type, the representation
    of that abstract type could be any subexpression of [ty], in particular
    any type variable present in [ty].
 *)
-let rec check_unboxed_abstract_arg loc univ ty =
-  match ty.desc with
-  | Tvar _ -> check_type_var loc univ ty.id
-  | Tarrow (_, t1, t2, _)
-  | Tfield (_, _, t1, t2) ->
-    check_unboxed_abstract_arg loc univ t1;
-    check_unboxed_abstract_arg loc univ t2
-  | Ttuple args
-  | Tconstr (_, args, _)
-  | Tpackage (_, _, args) ->
-    List.iter (check_unboxed_abstract_arg loc univ) args
-  | Tobject (fields, r) ->
-    check_unboxed_abstract_arg loc univ fields;
-    begin match !r with
-    | None -> ()
-    | Some (_, args) -> List.iter (check_unboxed_abstract_arg loc univ) args
-    end
-  | Tnil
-  | Tunivar _ -> ()
-  | Tlink e -> check_unboxed_abstract_arg loc univ e
-  | Tsubst _ -> assert false
-  | Tvariant { row_fields; row_more; row_name } ->
-    List.iter (check_unboxed_abstract_row_field loc univ) row_fields;
-    check_unboxed_abstract_arg loc univ row_more;
-    begin match row_name with
-    | None -> ()
-    | Some (_, args) -> List.iter (check_unboxed_abstract_arg loc univ) args
-    end
-  | Tpoly (t, _) -> check_unboxed_abstract_arg loc univ t
 
-and check_unboxed_abstract_row_field loc univ (_, field) =
-  match field with
-  | Rpresent (Some ty) -> check_unboxed_abstract_arg loc univ ty
-  | Reither (_, args, _, r) ->
-    List.iter (check_unboxed_abstract_arg loc univ) args;
-    begin match !r with
-    | None -> ()
-    | Some f -> check_unboxed_abstract_row_field loc univ ("", f)
-    end
-  | Rabsent
-  | Rpresent None -> ()
-
-(* Check that the argument to a GADT constructor is compatible with unboxing
-   the type, given the universal parameters of the type. *)
-let rec check_unboxed_gadt_arg loc univ env ty =
-  match get_unboxed_type_representation env ty with
-  | Some {desc = Tvar _; id} -> check_type_var loc univ id
-  | Some {desc = Tarrow _ | Ttuple _ | Tpackage _ | Tobject _ | Tnil
-                 | Tvariant _; _} ->
-    ()
-    (* A comment in [Translcore.transl_exp0] claims the above cannot be
-       represented by floats. *)
-  | Some {desc = Tconstr (p, args, _); _} ->
-    let tydecl = Env.find_type p env in
-    assert (not tydecl.type_unboxed.unboxed);
-    if tydecl.type_kind = Type_abstract then
-      List.iter (check_unboxed_abstract_arg loc univ) args
-  | Some {desc = Tfield _ | Tlink _ | Tsubst _; _} -> assert false
-  | Some {desc = Tunivar _; _} -> ()
-  | Some {desc = Tpoly (t2, _); _} -> check_unboxed_gadt_arg loc univ env t2
-  | None -> ()
-      (* This case is tricky: the argument is another (or the same) type
-         in the same recursive definition. In this case we don't have to
-         check because we will also check that other type for correctness. *)
 
 let transl_declaration env sdecl id =
   (* Bind type parameters *)
@@ -439,34 +366,12 @@ let transl_declaration env sdecl id =
               raise(Error(sdecl.ptype_loc, Duplicate_constructor name));
             all_constrs := StringSet.add name !all_constrs)
           scstrs;
-        if List.length
-            (List.filter (fun cd -> cd.pcd_args <> Pcstr_tuple []) scstrs)
-           > (Config.max_tag + 1) then
-          raise(Error(sdecl.ptype_loc, Too_many_constructors));
         let make_cstr scstr =
           let name = Ident.create scstr.pcd_name.txt in
-          let targs, tret_type, args, ret_type, cstr_params =
+          let targs, tret_type, args, ret_type, _cstr_params =
             make_constructor env (Path.Pident id) params
                              scstr.pcd_args scstr.pcd_res
           in
-          if Config.flat_float_array && unbox then begin
-            (* Cannot unbox a type when the argument can be both float and
-               non-float because it interferes with the dynamic float array
-               optimization. This can only happen when the type is a GADT
-               and the argument is an existential type variable or an
-               unboxed (or abstract) type constructor applied to some
-               existential type variable. Of course we also have to rule
-               out any abstract type constructor applied to anything that
-               might be an existential type variable.
-               There is a difficulty with existential variables created
-               out of thin air (rather than bound by the declaration).
-               See PR#7511 and GPR#1133 for details. *)
-            match Datarepr.constructor_existentials args ret_type with
-            | _, [] -> ()
-            | [argty], _ex ->
-                check_unboxed_gadt_arg sdecl.ptype_loc cstr_params env argty
-            | _ -> assert false
-          end;
           let tcstr =
             { cd_id = name;
               cd_name = scstr.pcd_name;
@@ -494,9 +399,9 @@ let transl_declaration env sdecl id =
           let lbls, lbls' = transl_labels env true lbls in
           let rep =
             if unbox then Record_unboxed false
-            else if List.for_all (fun l -> is_float env l.Types.ld_type) lbls'
-            then Record_object
-            else Record_regular
+            else 
+              if List.exists (fun ({txt },_) -> txt = "obj") sdecl.ptype_attributes then Record_object
+              else Record_regular
           in
           Ttype_record lbls, Type_record(lbls', rep)
       | Ptype_open -> Ttype_open, Type_open
@@ -726,10 +631,10 @@ let check_well_founded env loc path to_check ty =
     if fini then () else
     let rec_ok =
       match ty.desc with
-        Tconstr(p,_,_) ->
-          !Clflags.recursive_types && Ctype.is_contractive env p
+        Tconstr(_p,_,_) ->
+          false (*!Clflags.recursive_types && Ctype.is_contractive env p*)
       | Tobject _ | Tvariant _ -> true
-      | _ -> !Clflags.recursive_types
+      | _ -> false (* !Clflags.recursive_types*)
     in
     let visited' = TypeMap.add ty parents !visited in
     let arg_exn =
@@ -1643,96 +1548,21 @@ let transl_exception env sext =
   let newenv = Env.add_extension ~check:true ext.ext_id ext.ext_type env in
     ext, newenv
 
-type native_repr_attribute =
-  | Native_repr_attr_absent
-  | Native_repr_attr_present of native_repr_kind
 
-let get_native_repr_attribute attrs ~global_repr =
-  match
-    Attr_helper.get_no_payload_attribute ["unboxed"; "ocaml.unboxed"]  attrs,
-    Attr_helper.get_no_payload_attribute ["untagged"; "ocaml.untagged"] attrs,
-    global_repr
+
+let rec parse_native_repr_attributes env core_type ty =
+  match core_type.ptyp_desc, (Ctype.repr ty).desc
   with
-  | None, None, None -> Native_repr_attr_absent
-  | None, None, Some repr -> Native_repr_attr_present repr
-  | Some _, None, None -> Native_repr_attr_present Unboxed
-  | None, Some _, None -> Native_repr_attr_present Untagged
-  | Some { Location.loc }, _, _
-  | _, Some { Location.loc }, _ ->
-    raise (Error (loc, Multiple_native_repr_attributes))
-
-let native_repr_of_type env kind ty =
-  match kind, (Ctype.expand_head_opt env ty).desc with
-  | Untagged, Tconstr (path, _, _) when Path.same path Predef.path_int ->
-    Some Untagged_int
-  | Unboxed, Tconstr (path, _, _) when Path.same path Predef.path_float ->
-    Some Unboxed_float
-  | Unboxed, Tconstr (path, _, _) when Path.same path Predef.path_int32 ->
-    Some (Unboxed_integer Pint32)
-  | Unboxed, Tconstr (path, _, _) when Path.same path Predef.path_int64 ->
-    Some (Unboxed_integer Pint64)
-  | Unboxed, Tconstr (path, _, _) when Path.same path Predef.path_nativeint ->
-    Some (Unboxed_integer Pnativeint)
-  | _ ->
-    None
-
-(* Raises an error when [core_type] contains an [@unboxed] or [@untagged]
-   attribute in a strict sub-term. *)
-let error_if_has_deep_native_repr_attributes core_type =
-  let open Ast_iterator in
-  let this_iterator =
-    { default_iterator with typ = fun iterator core_type ->
-      begin
-        match
-          get_native_repr_attribute core_type.ptyp_attributes ~global_repr:None
-        with
-        | Native_repr_attr_present kind ->
-           raise (Error (core_type.ptyp_loc,
-                         Deep_unbox_or_untag_attribute kind))
-        | Native_repr_attr_absent -> ()
-      end;
-      default_iterator.typ iterator core_type }
-  in
-  default_iterator.typ this_iterator core_type
-
-let make_native_repr env core_type ty ~global_repr =
-  error_if_has_deep_native_repr_attributes core_type;
-  match get_native_repr_attribute core_type.ptyp_attributes ~global_repr with
-  | Native_repr_attr_absent ->
-    Same_as_ocaml_repr
-  | Native_repr_attr_present kind ->
-    begin match native_repr_of_type env kind ty with
-    | None ->
-      raise (Error (core_type.ptyp_loc, Cannot_unbox_or_untag_type kind))
-    | Some repr -> repr
-    end
-
-let rec parse_native_repr_attributes env core_type ty ~global_repr =
-  match core_type.ptyp_desc, (Ctype.repr ty).desc,
-    get_native_repr_attribute core_type.ptyp_attributes ~global_repr:None
-  with
-  | Ptyp_arrow _, Tarrow _, Native_repr_attr_present kind  ->
-    raise (Error (core_type.ptyp_loc, Cannot_unbox_or_untag_type kind))
-  | Ptyp_arrow (_, ct1, ct2), Tarrow (_, t1, t2, _), _ ->
-    let repr_arg = make_native_repr env ct1 t1 ~global_repr in
+  | Ptyp_arrow (_, _, ct2), Tarrow (_, _, t2, _) ->
+    let repr_arg = Same_as_ocaml_repr  in
     let repr_args, repr_res =
-      parse_native_repr_attributes env ct2 t2 ~global_repr
+      parse_native_repr_attributes env ct2 t2 
     in
     (repr_arg :: repr_args, repr_res)
-  | Ptyp_arrow _, _, _ | _, Tarrow _, _ -> assert false
-  | _ -> ([], make_native_repr env core_type ty ~global_repr)
+  | Ptyp_arrow _, _ | _, Tarrow _ -> assert false
+  | _ -> ([], Same_as_ocaml_repr)
 
 
-let check_unboxable env loc ty =
-  let ty = Ctype.repr (Ctype.expand_head_opt env ty) in
-  try match ty.desc with
-  | Tconstr (p, _, _) ->
-    let tydecl = Env.find_type p env in
-    if tydecl.type_unboxed.unboxed then
-      Location.prerr_warning loc
-        (Warnings.Unboxable_type_in_prim_decl (Path.name p))
-  | _ -> ()
-  with Not_found -> ()
 
 (* Translate a value declaration *)
 let transl_value_decl env loc valdecl =
@@ -1746,29 +1576,38 @@ let transl_value_decl env loc valdecl =
   | [] ->
       raise (Error(valdecl.pval_loc, Val_in_structure))
   | _ ->
-      let global_repr =
-        match
-          get_native_repr_attribute valdecl.pval_attributes ~global_repr:None
-        with
-        | Native_repr_attr_present repr -> Some repr
-        | Native_repr_attr_absent -> None
-      in
       let native_repr_args, native_repr_res =
-        parse_native_repr_attributes env valdecl.pval_type ty ~global_repr
+          let rec scann (attrs : Parsetree.attributes)  = 
+            match attrs with 
+            | ({txt = "internal.arity";_}, 
+              PStr [ {pstr_desc = Pstr_eval
+                        (
+                          ({pexp_desc = Pexp_constant (Pconst_integer (i,_))} :
+                             Parsetree.expression) ,_)}]) :: _ -> 
+               Some (int_of_string i)              
+            | _ :: rest  -> scann rest 
+            | [] -> None 
+          and make n = 
+            if n = 0 then []
+            else Primitive.Same_as_ocaml_repr :: make (n - 1)
+          in 
+            match scann valdecl.pval_attributes with 
+            | None ->  parse_native_repr_attributes env valdecl.pval_type ty 
+            | Some x -> make x , Primitive.Same_as_ocaml_repr
       in
       let prim =
         Primitive.parse_declaration valdecl
           ~native_repr_args
           ~native_repr_res
       in
+      let prim_native_name = prim.prim_native_name in 
       if prim.prim_arity = 0 &&
-         (prim.prim_name = "" || prim.prim_name.[0] <> '%') then
+         not ( String.length prim_native_name >= 20 &&
+               String.unsafe_get prim_native_name 0 = '\132' &&
+               String.unsafe_get prim_native_name 1 = '\149' 
+             ) && 
+         (prim.prim_name = "" || (prim.prim_name.[0] <> '%' && prim.prim_name.[0] <> '#')) then
         raise(Error(valdecl.pval_type.ptyp_loc, Null_arity_external));
-      if !Clflags.native_code
-      && prim.prim_arity > 5
-      && prim.prim_native_name = ""
-      then raise(Error(valdecl.pval_type.ptyp_loc, Missing_native_external));
-      Btype.iter_type_expr (check_unboxable env loc) ty;
       { val_type = ty; val_kind = Val_prim prim; Types.val_loc = loc;
         val_attributes = valdecl.pval_attributes }
   in
@@ -1972,10 +1811,6 @@ let report_error ppf = function
       fprintf ppf "A type parameter occurs several times"
   | Duplicate_constructor s ->
       fprintf ppf "Two constructors are named %s" s
-  | Too_many_constructors ->
-      fprintf ppf
-        "@[Too many non-constant constructors@ -- maximum is %i %s@]"
-        (Config.max_tag + 1) "non-constant constructors"
   | Duplicate_label s ->
       fprintf ppf "Two labels are named %s" s
   | Recursive_abbrev s ->
@@ -2016,10 +1851,6 @@ let report_error ppf = function
            fprintf ppf "but is used here with type")
   | Null_arity_external ->
       fprintf ppf "External identifiers must be functions"
-  | Missing_native_external ->
-      fprintf ppf "@[<hv>An external function with more than 5 arguments \
-                   requires a second stub function@ \
-                   for native-code compilation@]"
   | Unbound_type_var (ty, decl) ->
       fprintf ppf "A type variable is unbound in this type declaration";
       let ty = Ctype.repr ty in
@@ -2126,29 +1957,12 @@ let report_error ppf = function
         "cannot be checked"
   | Val_in_structure ->
       fprintf ppf "Value declarations are only allowed in signatures"
-  | Multiple_native_repr_attributes ->
-      fprintf ppf "Too many [@@unboxed]/[@@untagged] attributes"
-  | Cannot_unbox_or_untag_type Unboxed ->
-      fprintf ppf "Don't know how to unbox this type. Only float, int32, \
-                   int64 and nativeint can be unboxed"
-  | Cannot_unbox_or_untag_type Untagged ->
-      fprintf ppf "Don't know how to untag this type. Only int \
-                   can be untagged"
-  | Deep_unbox_or_untag_attribute kind ->
-      fprintf ppf
-        "The attribute '%s' should be attached to a direct argument or \
-         result of the primitive, it should not occur deeply into its type"
-        (match kind with Unboxed -> "@unboxed" | Untagged -> "@untagged")
   | Bad_immediate_attribute ->
       fprintf ppf "@[%s@ %s@]"
         "Types marked with the immediate attribute must be"
         "non-pointer types like int or bool"
   | Bad_unboxed_attribute msg ->
       fprintf ppf "@[This type cannot be unboxed because@ %s.@]" msg
-  | Wrong_unboxed_type_float ->
-      fprintf ppf "@[This type cannot be unboxed because@ \
-                   it might contain both float and non-float values.@ \
-                   You should annotate it with [%@%@ocaml.boxed].@]"
   | Boxed_and_unboxed ->
       fprintf ppf "@[A type cannot be boxed and unboxed at the same time.@]"
   | Nonrec_gadt ->

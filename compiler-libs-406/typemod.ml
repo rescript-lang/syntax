@@ -1771,7 +1771,7 @@ let type_implementation_more ?check_exists sourcefile outputprefix modulename in
       if not !Clflags.dont_write_files then begin
         let deprecated = Builtin_attributes.deprecated_of_str ast in
         let cmi =
-          Env.save_signature ?check_exists ~deprecated
+          Env.save_signature ~deprecated
             simple_sg modulename (outputprefix ^ ".cmi")
         in
         Cmt_format.save_cmt  (outputprefix ^ ".cmt") modulename
