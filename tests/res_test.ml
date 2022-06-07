@@ -62,6 +62,7 @@ module OutcomePrinterTests = struct
     Lazy.force Res_outcome_printer.setup;
 
     Compmisc.init_path false;
+    Clflags.nopervasives := true;
     let env = Compmisc.initial_env () in
     try (
       let (_typedStructure, signature, _newenv) =
@@ -93,7 +94,7 @@ module OutcomePrinterTests = struct
    * The inferred signature (i.e. the type of the module `oprint.res`) will
    * then be converted to the outcome tree.
    * The outcome tree is printed to a string
-   * and stored in a snapshot `tests/oprint/oprint.res.snapshot` *)
+   * and stored in a snapshot `tests/oprint/expected/oprint.resi.txt` *)
   let run () =
     let filename = "tests/oprint/oprint.res" in
     let result = Res_driver.parsingEngine.parseImplementation ~forPrinter:false ~filename in
