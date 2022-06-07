@@ -25,7 +25,12 @@ type mapper = {
   attributes: mapper -> T.attribute list -> attribute list;
   case: mapper -> T.case -> case;
   cases: mapper -> T.case list -> case list;
+  class_declaration: mapper -> T.class_declaration -> class_declaration;
+  class_description: mapper -> T.class_description -> class_description;
+  class_expr: mapper -> T.class_expr -> class_expr;
+  class_field: mapper -> T.class_field -> class_field;
   class_signature: mapper -> T.class_signature -> class_signature;
+  class_structure: mapper -> T.class_structure -> class_structure;
   class_type: mapper -> T.class_type -> class_type;
   class_type_declaration: mapper -> T.class_type_declaration
                           -> class_type_declaration;
@@ -83,6 +88,9 @@ Some notes:
 
 (** Utility functions. *)
 
+let string_is_prefix sub str =
+  let sublen = String.length sub in
+  String.length str >= sublen && String.sub str 0 sublen = sub
 
 let map_opt f = function None -> None | Some e -> Some (f e)
 
@@ -153,8 +161,11 @@ let structure_item sub item =
         Pstr_modtype (sub.module_type_declaration sub mtd)
     | Tstr_open od ->
         Pstr_open (sub.open_description sub od)
-    | Tstr_class _list ->
-        Pstr_class ()
+    | Tstr_class list ->
+        Pstr_class
+          (List.map
+             (fun (ci, _) -> sub.class_declaration sub ci)
+             list)
     | Tstr_class_type list ->
         Pstr_class_type
           (List.map
@@ -430,12 +441,17 @@ let expression sub exp =
           dir, sub.expr sub exp3)
     | Texp_send (exp, meth, _) ->
         Pexp_send (sub.expr sub exp, match meth with
-            Tmeth_name name -> mkloc name loc)
-    | Texp_new _
-    | Texp_instvar _
-    | Texp_setinstvar _
-    | Texp_override _ ->
-        assert false
+            Tmeth_name name -> mkloc name loc
+          | Tmeth_val id -> mkloc (Ident.name id) loc)
+    | Texp_new (_path, lid, _) -> Pexp_new (map_loc sub lid)
+    | Texp_instvar (_, path, name) ->
+      Pexp_ident ({loc = sub.location sub name.loc ; txt = lident_of_path path})
+    | Texp_setinstvar (_, _path, lid, exp) ->
+        Pexp_setinstvar (map_loc sub lid, sub.expr sub exp)
+    | Texp_override (_, list) ->
+        Pexp_override (List.map (fun (_path, lid, exp) ->
+              (map_loc sub lid, sub.expr sub exp)
+          ) list)
     | Texp_letmodule (_id, name, mexpr, exp) ->
         Pexp_letmodule (name, sub.module_expr sub mexpr,
           sub.expr sub exp)
@@ -444,8 +460,8 @@ let expression sub exp =
                            sub.expr sub exp)
     | Texp_assert exp -> Pexp_assert (sub.expr sub exp)
     | Texp_lazy exp -> Pexp_lazy (sub.expr sub exp)
-    | Texp_object () ->
-        assert false
+    | Texp_object (cl, _) ->
+        Pexp_object (sub.class_structure sub cl)
     | Texp_pack (mexpr) ->
         Pexp_pack (sub.module_expr sub mexpr)
     | Texp_unreachable ->
@@ -496,8 +512,8 @@ let signature_item sub item =
         Psig_open (sub.open_description sub od)
     | Tsig_include incl ->
         Psig_include (sub.include_description sub incl)
-    | Tsig_class () ->
-        Psig_class ()
+    | Tsig_class list ->
+        Psig_class (List.map (sub.class_description sub) list)
     | Tsig_class_type list ->
         Psig_class_type (List.map (sub.class_type_declaration sub) list)
     | Tsig_attribute x ->
@@ -530,6 +546,8 @@ let class_infos f sub ci =
     (map_loc sub ci.ci_id_name)
     (f sub ci.ci_expr)
 
+let class_declaration sub = class_infos sub.class_expr sub
+let class_description sub = class_infos sub.class_type sub
 let class_type_declaration sub = class_infos sub.class_type sub
 
 let module_type sub mty =
@@ -587,7 +605,42 @@ let module_expr sub mexpr =
         in
         Mod.mk ~loc ~attrs desc
 
+let class_expr sub cexpr =
+  let loc = sub.location sub cexpr.cl_loc in
+  let attrs = sub.attributes sub cexpr.cl_attributes in
+  let desc = match cexpr.cl_desc with
+    | Tcl_constraint ( { cl_desc = Tcl_ident (_path, lid, tyl); _ },
+                       None, _, _, _ ) ->
+        Pcl_constr (map_loc sub lid,
+          List.map (sub.typ sub) tyl)
+    | Tcl_structure clstr -> Pcl_structure (sub.class_structure sub clstr)
 
+    | Tcl_fun (label, pat, _pv, cl, _partial) ->
+        Pcl_fun (label, None, sub.pat sub pat, sub.class_expr sub cl)
+
+    | Tcl_apply (cl, args) ->
+        Pcl_apply (sub.class_expr sub cl,
+          List.fold_right (fun (label, expo) list ->
+              match expo with
+                None -> list
+              | Some exp -> (label, sub.expr sub exp) :: list
+          ) args [])
+
+    | Tcl_let (rec_flat, bindings, _ivars, cl) ->
+        Pcl_let (rec_flat,
+          List.map (sub.value_binding sub) bindings,
+          sub.class_expr sub cl)
+
+    | Tcl_constraint (cl, Some clty, _vals, _meths, _concrs) ->
+        Pcl_constraint (sub.class_expr sub cl,  sub.class_type sub clty)
+
+    | Tcl_open (ovf, _p, lid, _env, e) ->
+        Pcl_open (ovf, lid, sub.class_expr sub e)
+
+    | Tcl_ident _ -> assert false
+    | Tcl_constraint (_, None, _, _, _) -> assert false
+  in
+  Cl.mk ~loc ~attrs desc
 
 let class_type sub ct =
   let loc = sub.location sub ct.cltyp_loc in
@@ -652,6 +705,16 @@ let core_type sub ct =
   in
   Typ.mk ~loc ~attrs desc
 
+let class_structure sub cs =
+  let rec remove_self = function
+    | { pat_desc = Tpat_alias (p, id, _s) }
+      when string_is_prefix "selfpat-" id.Ident.name ->
+        remove_self p
+    | p -> p
+  in
+  { pcstr_self = sub.pat sub (remove_self cs.cstr_self);
+    pcstr_fields = List.map (sub.class_field sub) cs.cstr_fields;
+  }
 
 let row_field sub rf =
   match rf with
@@ -665,7 +728,47 @@ let object_field sub ofield =
       Otag (label, sub.attributes sub attrs, sub.typ sub ct)
   | OTinherit ct -> Oinherit (sub.typ sub ct)
 
+and is_self_pat = function
+  | { pat_desc = Tpat_alias(_pat, id, _) } ->
+      string_is_prefix "self-" (Ident.name id)
+  | _ -> false
 
+let class_field sub cf =
+  let loc = sub.location sub cf.cf_loc in
+  let attrs = sub.attributes sub cf.cf_attributes in
+  let desc = match cf.cf_desc with
+      Tcf_inherit (ovf, cl, super, _vals, _meths) ->
+        Pcf_inherit (ovf, sub.class_expr sub cl,
+                     map_opt (fun v -> mkloc v loc) super)
+    | Tcf_constraint (cty, cty') ->
+        Pcf_constraint (sub.typ sub cty, sub.typ sub cty')
+    | Tcf_val (lab, mut, _, Tcfk_virtual cty, _) ->
+        Pcf_val (lab, mut, Cfk_virtual (sub.typ sub cty))
+    | Tcf_val (lab, mut, _, Tcfk_concrete (o, exp), _) ->
+        Pcf_val (lab, mut, Cfk_concrete (o, sub.expr sub exp))
+    | Tcf_method (lab, priv, Tcfk_virtual cty) ->
+        Pcf_method (lab, priv, Cfk_virtual (sub.typ sub cty))
+    | Tcf_method (lab, priv, Tcfk_concrete (o, exp)) ->
+        let remove_fun_self = function
+          | { exp_desc =
+              Texp_function { arg_label = Nolabel; cases = [case]; _ } }
+            when is_self_pat case.c_lhs && case.c_guard = None -> case.c_rhs
+          | e -> e
+        in
+        let exp = remove_fun_self exp in
+        Pcf_method (lab, priv, Cfk_concrete (o, sub.expr sub exp))
+    | Tcf_initializer exp ->
+        let remove_fun_self = function
+          | { exp_desc =
+              Texp_function { arg_label = Nolabel; cases = [case]; _ } }
+            when is_self_pat case.c_lhs && case.c_guard = None -> case.c_rhs
+          | e -> e
+        in
+        let exp = remove_fun_self exp in
+        Pcf_initializer (sub.expr sub exp)
+    | Tcf_attribute x -> Pcf_attribute x
+  in
+  Cf.mk ~loc ~attrs desc
 
 let location _sub l = l
 
@@ -680,10 +783,15 @@ let default_mapper =
     signature_item = signature_item;
     module_type = module_type;
     with_constraint = with_constraint;
+    class_declaration = class_declaration;
+    class_expr = class_expr;
+    class_field = class_field;
+    class_structure = class_structure;
     class_type = class_type;
     class_type_field = class_type_field;
     class_signature = class_signature;
     class_type_declaration = class_type_declaration;
+    class_description = class_description;
     type_declaration = type_declaration;
     type_kind = type_kind;
     typ = core_type;

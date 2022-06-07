@@ -65,7 +65,41 @@ val get_unboxed_type_representation: Env.t -> type_expr -> type_expr option
 
 type native_repr_kind = Unboxed | Untagged
 
-type error 
+type error =
+    Repeated_parameter
+  | Duplicate_constructor of string
+  | Too_many_constructors
+  | Duplicate_label of string
+  | Recursive_abbrev of string
+  | Cycle_in_def of string * type_expr
+  | Definition_mismatch of type_expr * Includecore.type_mismatch list
+  | Constraint_failed of type_expr * type_expr
+  | Inconsistent_constraint of Env.t * (type_expr * type_expr) list
+  | Type_clash of Env.t * (type_expr * type_expr) list
+  | Parameters_differ of Path.t * type_expr * type_expr
+  | Null_arity_external
+  | Missing_native_external
+  | Unbound_type_var of type_expr * type_declaration
+  | Cannot_extend_private_type of Path.t
+  | Not_extensible_type of Path.t
+  | Extension_mismatch of Path.t * Includecore.type_mismatch list
+  | Rebind_wrong_type of Longident.t * Env.t * (type_expr * type_expr) list
+  | Rebind_mismatch of Longident.t * Path.t * Path.t
+  | Rebind_private of Longident.t
+  | Bad_variance of int * (bool*bool*bool) * (bool*bool*bool)
+  | Unavailable_type_constructor of Path.t
+  | Bad_fixed_type of string
+  | Unbound_type_var_ext of type_expr * extension_constructor
+  | Varying_anonymous
+  | Val_in_structure
+  | Multiple_native_repr_attributes
+  | Cannot_unbox_or_untag_type of native_repr_kind
+  | Deep_unbox_or_untag_attribute of native_repr_kind
+  | Bad_immediate_attribute
+  | Bad_unboxed_attribute of string
+  | Wrong_unboxed_type_float
+  | Boxed_and_unboxed
+  | Nonrec_gadt
 
 exception Error of Location.t * error
 

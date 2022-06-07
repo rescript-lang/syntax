@@ -26,18 +26,11 @@ val type_structure:
 val type_toplevel_phrase:
         Env.t -> Parsetree.structure ->
          Typedtree.structure * Types.signature * Env.t
-
-
-val rescript_hide : Typedtree.structure_item_desc -> bool
-
-val type_implementation_more: ?check_exists:unit -> 
-  string -> string -> string -> Env.t -> Parsetree.structure ->
-  Typedtree.structure * Typedtree.module_coercion * Env.t * Types.signature
-
 val type_implementation:
   string -> string -> string -> Env.t -> Parsetree.structure ->
   Typedtree.structure * Typedtree.module_coercion
-  
+val type_interface:
+        string -> Env.t -> Parsetree.signature -> Typedtree.signature
 val transl_signature:
         Env.t -> Parsetree.signature -> Typedtree.signature
 val check_nongen_schemes:
@@ -45,6 +38,9 @@ val check_nongen_schemes:
 val type_open_:
         ?used_slot:bool ref -> ?toplevel:bool -> Asttypes.override_flag ->
         Env.t -> Location.t -> Longident.t Asttypes.loc -> Path.t * Env.t
+val modtype_of_package:
+        Env.t -> Location.t ->
+        Path.t -> Longident.t list -> type_expr list -> module_type
 val simplify_signature: signature -> signature
 
 val path_of_module : Typedtree.module_expr -> Path.t option
@@ -52,6 +48,9 @@ val path_of_module : Typedtree.module_expr -> Path.t option
 val save_signature:
   string -> Typedtree.signature -> string -> string ->
   Env.t -> Cmi_format.cmi_infos -> unit
+
+val package_units:
+  Env.t -> string list -> string -> string -> Typedtree.module_coercion
 
 type error =
     Cannot_apply of module_type
@@ -67,7 +66,9 @@ type error =
   | With_cannot_remove_constrained_type
   | Repeated_name of string * string
   | Non_generalizable of type_expr
+  | Non_generalizable_class of Ident.t * class_declaration
   | Non_generalizable_module of module_type
+  | Implementation_is_required of string
   | Interface_not_compiled of string
   | Not_allowed_in_functor_body
   | Not_a_packed_module of type_expr
@@ -80,10 +81,10 @@ type error =
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
 
-
-val super_report_error_no_wrap_printing_env: formatter -> error -> unit
-
-
 val report_error: Env.t -> formatter -> error -> unit
 
 
+module ImplementationHooks : Misc.HookSig
+  with type t = Typedtree.structure * Typedtree.module_coercion
+module InterfaceHooks : Misc.HookSig
+  with type t = Typedtree.signature
