@@ -323,8 +323,7 @@ and value_binding =
 and module_coercion =
     Tcoerce_none
   | Tcoerce_structure of (int * module_coercion) list *
-                         (Ident.t * int * module_coercion) list *
-                         string list (* runtime fields *)
+                         (Ident.t * int * module_coercion) list
   | Tcoerce_functor of module_coercion * module_coercion
   | Tcoerce_primitive of primitive_coercion
   | Tcoerce_alias of Path.t * module_coercion
@@ -351,7 +350,6 @@ and primitive_coercion =
     pc_type: type_expr;
     pc_env: Env.t;
     pc_loc : Location.t;
-    pc_id : Ident.t;
   }
 
 and signature = {

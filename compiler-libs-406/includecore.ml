@@ -39,7 +39,7 @@ let value_descriptions ~loc env name
           if p1 = p2 then Tcoerce_none else raise Dont_match
       | (Val_prim p, _) ->
           let pc = {pc_desc = p; pc_type = vd2.Types.val_type;
-                  pc_env = env; pc_loc = vd1.Types.val_loc; pc_id = Ident.create name } in
+                  pc_env = env; pc_loc = vd1.Types.val_loc; } in
           Tcoerce_primitive pc
       | (_, Val_prim _) -> raise Dont_match
       | (_, _) -> Tcoerce_none
