@@ -89,3 +89,5 @@ let gprofile = ref false                (* -p *)
 let afl_instrument = ref Config.afl_instrument (* -afl-instrument *)
 let recursive_types = ref false         (* -rectypes *)
 and opaque = ref false                  (* -opaque *)
+
+let native_code = ref false             (* set to true under ocamlopt *)
