@@ -47,4 +47,8 @@ val cmt_magic_number: string
 val default_uncurry : bool ref 
 val print_config : out_channel -> unit;;
 
-
+val default_executable_name : string
+val flexdll_dirs : string list
+val safe_string : bool
+val default_safe_string : bool
+val afl_instrument : bool

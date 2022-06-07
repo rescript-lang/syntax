@@ -1,6 +1,0 @@
-S src
-B src
-S +compiler-libs
-B +compiler-libs
-
-FLG -w +a-4-42-40-9-48

@@ -40,3 +40,15 @@ let print_config oc =
   p "cmt_magic_number" cmt_magic_number;
   flush oc;
 ;;
+
+let default_executable_name =
+  match Sys.os_type with
+    "Unix" -> "a.out"
+  | "Win32" | "Cygwin" -> "camlprog.exe"
+  | _ -> "camlprog"
+let flexdll_dirs = [];;
+
+let safe_string = true
+let default_safe_string = true
+
+let afl_instrument = false

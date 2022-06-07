@@ -25,6 +25,8 @@ let dump_parsetree = ref false          (* -dparsetree *)
 and dump_typedtree = ref false          (* -dtypedtree *)
 and dump_rawlambda = ref false          (* -drawlambda *)
 and dump_lambda = ref false             (* -dlambda *)
+and no_std_include = ref false          (* -nostdlib *)
+
 
 
 let dont_write_files = ref false        (* set to true under ocamldoc *)
@@ -69,3 +71,20 @@ let dont_record_crc_unit : string option ref = ref None
 let bs_gentype = ref None
 let no_assert_false = ref false
 let dump_location = ref true
+
+let use_threads = ref false
+let use_vmthreads = ref false
+let compile_only = ref false
+
+let std_include_dir () =
+  if !no_std_include then [] else [Config.standard_library]
+;;
+
+let unsafe_string =
+  if Config.safe_string then ref false
+  else ref (not Config.default_safe_string)
+
+let gprofile = ref false                (* -p *)
+
+let afl_instrument = ref Config.afl_instrument (* -afl-instrument *)
+let recursive_types = ref false         (* -rectypes *)

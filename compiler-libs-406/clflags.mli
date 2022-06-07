@@ -43,3 +43,12 @@ val bs_gentype : string option ref
 val no_assert_false : bool ref
 val dump_location : bool ref
 
+val use_threads : bool ref
+val use_vmthreads : bool ref
+val compile_only : bool ref
+val no_std_include : bool ref
+val std_include_dir : unit -> string list
+val unsafe_string : bool ref
+val gprofile : bool ref
+val afl_instrument : bool ref
+val recursive_types : bool ref
