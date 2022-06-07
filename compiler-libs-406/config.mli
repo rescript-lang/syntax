@@ -52,3 +52,5 @@ val flexdll_dirs : string list
 val safe_string : bool
 val default_safe_string : bool
 val afl_instrument : bool
+val max_tag : int
+val flat_float_array : bool

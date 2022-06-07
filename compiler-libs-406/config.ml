@@ -52,3 +52,6 @@ let safe_string = true
 let default_safe_string = true
 
 let afl_instrument = false
+
+let max_tag = 243
+let flat_float_array = true
