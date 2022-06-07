@@ -65,7 +65,7 @@ let initial_env () =
   ) env (!implicit_modules @ List.rev !Clflags.open_modules)
 
 
-(* let read_color_env ppf =
+let read_color_env ppf =
   try
     match Clflags.parse_color_setting (Sys.getenv "OCAML_COLOR") with
     | None ->
@@ -77,4 +77,4 @@ let initial_env () =
       | None -> Clflags.color := Some x
       | Some _ -> ()
   with
-    Not_found -> () *)
+    Not_found -> ()
