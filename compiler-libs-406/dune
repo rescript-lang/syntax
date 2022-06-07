@@ -1,5 +1,5 @@
 (library
  (name compilerlibs406)
  (flags -w "-9" -w -deprecated)
- (modules_without_implementation parsetree asttypes)
+ (modules_without_implementation parsetree asttypes outcometree)
  (libraries ))
