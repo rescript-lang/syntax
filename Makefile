@@ -9,11 +9,11 @@ bootstrap: build
 bench: build
 	dune exec -- bench
 
-test:
+test: reanalyze
 	dune exec -- tests
 	dune exec -- ./test.sh
 
-roundtrip-test:
+roundtrip-test: reanalyze
 	dune exec -- tests
 	ROUNDTRIP_TEST=1 dune exec -- ./test.sh
 
