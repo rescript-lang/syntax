@@ -2655,6 +2655,7 @@ and parseJsxFragment p =
  *   | ?lident
  *   |  lident =  jsx_expr
  *   |  lident = ?jsx_expr
+ *   |  {...jsx_expr}
  *)
 and parseJsxProp p =
   match p.Parser.token with
@@ -2691,6 +2692,30 @@ and parseJsxProp p =
           if optional then Asttypes.Optional name else Asttypes.Labelled name
         in
         Some (label, attrExpr)
+    end
+  (* {...props} *)
+  | Lbrace ->
+    begin
+      Parser.next p;
+      match p.Parser.token with
+      | DotDotDot ->
+        begin
+          Parser.next p;
+          let loc = mkLoc p.Parser.startPos p.prevEndPos in
+          let propLocAttr = (Location.mkloc "ns.namedArgLoc" loc, Parsetree.PStr []) in
+          let attrExpr =
+            let e = parsePrimaryExpr ~operand:(parseAtomicExpr p) p in
+            {e with pexp_attributes = propLocAttr::e.pexp_attributes}
+          in
+          (* using label "spreadProps" to distinguish from others *)
+          let label = Asttypes.Labelled "spreadProps" in
+          match p.Parser.token with
+          | Rbrace ->
+            Parser.next p;
+            Some (label, attrExpr)
+          |_ -> None
+        end
+      | _ -> None
     end
   | _ ->
     None
