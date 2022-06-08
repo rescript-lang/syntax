@@ -7,7 +7,7 @@ on:
     branches: [ master ]
 
 env:
-  OCAML_VERSION: 4.14.0
+  OCAML_VERSION: 4.12.1
   
 jobs:
   test:
