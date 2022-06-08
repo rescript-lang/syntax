@@ -1,3 +1,5 @@
+SHELL = /bin/bash
+
 build:
 	dune build
 
@@ -7,16 +9,16 @@ bootstrap: build
 bench: build
 	dune exec -- bench
 
-test:
+test: reanalyze
 	dune exec -- tests
 	dune exec -- ./test.sh
 
-roundtrip-test:
+roundtrip-test: reanalyze
 	dune exec -- tests
 	ROUNDTRIP_TEST=1 dune exec -- ./test.sh
 
 reanalyze: build
-	reanalyze.exe -all-cmt _build/default -suppress tests
+	reanalyze.exe -all-cmt _build/default -suppress tests,compiler-libs-406 -exclude-paths compiler-libs-406 
 
 clean:
 	dune clean

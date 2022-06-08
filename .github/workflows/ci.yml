@@ -7,7 +7,7 @@ on:
     branches: [ master ]
 
 env:
-  OCAML_VERSION: 4.14.0
+  OCAML_VERSION: 4.12.1
   
 jobs:
   test:
@@ -35,7 +35,7 @@ jobs:
         opam-depext: false
 
     - name: Install dependencies
-      run: opam install dune
+      run: opam install dune reanalyze
 
     - name: Build executables
       run: opam exec -- dune build
