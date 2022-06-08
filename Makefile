@@ -18,7 +18,7 @@ roundtrip-test: reanalyze
 	ROUNDTRIP_TEST=1 dune exec -- ./test.sh
 
 reanalyze: build
-	reanalyze.exe -all-cmt _build/default -suppress tests
+	reanalyze.exe -all-cmt _build/default -suppress tests,compiler-libs-406 -exclude-paths compiler-libs-406 
 
 clean:
 	dune clean
