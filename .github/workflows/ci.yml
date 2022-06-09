@@ -36,6 +36,7 @@ jobs:
           default: https://github.com/ocaml/opam-repository.git
         opam-pin: false
         opam-depext: false
+        dune-cache: true
 
     - name: Use OCaml ${{matrix.ocaml_compiler}} (macos-arm)
       if: runner.name == 'macos-arm'
@@ -44,6 +45,7 @@ jobs:
         ocaml-compiler: ${{matrix.ocaml_compiler}}
         opam-pin: false
         opam-depext: false
+        dune-cache: true
 
     - name: Install dependencies
       run: opam install . --deps-only

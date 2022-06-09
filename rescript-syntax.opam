@@ -10,7 +10,7 @@ depends: [
   "ocaml" {>= "4.08"}
   "ocamlformat" {= "0.22.4"}
   "reanalyze" {= "2.23.0"}
-  "dune"
+  "dune" {>= "2.8.5"}
 ]
 build: [
   ["dune" "subst"] {pinned}
