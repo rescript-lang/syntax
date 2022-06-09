@@ -1,6 +1,9 @@
-#!/bin/zsh
+#!/bin/bash
 
-setopt extendedglob
+# Note:
+# 1. This was converted from zsh to bash because zsh is not available on Linux and Windows Github action runners.
+# 2. macOS still has bash 3 and therefore no globstar ("**") support.
+#    Therefore we need to use find + temp files for the file lists.
 
 function exp {
   echo "$(dirname $1)/expected/$(basename $1).txt"
@@ -13,23 +16,30 @@ function maybeWait {
   [[ $((taskCount % 20)) = 0 ]] && wait
 }
 
+rm -rf temp
+mkdir temp
+
 # parsing
-for file in tests/parsing/{errors,infiniteLoops,recovery}/**/*.(res|resi); do
+find tests/parsing/{errors,infiniteLoops,recovery} -name "*.res" -o -name "*.resi" >temp/files.txt
+while read file; do
   rescript -recover -print ml $file &> $(exp $file) & maybeWait
-done
-for file in tests/parsing/{grammar,other}/**/*.(res|resi); do
+done <temp/files.txt
+find tests/parsing/{grammar,other} -name "*.res" -o -name "*.resi" >temp/files.txt
+while read file; do
   rescript -print ml $file &> $(exp $file) & maybeWait
-done
+done <temp/files.txt
 
 # printing
-for file in tests/{printer,conversion}/**/*.(res|resi|ml|mli); do
+find tests/{printer,conversion} -name "*.res" -o -name "*.resi" -o -name "*.ml" -o -name "*.mli" >temp/files.txt
+while read file; do
   rescript $file &> $(exp $file) & maybeWait
-done
+done <temp/files.txt
 
 # printing with ppx
-for file in tests/ppx/react/*.(res|resi); do
+find tests/ppx/react -name "*.res" -o -name "*.resi" >temp/files.txt
+while read file; do
   rescript -ppx jsx $file &> $(exp $file) & maybeWait
-done
+done <temp/files.txt
 
 wait
 
@@ -37,22 +47,24 @@ warningYellow='\033[0;33m'
 successGreen='\033[0;32m'
 reset='\033[0m'
 
-diff=$(git ls-files --modified tests/**/expected)
+git ls-files --modified $(find tests -name expected) >temp/diff.txt
+diff=$(cat temp/diff.txt)
 if [[ $diff = "" ]]; then
   printf "${successGreen}✅ No unstaged tests difference.${reset}\n"
 else
   printf "${warningYellow}⚠️ There are unstaged differences in tests/! Did you break a test?\n${diff}\n${reset}"
+  rm -r temp/
   exit 1
 fi
 
 # roundtrip tests
 if [[ $ROUNDTRIP_TEST = 1 ]]; then
   echo "Running roundtrip tests…"
-  mkdir -p temp
   roundtripTestsResult="temp/result.txt"
   touch $roundtripTestsResult
 
-  for file in tests/{idempotency,printer}/**/*.(res|resi|re|rei|ml|mli); do {
+  find tests/{idempotency,printer} -name "*.res" -o -name "*.resi" -o -name "*.ml" -o -name "*.mli" >temp/files.txt
+  while read file; do {
     mkdir -p temp/$(dirname $file)
     sexpAst1=temp/$file.sexp
     sexpAst2=temp/$file.2.sexp
@@ -77,12 +89,11 @@ if [[ $ROUNDTRIP_TEST = 1 ]]; then
     diff --unified $rescript1 $rescript2
     [[ "$?" = 1 ]] && echo 1 > $roundtripTestsResult
   } & maybeWait
-  done
+  done <temp/files.txt
 
   wait
 
   result=$(cat $roundtripTestsResult)
-  rm -r temp/
 
   if [[ $result = "1" ]]; then
     printf "${warningYellow}⚠️ Roundtrip tests failed.${reset}\n"
@@ -92,3 +103,5 @@ if [[ $ROUNDTRIP_TEST = 1 ]]; then
   fi
 
 fi
+
+rm -r temp/

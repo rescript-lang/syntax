@@ -48,5 +48,5 @@ jobs:
       run: opam exec -- dune build
 
     - name: Run roundtrip tests
-      if: runner.os == 'macOS'
+      if: runner.os != 'Windows'
       run: opam exec -- make roundtrip-test
