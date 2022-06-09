@@ -2,5 +2,5 @@
  (name res_cli)
  (public_name rescript)
  (flags
-  (-open Syntax))
- (libraries syntax compiler-libs.common))
+  (-open Syntax -open Compilerlibs406 -w -deprecated))
+ (libraries syntax compilerlibs406))

@@ -4,8 +4,8 @@
  (enabled_if
   (= %{system} macosx))
  (flags
-  (-open Syntax))
+  (-open Syntax -open Compilerlibs406))
  (foreign_stubs
   (language c)
   (names mac_osx_time))
- (libraries syntax compiler-libs.common))
+ (libraries syntax compilerlibs406))

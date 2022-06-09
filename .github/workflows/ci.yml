@@ -7,7 +7,7 @@ on:
     branches: [ master ]
 
 env:
-  OCAML_VERSION: 4.06.1
+  OCAML_VERSION: 4.14.0
   
 jobs:
   test:
@@ -25,7 +25,7 @@ jobs:
       uses: actions/cache@v2.1.5
       with:
         path: ~/.opam
-        key: ${{matrix.os}}-ocaml-${{env.OCAML_VERSION}}
+        key: ${{matrix.os}}-ocaml-${{env.OCAML_VERSION}}-v2
 
     - name: Use OCaml ${{env.OCAML_VERSION}}
       uses: ocaml/setup-ocaml@v2.0.3

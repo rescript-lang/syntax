@@ -23,14 +23,12 @@ J. Blow.
 
 Required:
 
-- OCaml 4.06.1
+- OCaml 4.08 or later
 - Dune
 - Reanalyze
 - OS: macOS, Linux or Windows (tests will currently run on macOS only)
 
 ```sh
-opam switch create 4.06.1 # Note: on macOS ARM, do "arch -x86_64 zsh" first
-eval $(opam env)
 opam install dune reanalyze
 git clone https://github.com/rescript-lang/syntax.git
 cd syntax

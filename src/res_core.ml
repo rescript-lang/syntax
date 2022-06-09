@@ -462,11 +462,10 @@ let wrapTypeAnnotation ~loc newtypes core_type body =
   * e.g. foo(_, 3) becomes (__x) => foo(__x, 3)
   *)
 let processUnderscoreApplication args =
-  let open Parsetree in
   let exp_question = ref None in
   let hidden_var = "__x" in
   let check_arg ((lab, exp) as arg) =
-    match exp.pexp_desc with
+    match exp.Parsetree.pexp_desc with
     | Pexp_ident ({ txt = Lident "_"} as id) ->
       let new_id = Location.mkloc (Longident.Lident hidden_var) id.loc in
       let new_exp = Ast_helper.Exp.mk (Pexp_ident new_id) ~loc:exp.pexp_loc in
@@ -2365,7 +2364,6 @@ and overParseConstrainedOrCoercedOrArrowExpression p expr =
         (Diagnostics.message msg);
       arrow1
     | _ ->
-      let open Parsetree in
       let loc = mkLoc expr.pexp_loc.loc_start typ.ptyp_loc.loc_end in
       let expr = Ast_helper.Exp.constraint_ ~loc expr typ in
       let () = Parser.err

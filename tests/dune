@@ -2,5 +2,5 @@
  (name res_test)
  (public_name tests)
  (flags
-  (-open Syntax))
- (libraries syntax compiler-libs.common))
+  (-open Syntax -open Compilerlibs406))
+ (libraries syntax compilerlibs406))
