@@ -34,6 +34,10 @@ let optionIdent = Lident "option"
 let constantString ~loc str =
   Ast_helper.Exp.constant ~loc (Pconst_string (str, None))
 
+let recordWithKey ~loc = Exp.record ~loc
+                          [({loc; txt = Lident "key"}, Exp.construct {loc; txt = Lident "None"} None)]
+                          None
+
 let safeTypeFromValue valueStr =
   let valueStr = getLabel valueStr in
   match String.sub valueStr 0 1 with
@@ -487,8 +491,10 @@ let jsxMapper () =
       | _ -> false
     in
     (* check if record which goes to Foo.make({ ... } as record) empty or not
-       if empty then change it to "_" *)
-    let props = if isEmptyRecord record then Exp.ident { loc; txt = Lident "_"} else record in
+      if empty then change it to {key: None} only for upper case jsx
+      This would be redundant regarding PR progress https://github.com/rescript-lang/syntax/pull/299
+    *)
+    let props = if isEmptyRecord record then recordWithKey ~loc else record in
     (* handle key, ref, children *)
     (* React.createElement(Component.make, props, ...children) *)
     match !childrenArg with
