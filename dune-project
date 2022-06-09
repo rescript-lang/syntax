@@ -4,6 +4,22 @@
 
 (generate_opam_files true)
 
+(license MIT)
+
+(authors "Maxim Valcke <mvalcke@hubspot.com>")
+
+(maintainers "Maxim Valcke <mvalcke@hubspot.com>")
+
+(homepage "https://github.com/rescript-lang/syntax")
+
+(bug_reports "https://github.com/rescript-lang/syntax/issues")
+
 (package
  (name rescript-syntax)
- (synopsis "ReScript parser/printer"))
+ (synopsis "ReScript parser/printer")
+ (depends
+  (ocaml
+   (>= 4.08))
+  (reanalyze
+   (= 2.23.0))
+  dune))

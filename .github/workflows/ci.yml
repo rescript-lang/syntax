@@ -25,7 +25,7 @@ jobs:
       uses: actions/cache@v2.1.5
       with:
         path: ~/.opam
-        key: ${{matrix.os}}-ocaml-${{env.OCAML_VERSION}}-v2
+        key: ${{matrix.os}}-ocaml-${{env.OCAML_VERSION}}
 
     - name: Use OCaml ${{env.OCAML_VERSION}}
       uses: ocaml/setup-ocaml@v2.0.3
@@ -35,7 +35,7 @@ jobs:
         opam-depext: false
 
     - name: Install dependencies
-      run: opam install dune reanalyze
+      run: opam install . --deps-only
 
     - name: Build executables
       run: opam exec -- dune build
