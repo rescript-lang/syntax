@@ -6,15 +6,13 @@ on:
   pull_request:
     branches: [ master ]
 
-env:
-  OCAML_VERSION: 4.14.0
-  
 jobs:
   test:
     strategy:
       fail-fast: false
       matrix:
         os: [macos-latest, ubuntu-latest, windows-latest, macos-arm]
+        ocaml_compiler: [4.14.0]
 
     runs-on: ${{matrix.os}}
     
@@ -27,11 +25,11 @@ jobs:
 
     - uses: actions/checkout@v3
 
-    - name: Use OCaml ${{env.OCAML_VERSION}}
+    - name: Use OCaml ${{matrix.ocaml_compiler}}
       if: runner.name != 'macos-arm'
       uses: ocaml/setup-ocaml@v2.0.3
       with:
-        ocaml-compiler: ${{env.OCAML_VERSION}}
+        ocaml-compiler: ${{matrix.ocaml_compiler}}
         # Set default repo explicitly.
         # Windows uses https://github.com/fdopen/opam-repository-mingw otherwise which may be out of date.
         opam-repositories: |
@@ -39,11 +37,11 @@ jobs:
         opam-pin: false
         opam-depext: false
 
-    - name: Use OCaml ${{env.OCAML_VERSION}}
+    - name: Use OCaml ${{matrix.ocaml_compiler}} (macos-arm)
       if: runner.name == 'macos-arm'
       uses: AbstractMachinesLab/setup-ocaml@arm-support
       with:
-        ocaml-compiler: ${{env.OCAML_VERSION}}
+        ocaml-compiler: ${{matrix.ocaml_compiler}}
         opam-pin: false
         opam-depext: false
 
