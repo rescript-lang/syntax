@@ -725,7 +725,6 @@ let jsxMapper () =
                       ] )
             in
             let namedTypeList = List.fold_left argToType [] namedArgList in
-            let loc = emptyLoc in
             let externalTypes = (* translate newtypes to type variables *)
               List.fold_left
                 (fun args newtype ->
@@ -735,17 +734,17 @@ let jsxMapper () =
             in
             (* @obj type make = { ... } *)
             let propsRecordType =
-              makePropsRecordType fnName pstr_loc
-                ((true, "key", [], keyType pstr_loc) :: namedTypeList)
+              makePropsRecordType fnName emptyLoc
+                ((true, "key", [], keyType emptyLoc) :: namedTypeList)
             in
             let innerExpressionArgs =
               List.map pluckArg namedArgListWithKeyAndRefForNew
-              @ if hasUnit then [ (Nolabel, Exp.construct { loc; txt = Lident "()" } None) ] else []
+              @ if hasUnit then [ (Nolabel, Exp.construct { loc=emptyLoc; txt = Lident "()" } None) ] else []
             in
             let innerExpression =
               Exp.apply
                 (Exp.ident
-                   { loc; txt = Lident (match recFlag with Recursive -> internalFnName | Nonrecursive -> fnName) })
+                   { loc=emptyLoc; txt = Lident (match recFlag with Recursive -> internalFnName | Nonrecursive -> fnName) })
                 innerExpressionArgs
             in
             let innerExpressionWithRef =
@@ -781,26 +780,23 @@ let jsxMapper () =
                     [ Vb.mk ~loc:emptyLoc (Pat.var ~loc:emptyLoc { loc = emptyLoc; txt }) fullExpression ]
                     (Exp.ident ~loc:emptyLoc { loc = emptyLoc; txt = Lident txt })
             in
-            let rec returnedExpression labels ({ pexp_desc } as expr) =
+            let rec returnedExpression patterns ({ pexp_desc } as expr) =
               match pexp_desc with
               | Pexp_fun (_arg_label, _default, { ppat_desc = Ppat_construct ({ txt = Lident "()" }, _) | Ppat_any }, expr) ->
-                (labels, expr)
-              | Pexp_fun (arg_label, _default, _pattern, expr) ->
-                returnedExpression ({ txt = getLabel arg_label; loc=pstr_loc } :: labels) expr
-              | _ -> (labels, expr)
+                (patterns, expr)
+              | Pexp_fun (arg_label, _default, ({ ppat_loc } as pattern), expr) ->
+                returnedExpression (({loc = ppat_loc; txt = Lident (getLabel arg_label)}, pattern) :: patterns) expr
+              | _ -> (patterns, expr)
             in
-            let labels, expression = returnedExpression [] expression in
-            let patterns = labels |> List.map (fun {txt} ->
-              ({txt = Longident.parse txt; loc = pstr_loc}, Pat.var { txt; loc = pstr_loc }))
-            in
-            let pattern = if List.length patterns = 0
+            let patternsWithLid, expression = returnedExpression [] expression in
+            let pattern = if List.length patternsWithLid = 0
               then Pat.any ()
-              else (Pat.record (List.rev patterns) Closed)
+              else (Pat.record (List.rev patternsWithLid) Closed)
             in
             let expression = Exp.fun_ Nolabel None
               begin
               Pat.constraint_ pattern
-                (Typ.constr ~loc { txt = Longident.parse @@ fnName; loc }
+                (Typ.constr ~loc:emptyLoc { txt = Longident.parse @@ fnName; loc=emptyLoc }
                   (makePropsTypeParams namedTypeList))
               end
               expression
