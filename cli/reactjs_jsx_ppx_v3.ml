@@ -353,7 +353,14 @@ let jsxMapper () =
       | Ldot (_modulePath, value) as fullPath when isCap value -> Ldot (fullPath, "make")
       | modulePath -> modulePath
     in
-    let props = record in
+    let isEmptyRecord { pexp_desc } =
+      match pexp_desc with
+      | Pexp_record (labelDecls, _) when List.length labelDecls = 0 -> true
+      | _ -> false
+    in
+    (* check if record which goes to Foo.make({ ... } as record) empty or not
+       if empty then change it to "_" *)
+    let props = if isEmptyRecord record then Exp.ident { loc; txt = Lident "_"} else record in
     (* handle key, ref, children *)
     (* React.createElement(Component.make, props, ...children) *)
     match !childrenArg with
