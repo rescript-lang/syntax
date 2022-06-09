@@ -21,21 +21,19 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
-    - name: Cache OCaml's opam
-      uses: actions/cache@v2.1.5
-      with:
-        path: ~/.opam
-        key: ${{matrix.os}}-ocaml-${{env.OCAML_VERSION}}-v2
-
     - name: Use OCaml ${{env.OCAML_VERSION}}
       uses: ocaml/setup-ocaml@v2.0.3
       with:
         ocaml-compiler: ${{env.OCAML_VERSION}}
+        # Set default repo explicitly.
+        # Windows uses https://github.com/fdopen/opam-repository-mingw otherwise which may be out of date.
+        opam-repositories: |
+          default: https://github.com/ocaml/opam-repository.git
         opam-pin: false
         opam-depext: false
 
     - name: Install dependencies
-      run: opam install dune reanalyze
+      run: opam install . --deps-only
 
     - name: Build executables
       run: opam exec -- dune build
