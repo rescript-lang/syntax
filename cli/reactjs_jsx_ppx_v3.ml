@@ -34,9 +34,10 @@ let optionIdent = Lident "option"
 let constantString ~loc str =
   Ast_helper.Exp.constant ~loc (Pconst_string (str, None))
 
-let recordWithKey ~loc = Exp.record ~loc
-                          [({loc; txt = Lident "key"}, Exp.construct {loc; txt = Lident "None"} None)]
-                          None
+let recordWithKey ~loc =
+  Exp.record ~loc
+    [({loc; txt = Lident "key"}, Exp.construct {loc; txt = Lident "None"} None)]
+    None
 
 let safeTypeFromValue valueStr =
   let valueStr = getLabel valueStr in
@@ -485,14 +486,14 @@ let jsxMapper () =
         Ldot (fullPath, "make")
       | modulePath -> modulePath
     in
-    let isEmptyRecord { pexp_desc } =
+    let isEmptyRecord {pexp_desc} =
       match pexp_desc with
       | Pexp_record (labelDecls, _) when List.length labelDecls = 0 -> true
       | _ -> false
     in
     (* check if record which goes to Foo.make({ ... } as record) empty or not
-      if empty then change it to {key: None} only for upper case jsx
-      This would be redundant regarding PR progress https://github.com/rescript-lang/syntax/pull/299
+       if empty then change it to {key: None} only for upper case jsx
+       This would be redundant regarding PR progress https://github.com/rescript-lang/syntax/pull/299
     *)
     let props = if isEmptyRecord record then recordWithKey ~loc else record in
     (* handle key, ref, children *)
@@ -996,7 +997,6 @@ let jsxMapper () =
                   ] )
           in
           let namedTypeList = List.fold_left argToType [] namedArgList in
-          let loc = emptyLoc in
           let externalTypes =
             (* translate newtypes to type variables *)
             List.fold_left
@@ -1009,21 +1009,23 @@ let jsxMapper () =
           in
           (* @obj type make = { ... } *)
           let propsRecordType =
-            makePropsRecordType fnName pstr_loc
-              ((true, "key", [], keyType pstr_loc) :: namedTypeList)
+            makePropsRecordType fnName emptyLoc
+              ((true, "key", [], keyType emptyLoc) :: namedTypeList)
           in
           let innerExpressionArgs =
             List.map pluckArg namedArgListWithKeyAndRefForNew
             @
             if hasUnit then
-              [(Nolabel, Exp.construct {loc; txt = Lident "()"} None)]
+              [
+                (Nolabel, Exp.construct {loc = emptyLoc; txt = Lident "()"} None);
+              ]
             else []
           in
           let innerExpression =
             Exp.apply
               (Exp.ident
                  {
-                   loc;
+                   loc = emptyLoc;
                    txt =
                      Lident
                        (match recFlag with
@@ -1074,7 +1076,7 @@ let jsxMapper () =
                 ]
                 (Exp.ident ~loc:emptyLoc {loc = emptyLoc; txt = Lident txt})
           in
-          let rec returnedExpression labels ({pexp_desc} as expr) =
+          let rec returnedExpression patterns ({pexp_desc} as expr) =
             match pexp_desc with
             | Pexp_fun
                 ( _arg_label,
@@ -1084,29 +1086,24 @@ let jsxMapper () =
                       Ppat_construct ({txt = Lident "()"}, _) | Ppat_any;
                   },
                   expr ) ->
-              (labels, expr)
-            | Pexp_fun (arg_label, _default, _pattern, expr) ->
+              (patterns, expr)
+            | Pexp_fun (arg_label, _default, ({ppat_loc} as pattern), expr) ->
               returnedExpression
-                ({txt = getLabel arg_label; loc = pstr_loc} :: labels)
+                (({loc = ppat_loc; txt = Lident (getLabel arg_label)}, pattern)
+                :: patterns)
                 expr
-            | _ -> (labels, expr)
+            | _ -> (patterns, expr)
           in
-          let labels, expression = returnedExpression [] expression in
-          let patterns =
-            labels
-            |> List.map (fun {txt} ->
-                   ( {txt = Longident.parse txt; loc = pstr_loc},
-                     Pat.var {txt; loc = pstr_loc} ))
-          in
+          let patternsWithLid, expression = returnedExpression [] expression in
           let pattern =
-            if List.length patterns = 0 then Pat.any ()
-            else Pat.record (List.rev patterns) Closed
+            if List.length patternsWithLid = 0 then Pat.any ()
+            else Pat.record (List.rev patternsWithLid) Closed
           in
           let expression =
             Exp.fun_ Nolabel None
               (Pat.constraint_ pattern
-                 (Typ.constr ~loc
-                    {txt = Longident.parse @@ fnName; loc}
+                 (Typ.constr ~loc:emptyLoc
+                    {txt = Longident.parse @@ fnName; loc = emptyLoc}
                     (makePropsTypeParams namedTypeList)))
               expression
           in
