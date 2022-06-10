@@ -219,8 +219,7 @@ let filterMap f =
     let fields = props |> List.map (fun (arg_label, ({ pexp_loc } as expr) ) ->
       (* In case filed label is "key" only then change expression to option *)
       if getLabel arg_label = "key" then
-        ({ txt = (Longident.parse (getLabel arg_label)); loc = pexp_loc} ,
-          (Exp.construct { txt = (Longident.parse "Some"); loc = pexp_loc} (Some expr)))
+        ({ txt = (Longident.parse (getLabel arg_label)); loc = pexp_loc} , expr)
       else
         ({ txt = (Longident.parse (getLabel arg_label)); loc = pexp_loc} , expr))
     in
