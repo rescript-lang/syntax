@@ -755,10 +755,10 @@ let jsxMapper () =
         let namedTypeList = List.fold_left argToConcreteType [] propTypes in
         let retPropsType =
           Typ.constr ~loc:pstr_loc
-            (Location.mkloc (Lident fnName) pstr_loc)
+            (Location.mkloc (Lident "props") pstr_loc)
             (makePropsTypeParams namedTypeList)
         in
-        (* @obj type make = { ... } *)
+        (* type props<'id, 'name> = { @optional key: string, @optional id: 'id, ... } *)
         let propsRecordType =
           makePropsRecordType "props" Location.none
             ((true, "key", [], keyType pstr_loc) :: namedTypeList)
@@ -1117,9 +1117,10 @@ let jsxMapper () =
                   },
                   expr ) ->
               (patterns, expr)
-            | Pexp_fun (arg_label, _default, ({ppat_loc} as pattern), expr) ->
+            | Pexp_fun (arg_label, _default, {ppat_loc}, expr) ->
               returnedExpression
-                (({loc = ppat_loc; txt = Lident (getLabel arg_label)}, pattern)
+                (( {loc = ppat_loc; txt = Lident (getLabel arg_label)},
+                   Pat.var {txt = getLabel arg_label; loc = ppat_loc} )
                 :: patterns)
                 expr
             | _ -> (patterns, expr)
@@ -1189,10 +1190,7 @@ let jsxMapper () =
     match signature with
     | {
         psig_loc;
-        psig_desc =
-          Psig_value
-            ({pval_name = {txt = fnName}; pval_attributes; pval_type} as
-            psig_desc);
+        psig_desc = Psig_value ({pval_attributes; pval_type} as psig_desc);
       } as psig -> (
       match List.filter hasAttr pval_attributes with
       | [] -> signature :: returnSignatures
