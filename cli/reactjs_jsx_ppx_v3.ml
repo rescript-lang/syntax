@@ -20,9 +20,11 @@ let getLabel str = match str with Optional str | Labelled str -> str | Nolabel -
 
 let optionIdent = Lident "option"
 
+let optionalAttr = [ ({ txt = "optional"; loc = Location.none }, PStr []) ]
+
 let constantString ~loc str = Ast_helper.Exp.constant ~loc (Pconst_string (str, None))
 
-let recordWithKey ~loc = Exp.record ~loc
+let recordWithOnlyKey ~loc = Exp.record ~loc
                           [({loc; txt = Lident "key"}, Exp.construct {loc; txt = Lident "None"} None)]
                           None
 
@@ -31,7 +33,7 @@ let safeTypeFromValue valueStr =
   match String.sub valueStr 0 1 with "_" -> "T" ^ valueStr | _ -> valueStr
   [@@raises Invalid_argument]
 
-let keyType loc = Typ.constr ~loc { loc; txt = optionIdent } [ Typ.constr ~loc { loc; txt = Lident "string" } [] ]
+let keyType loc = Typ.constr ~loc { loc; txt = Lident "string" } []
 
 type 'a children = ListLiteral of 'a | Exact of 'a
 
@@ -218,10 +220,10 @@ let filterMap f =
                                 |> List.partition (fun (label, _) -> label <> labelled "spreadProps") in
     let fields = props |> List.map (fun (arg_label, ({ pexp_loc } as expr) ) ->
       (* In case filed label is "key" only then change expression to option *)
-      if getLabel arg_label = "key" then
-        ({ txt = (Longident.parse (getLabel arg_label)); loc = pexp_loc} , expr)
-      else
-        ({ txt = (Longident.parse (getLabel arg_label)); loc = pexp_loc} , expr))
+      if isOptional arg_label then
+        ({ txt = (Lident (getLabel arg_label)); loc = pexp_loc} , { expr with pexp_attributes = optionalAttr })
+      else 
+        ({ txt = (Lident (getLabel arg_label)); loc = pexp_loc} , expr))
     in
     let spreadFields = propsToSpread |> List.map (fun (_, expression) -> expression) in
     match spreadFields with
@@ -260,44 +262,40 @@ let rec makePropsTypeParamsSig namedTypeList =
       else if isOptional then Some (extractOptionalCoreType interiorType)
       else Some interiorType)
 
-(* @obj type make<'id, 'name, ...> = { id: 'id, name: 'name, ... } *)
-let makePropsRecordType fnName loc namedTypeList =
+(* type props<'id, 'name, ...> = { @optional key: string, @optional id: 'id, ... } *)
+let makePropsRecordType propsName loc namedTypeList =
   let labelDeclList =
     namedTypeList
-    |> List.map (fun (isOptional, label, _, interiorType) ->
-            Type.field ~loc { txt = label; loc }
-            (if label = "key" then interiorType
-            else if isOptional then wrapCoreTypeOption (Typ.var label)
-            else Typ.var label))
+    |> List.map (fun (isOptional, label, _, _interiorType) ->
+      if label = "key" then Type.field ~loc ~attrs:optionalAttr { txt = label; loc } (keyType Location.none)
+      else if isOptional then Type.field ~loc ~attrs:optionalAttr { txt = label; loc } (Typ.var label)
+      else Type.field ~loc { txt = label; loc } (Typ.var label))
   in
   (* 'id, 'className, ... *)
   let params = makePropsTypeParamsTvar namedTypeList in
   Str.type_ Nonrecursive
     [
       Type.mk ~loc
-        ~attrs:[ ({ txt = "bs.obj"; loc }, PStr []) ]
         ~params
-        { txt = fnName; loc }
+        { txt = propsName; loc }
         ~kind:(Ptype_record labelDeclList);
     ]
 
-(* @obj type props = { id: option<string>, key: ... } *)
-let makePropsRecordTypeSig fnName loc namedTypeList =
+(* type props<'id, 'name, ...> = { @optional key: string, @optional id: 'id, ... } *)
+let makePropsRecordTypeSig propsName loc namedTypeList =
   let labelDeclList =
     namedTypeList
-    |> List.map (fun (isOptional, label, _, interiorType) ->
-            Type.field ~loc { txt = label; loc }
-            (if label = "key" then interiorType
-            else if isOptional then wrapCoreTypeOption (Typ.var label)
-            else Typ.var label))
+    |> List.map (fun (isOptional, label, _, _interiorType) ->
+      if label = "key" then Type.field ~loc ~attrs:optionalAttr { txt = label; loc } (keyType Location.none)
+      else if isOptional then Type.field ~loc ~attrs:optionalAttr { txt = label; loc } (Typ.var label)
+      else Type.field ~loc { txt = label; loc } (Typ.var label))
   in
   let params = makePropsTypeParamsTvar namedTypeList in
   Sig.type_ Nonrecursive
     [
       Type.mk ~loc
-        ~attrs:[ ({ txt = "bs.obj"; loc }, PStr []) ]
         ~params
-        { txt = fnName; loc }
+        { txt = propsName ; loc }
         ~kind:(Ptype_record labelDeclList);
     ]
 
@@ -365,7 +363,7 @@ let jsxMapper () =
       if empty then change it to {key: None} only for upper case jsx
       This would be redundant regarding PR progress https://github.com/rescript-lang/syntax/pull/299
     *)
-    let props = if isEmptyRecord record then recordWithKey ~loc else record in
+    let props = if isEmptyRecord record then recordWithOnlyKey ~loc else record in
     (* handle key, ref, children *)
     (* React.createElement(Component.make, props, ...children) *)
     match !childrenArg with
@@ -563,12 +561,12 @@ let jsxMapper () =
             let innerType, propTypes = getPropTypes [] pval_type in
             let namedTypeList = List.fold_left argToConcreteType [] propTypes in
             let retPropsType = (Typ.constr ~loc:pstr_loc 
-                                (Location.mkloc (Longident.parse fnName) pstr_loc)
+                                (Location.mkloc (Lident fnName) pstr_loc)
                                 (makePropsTypeParams namedTypeList))
             in
             (* @obj type make = { ... } *)
             let propsRecordType =
-              makePropsRecordType fnName pstr_loc
+              makePropsRecordType "props" Location.none
                 ((true, "key", [], keyType pstr_loc) :: namedTypeList)
             in
             (* can't be an arrow because it will defensively uncurry *)
@@ -755,7 +753,7 @@ let jsxMapper () =
             in
             (* @obj type make = { ... } *)
             let propsRecordType =
-              makePropsRecordType fnName emptyLoc
+              makePropsRecordType "props" emptyLoc
                 ((true, "key", [], keyType emptyLoc) :: namedTypeList)
             in
             let innerExpressionArgs =
@@ -817,7 +815,7 @@ let jsxMapper () =
             let expression = Exp.fun_ Nolabel None
               begin
               Pat.constraint_ pattern
-                (Typ.constr ~loc:emptyLoc { txt = Longident.parse @@ fnName; loc=emptyLoc }
+                (Typ.constr ~loc:emptyLoc { txt = Lident "props"; loc=emptyLoc }
                   (makePropsTypeParams namedTypeList))
               end
               (if List.length vbMatchList = 0 then expression else (Exp.let_ Nonrecursive vbMatchList expression))
@@ -879,12 +877,12 @@ let jsxMapper () =
             in
             let innerType, propTypes = getPropTypes [] pval_type in
             let namedTypeList = List.fold_left argToConcreteType [] propTypes in
-            let retPropsType = (Typ.constr (Location.mkloc (Longident.parse fnName) psig_loc)
+            let retPropsType = (Typ.constr (Location.mkloc (Lident "props") psig_loc)
                                 (makePropsTypeParamsSig namedTypeList))
             in
             let propsRecordType =
-              makePropsRecordTypeSig fnName psig_loc
-                ((true, "key", [], keyType psig_loc) :: namedTypeList)
+              makePropsRecordTypeSig "props" Location.none
+                ((true, "key", [], keyType Location.none) :: namedTypeList)
             in
             (* can't be an arrow because it will defensively uncurry *)
             let newExternalType =
