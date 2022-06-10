@@ -524,6 +524,14 @@ let jsxMapper () =
     [@@raises Invalid_argument]
   in
 
+  let argWithDefaultValue (name, default, _,_,_,_) =
+    match default with
+    | Some default when isOptional name ->
+        Some (getLabel name, default)
+    | _ -> None
+    [@@raises Invalid_argument]
+  in
+
   let argToConcreteType types (name, loc, type_) =
     match name with
     | name when isLabelled name -> (false, getLabel name, [], type_) :: types
@@ -724,6 +732,20 @@ let jsxMapper () =
                       ] )
             in
             let namedTypeList = List.fold_left argToType [] namedArgList in
+            let namedArgWithDefaultValueList = filterMap argWithDefaultValue namedArgList in
+            let vbMatch ((label, default)) =
+              Vb.mk (Pat.var (Location.mknoloc label))
+              (Exp.match_ (Exp.ident { txt = Lident label; loc=Location.none })
+              [
+                Exp.case
+                  (Pat.construct (Location.mknoloc @@ Lident "Some") (Some (Pat.var ( Location.mknoloc label))))
+                  (Exp.ident (Location.mknoloc @@ Lident label));
+                Exp.case
+                  (Pat.construct (Location.mknoloc @@ Lident "None") None)
+                  default
+              ])
+            in
+            let vbMatchList = List.map vbMatch namedArgWithDefaultValueList in
             let externalTypes = (* translate newtypes to type variables *)
               List.fold_left
                 (fun args newtype ->
@@ -798,7 +820,7 @@ let jsxMapper () =
                 (Typ.constr ~loc:emptyLoc { txt = Longident.parse @@ fnName; loc=emptyLoc }
                   (makePropsTypeParams namedTypeList))
               end
-              expression
+              (if List.length vbMatchList = 0 then expression else (Exp.let_ Nonrecursive vbMatchList expression))
             in 
             (* let make = ({id, name, ...}: make<'id, 'name, ...>) => { ... } *)
             let bindings =
