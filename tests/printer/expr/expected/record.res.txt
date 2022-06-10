@@ -45,9 +45,9 @@ let r = {a} // actually not a record, just an expression in braces
 let r = {a, b}
 let r = {a, b, c: 42}
 let r = {A.a, b}
-let r = {A.a: a, b}
-let r = {a: a, b}
-let r = {a, b: b}
+let r = {A.a, b}
+let r = {a, b}
+let r = {a, b}
 
 // Punning + comments
 let r = {

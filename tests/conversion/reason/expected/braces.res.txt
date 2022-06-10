@@ -20,5 +20,5 @@ let getDailyNewCases = x =>
   | Pair({prevRecord, record}) =>
     let confirmed = record.confirmed - prevRecord.confirmed
     let deaths = record.deaths - prevRecord.deaths
-    {confirmed: confirmed, deaths: deaths}
+    {confirmed, deaths}
   }
