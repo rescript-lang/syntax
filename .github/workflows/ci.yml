@@ -19,6 +19,12 @@ jobs:
     runs-on: ${{matrix.os}}
     
     steps:
+    - name: "Windows: Set git to use LF"
+      if: runner.os == 'Windows'
+      run: |
+        git config --global core.autocrlf false
+        git config --global core.eol lf
+
     - uses: actions/checkout@v3
 
     - name: Use OCaml ${{env.OCAML_VERSION}}
@@ -50,3 +56,7 @@ jobs:
     - name: Run roundtrip tests
       if: runner.os != 'Windows'
       run: opam exec -- make roundtrip-test
+
+    - name: Run tests (Windows)
+      if: runner.os == 'Windows'
+      run: opam exec -- make test
