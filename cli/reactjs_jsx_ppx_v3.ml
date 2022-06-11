@@ -33,6 +33,13 @@ let safeTypeFromValue valueStr =
 
 let keyType loc = Typ.constr ~loc { loc; txt = Lident "string" } []
 
+let refType loc = Typ.constr ~loc { loc; txt = Ldot (Lident "React", "ref") }
+                  [ 
+                    (Typ.constr ~loc { loc; txt = Ldot (Ldot (Lident "Js", "Nullable"), "t")}
+                      [(Typ.constr ~loc { loc; txt = Ldot (Lident "Dom", "element") } [])]
+                    ) 
+                  ]
+
 type 'a children = ListLiteral of 'a | Exact of 'a
 
 type componentConfig = { propsName : string }
@@ -201,7 +208,7 @@ let filterMap f =
 let makePropsTypeParamsTvar namedTypeList =
   namedTypeList
     |> filterMap (fun (_, label, _, _) ->
-      if label <> "key" then Some (Typ.var label, Invariant) else None)
+      if label = "key" || label = "ref" then None else Some (Typ.var label, Invariant))
 
 let extractOptionalCoreType = function
 | { ptyp_desc = Ptyp_constr ({txt}, [ coreType ])} when txt = optionIdent -> coreType
@@ -212,7 +219,7 @@ let extractOptionalCoreType = function
 let makePropsTypeParams namedTypeList =
   namedTypeList
     |> filterMap (fun (_isOptional, label, _, _interiorType) ->
-      if label = "key" then None
+      if label = "key" || label = "ref" then None
       else Some (Typ.var label))
 
 (* make type params for make sig arguments *)
@@ -220,7 +227,7 @@ let makePropsTypeParams namedTypeList =
 let makePropsTypeParamsSig namedTypeList =
   namedTypeList
     |> filterMap (fun (isOptional, label, _, interiorType) ->
-      if label = "key" then None
+      if label = "key" || label = "ref" then None
       else if isOptional then Some (extractOptionalCoreType interiorType)
       else Some interiorType)
 
@@ -230,6 +237,7 @@ let makePropsRecordType propsName loc namedTypeList =
     namedTypeList
     |> List.map (fun (isOptional, label, _, _interiorType) ->
       if label = "key" then Type.field ~loc ~attrs:optionalAttr { txt = label; loc } (keyType Location.none)
+      else if label = "ref" then Type.field ~loc ~attrs:optionalAttr { txt = label; loc } (refType Location.none)
       else if isOptional then Type.field ~loc ~attrs:optionalAttr { txt = label; loc } (Typ.var label)
       else Type.field ~loc { txt = label; loc } (Typ.var label))
   in
@@ -529,7 +537,7 @@ let jsxMapper () =
             (* type props<'id, 'name> = { @optional key: string, @optional id: 'id, ... } *)
             let propsRecordType =
               makePropsRecordType "props" Location.none
-                ((true, "key", [], keyType pstr_loc) :: namedTypeList)
+                ((true, "key", [], keyType pstr_loc) :: (true, "ref", [], refType pstr_loc) :: namedTypeList)
             in
             (* can't be an arrow because it will defensively uncurry *)
             let newExternalType =
@@ -692,6 +700,7 @@ let jsxMapper () =
                       ] )
             in
             let namedTypeList = List.fold_left argToType [] namedArgList in
+            let vbIgnoreUnusedRef = Vb.mk (Pat.any ()) (Exp.ident (Location.mknoloc (Lident "ref"))) in
             let namedArgWithDefaultValueList = filterMap argWithDefaultValue namedArgList in
             let vbMatch ((label, default)) =
               Vb.mk (Pat.var (Location.mknoloc label))
@@ -716,7 +725,7 @@ let jsxMapper () =
             (* type props = { ... } *)
             let propsRecordType =
               makePropsRecordType "props" emptyLoc
-                ((true, "key", [], keyType emptyLoc) :: namedTypeList)
+                ((true, "key", [], keyType emptyLoc) :: (true, "ref", [], refType pstr_loc) :: namedTypeList)
             in
             let innerExpressionArgs =
               List.map pluckArg namedArgListWithKeyAndRefForNew
@@ -770,17 +779,19 @@ let jsxMapper () =
               | _ -> (patterns, expr)
             in
             let patternsWithLid, expression = returnedExpression [] expression in
-            let pattern = if List.length patternsWithLid = 0
-              then Pat.any ()
-              else (Pat.record (List.rev patternsWithLid) Closed)
+            let pattern = (Pat.record ((List.rev patternsWithLid) @ [(Location.mknoloc (Lident "ref"), Pat.var (Location.mknoloc "ref"))]) Closed)
             in
+            (* add patttern matching for optional prop value *)
+            let expression = if List.length vbMatchList = 0 then expression else (Exp.let_ Nonrecursive vbMatchList expression) in
+            (* add let _ = ref to ignore unused warning *)
+            let expression = Exp.let_ Nonrecursive [ vbIgnoreUnusedRef ] expression in
             let expression = Exp.fun_ Nolabel None
               begin
               Pat.constraint_ pattern
                 (Typ.constr ~loc:emptyLoc { txt = Lident "props"; loc=emptyLoc }
                   (makePropsTypeParams namedTypeList))
               end
-              (if List.length vbMatchList = 0 then expression else (Exp.let_ Nonrecursive vbMatchList expression))
+              expression
             in 
             (* let make = ({id, name, ...}: props<'id, 'name, ...>) => { ... } *)
             let bindings =
@@ -844,7 +855,7 @@ let jsxMapper () =
             in
             let propsRecordType =
               makePropsRecordTypeSig "props" Location.none
-                ((true, "key", [], keyType Location.none) :: namedTypeList)
+                ((true, "key", [], keyType Location.none) :: (true, "ref", [], refType Location.none) :: namedTypeList)
             in
             (* can't be an arrow because it will defensively uncurry *)
             let newExternalType =
