@@ -1,4 +1,4 @@
-(dirs compiler-libs-406 src cli benchmarks tests scripts)
+(dirs compiler-libs-406 src cli benchmarks testrunner)
 
 (env
  (dev
