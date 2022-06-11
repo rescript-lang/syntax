@@ -2,5 +2,5 @@
  (name res_test)
  (public_name tests)
  (flags
-  (-open Syntax -open Compilerlibs406))
+  (-open Syntax -open Compilerlibs406 -w +26+27+32+33+39))
  (libraries syntax compilerlibs406))
