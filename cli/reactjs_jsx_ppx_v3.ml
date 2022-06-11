@@ -12,8 +12,6 @@ let nolabel = Nolabel
 
 let labelled str = Labelled str
 
-let optional str = Optional str
-
 let isOptional str =
   match str with
   | Optional _ -> true
@@ -201,10 +199,6 @@ let getPropsAttr payload =
   | _ -> defaultProps
   [@@raises Invalid_argument]
 
-(* Plucks the label, loc, and type_ from an AST node *)
-let pluckLabelDefaultLocType (label, default, _, _, loc, type_) =
-  (label, default, loc, type_)
-
 (* Lookup the filename from the location information on the AST node and turn it into a valid module identifier *)
 let filenameFromLoc (pstr_loc : Location.t) =
   let fileName =
@@ -238,57 +232,6 @@ let makeModuleName fileName nestedModules fnName =
   These functions help us build AST nodes that are needed when transforming a [@react.component] into a
   constructor and a props external
 *)
-
-(* Build an AST node representing all named args for the `external` definition for a component's props *)
-let rec recursivelyMakeNamedArgsForExternal list args =
-  match list with
-  | (label, default, loc, interiorType) :: tl ->
-    recursivelyMakeNamedArgsForExternal tl
-      (Typ.arrow ~loc label
-         (match (label, interiorType, default) with
-         (* ~foo=1 *)
-         | label, None, Some _ ->
-           {
-             ptyp_desc = Ptyp_var (safeTypeFromValue label);
-             ptyp_loc = loc;
-             ptyp_attributes = [];
-           }
-         (* ~foo: int=1 *)
-         | _label, Some type_, Some _ -> type_
-         (* ~foo: option(int)=? *)
-         | ( label,
-             Some {ptyp_desc = Ptyp_constr ({txt = Lident "option"}, [type_])},
-             _ )
-         | ( label,
-             Some
-               {
-                 ptyp_desc =
-                   Ptyp_constr
-                     ({txt = Ldot (Lident "*predef*", "option")}, [type_]);
-               },
-             _ )
-         (* ~foo: int=? - note this isnt valid. but we want to get a type error *)
-         | label, Some type_, _
-           when isOptional label ->
-           type_
-         (* ~foo=? *)
-         | label, None, _ when isOptional label ->
-           {
-             ptyp_desc = Ptyp_var (safeTypeFromValue label);
-             ptyp_loc = loc;
-             ptyp_attributes = [];
-           }
-         (* ~foo *)
-         | label, None, _ ->
-           {
-             ptyp_desc = Ptyp_var (safeTypeFromValue label);
-             ptyp_loc = loc;
-             ptyp_attributes = [];
-           }
-         | _label, Some type_, _ -> type_)
-         args)
-  | [] -> args
-  [@@raises Invalid_argument]
 
 (* List.filter_map in 4.08.0 *)
 let filterMap f =
@@ -347,31 +290,27 @@ let recordFromProps {pexp_loc} callArguments =
       pexp_attributes = [];
     }
 
-(* make type params for type make<'id, 'name, ...> *)
-let rec makePropsTypeParamsTvar namedTypeList =
+(* make type params for type props<'id, 'name, ...> *)
+let makePropsTypeParamsTvar namedTypeList =
   namedTypeList
   |> filterMap (fun (_, label, _, _) ->
          if label <> "key" then Some (Typ.var label, Invariant) else None)
 
-(* TODO check ~foo=option<(int, int)>=? case futher *)
 let extractOptionalCoreType = function
   | {ptyp_desc = Ptyp_constr ({txt}, [coreType])} when txt = optionIdent ->
     coreType
   | t -> t
 
-let wrapCoreTypeOption ({ptyp_loc} as coreType) =
-  Typ.constr {txt = Lident "option"; loc = ptyp_loc} [coreType]
-
 (* make type params for make fn arguments *)
-(* let make = ({id, name, children}: make<'id, 'name, 'children>) *)
-let rec makePropsTypeParams namedTypeList =
+(* let make = ({id, name, children}: props<'id, 'name, 'children>) *)
+let makePropsTypeParams namedTypeList =
   namedTypeList
   |> filterMap (fun (_isOptional, label, _, _interiorType) ->
          if label = "key" then None else Some (Typ.var label))
 
 (* make type params for make sig arguments *)
-(* let make: React.componentLike<make<string, option<string>>, React.element> *)
-let rec makePropsTypeParamsSig namedTypeList =
+(* let make: React.componentLike<props<string, option<string>>, React.element> *)
+let makePropsTypeParamsSig namedTypeList =
   namedTypeList
   |> filterMap (fun (isOptional, label, _, interiorType) ->
          if label = "key" then None
@@ -733,9 +672,7 @@ let jsxMapper () =
     | {
         pstr_loc;
         pstr_desc =
-          Pstr_primitive
-            ({pval_name = {txt = fnName}; pval_attributes; pval_type} as
-            value_description);
+          Pstr_primitive ({pval_attributes; pval_type} as value_description);
       } as pstr -> (
       match List.filter hasAttr pval_attributes with
       | [] -> structure :: returnStructures
@@ -1037,7 +974,7 @@ let jsxMapper () =
                   args)
               namedTypeList newtypes
           in
-          (* @obj type make = { ... } *)
+          (* type props = { ... } *)
           let propsRecordType =
             makePropsRecordType "props" emptyLoc
               ((true, "key", [], keyType emptyLoc) :: namedTypeList)
@@ -1139,7 +1076,7 @@ let jsxMapper () =
               (if List.length vbMatchList = 0 then expression
               else Exp.let_ Nonrecursive vbMatchList expression)
           in
-          (* let make = ({id, name, ...}: make<'id, 'name, ...>) => { ... } *)
+          (* let make = ({id, name, ...}: props<'id, 'name, ...>) => { ... } *)
           let bindings =
             match recFlag with
             | Recursive ->
