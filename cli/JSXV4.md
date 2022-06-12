@@ -1,7 +1,8 @@
 **Abbreviation**
-Tha placement of `@react.component` is an abbreviation as described below.
 
-**_Normal Case_**
+The placement of `@react.component` is an abbreviation as described below.
+
+**Normal Case**
 
 ```rescript
 @react.component
@@ -12,7 +13,7 @@ let make = (~x, ~y, ~z) => body
 let make = @react.component (~x, ~y, ~z) => body
 ```
 
-**_Forward Ref_**
+**Forward Ref**
 
 ```rescript
 @react.component
@@ -31,10 +32,11 @@ let make = React.forwardRef({
 ```
 
 **Conversion**
+
 Conversion applies to an arrow function definition where all the arguments are labelled.
 It produces a type definition and a new function.
 
-**_Definition_**
+**Definition**
 
 ```rescript
 @react.component (~x, ~y=3+x, ?z) => body
@@ -52,7 +54,7 @@ type props<'x, 'y, 'z> = {x: 'x, @optional y: 'y, @optional z: 'z, @optional key
 }
 ```
 
-**_Application_**
+**Application**
 
 ```rescript
 <Comp x>
@@ -68,7 +70,7 @@ React.createElement(Comp.make, {x, y:7, @optional z})
 React.createElement(Comp.make, {x, key: "7"})
 ```
 
-**_Interface_**
+**Interface**
 
 ```rescript
 @react.component
@@ -81,7 +83,7 @@ type props<'x, 'y, 'z> = {x: 'x, @optional y: 'y, @optional z: 'z}
 let make: (props<int, int, int>) => React.element
 ```
 
-**_Component_Name_**
+**Component Name**
 
 Use the V3 convention for names, and make sure the generated
 function has the name of the enclosing module/file.
