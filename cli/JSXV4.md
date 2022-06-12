@@ -60,7 +60,7 @@ Comp.make({x})
 
 <Comp x y=7 ?z>
 // is converted to
-Comp.make({x, y:7, ~optional z})
+Comp.make({x, y:7, @optional z})
 
 <Comp x key="7">
 // is converted to
