@@ -170,44 +170,35 @@ let makeModuleName fileName nestedModules fnName =
   constructor and a props external
 *)
 
-(* List.filter_map in 4.08.0 *)
-let filterMap f =
-  let rec aux accu = function
-    | [] -> List.rev accu
-    | x :: l -> (
-        match f x with None -> aux accu l | Some v -> aux (v :: accu) l )
+(* make record from props and spread props if exists *)
+let recordFromProps { pexp_loc } callArguments =
+  let rec removeLastPositionUnitAux props acc =
+    match props with
+    | [] -> acc
+    | [ (Nolabel, { pexp_desc = Pexp_construct ({ txt = Lident "()" }, None) }) ] -> acc
+    | (Nolabel, _) :: _rest -> raise (Invalid_argument "JSX: found non-labelled argument before the last position")
+    | prop :: rest -> removeLastPositionUnitAux rest (prop :: acc)
   in
-  aux []
-
-  (* make record from props and spread props if exists *)
-  let recordFromProps { pexp_loc } callArguments =
-    let rec removeLastPositionUnitAux props acc =
-      match props with
-      | [] -> acc
-      | [ (Nolabel, { pexp_desc = Pexp_construct ({ txt = Lident "()" }, None) }) ] -> acc
-      | (Nolabel, _) :: _rest -> raise (Invalid_argument "JSX: found non-labelled argument before the last position")
-      | prop :: rest -> removeLastPositionUnitAux rest (prop :: acc)
-    in
-    let props, propsToSpread = removeLastPositionUnitAux callArguments []
-                                |> List.rev
-                                |> List.partition (fun (label, _) -> label <> labelled "spreadProps") in
-    let fields = props |> List.map (fun (arg_label, ({ pexp_loc } as expr) ) ->
-      (* In case filed label is "key" only then change expression to option *)
-      if isOptional arg_label then
-        ({ txt = (Lident (getLabel arg_label)); loc = pexp_loc} , { expr with pexp_attributes = optionalAttr })
-      else 
-        ({ txt = (Lident (getLabel arg_label)); loc = pexp_loc} , expr))
-    in
-    let spreadFields = propsToSpread |> List.map (fun (_, expression) -> expression) in
-    match spreadFields with
-    | [] -> { pexp_desc=Pexp_record (fields, None); pexp_loc; pexp_attributes=[]}
-    | [ spreadProps] -> { pexp_desc=Pexp_record (fields, Some spreadProps); pexp_loc; pexp_attributes=[] }
-    | spreadProps :: _ -> { pexp_desc=Pexp_record (fields, Some spreadProps); pexp_loc; pexp_attributes=[] }
+  let props, propsToSpread = removeLastPositionUnitAux callArguments []
+                              |> List.rev
+                              |> List.partition (fun (label, _) -> label <> labelled "spreadProps") in
+  let fields = props |> List.map (fun (arg_label, ({ pexp_loc } as expr) ) ->
+    (* In case filed label is "key" only then change expression to option *)
+    if isOptional arg_label then
+      ({ txt = (Lident (getLabel arg_label)); loc = pexp_loc} , { expr with pexp_attributes = optionalAttr })
+    else 
+      ({ txt = (Lident (getLabel arg_label)); loc = pexp_loc} , expr))
+  in
+  let spreadFields = propsToSpread |> List.map (fun (_, expression) -> expression) in
+  match spreadFields with
+  | [] -> { pexp_desc=Pexp_record (fields, None); pexp_loc; pexp_attributes=[]}
+  | [ spreadProps] -> { pexp_desc=Pexp_record (fields, Some spreadProps); pexp_loc; pexp_attributes=[] }
+  | spreadProps :: _ -> { pexp_desc=Pexp_record (fields, Some spreadProps); pexp_loc; pexp_attributes=[] }
 
 (* make type params for type props<'id, 'name, ...> *)
 let makePropsTypeParamsTvar namedTypeList =
   namedTypeList
-    |> filterMap (fun (_, label, _, _) ->
+    |> List.filter_map (fun (_, label, _, _) ->
       if label = "key" || label = "ref" then None else Some (Typ.var label, Invariant))
 
 let extractOptionalCoreType = function
@@ -218,7 +209,7 @@ let extractOptionalCoreType = function
 (* let make = ({id, name, children}: props<'id, 'name, 'children>) *)
 let makePropsTypeParams namedTypeList =
   namedTypeList
-    |> filterMap (fun (_isOptional, label, _, _interiorType) ->
+    |> List.filter_map (fun (_isOptional, label, _, _interiorType) ->
       if label = "key" || label = "ref" then None
       else Some (Typ.var label))
 
@@ -226,7 +217,7 @@ let makePropsTypeParams namedTypeList =
 (* let make: React.componentLike<props<string, option<string>>, React.element> *)
 let makePropsTypeParamsSig namedTypeList =
   namedTypeList
-    |> filterMap (fun (isOptional, label, _, interiorType) ->
+    |> List.filter_map (fun (isOptional, label, _, interiorType) ->
       if label = "key" || label = "ref" then None
       else if isOptional then Some (extractOptionalCoreType interiorType)
       else Some interiorType)
@@ -701,7 +692,7 @@ let jsxMapper () =
             in
             let namedTypeList = List.fold_left argToType [] namedArgList in
             let vbIgnoreUnusedRef = Vb.mk (Pat.any ()) (Exp.ident (Location.mknoloc (Lident "ref"))) in
-            let namedArgWithDefaultValueList = filterMap argWithDefaultValue namedArgList in
+            let namedArgWithDefaultValueList = List.filter_map argWithDefaultValue namedArgList in
             let vbMatch ((label, default)) =
               Vb.mk (Pat.var (Location.mknoloc label))
               (Exp.match_ (Exp.ident { txt = Lident label; loc=Location.none })
