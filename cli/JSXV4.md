@@ -73,8 +73,7 @@ React.createElement(Comp.make, {x, key: "7"})
 **Interface And External**
 
 ```rescript
-@react.component
-let make: (~x: int, ~y: int=?, ~z: int=?) => React.element
+@react.component (~x: int, ~y: int=?, ~z: int=?) => React.element
 
 // is converted to
 
