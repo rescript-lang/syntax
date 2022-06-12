@@ -70,7 +70,7 @@ React.createElement(Comp.make, {x, y:7, @optional z})
 React.createElement(Comp.make, {x, key: "7"})
 ```
 
-**Interface**
+**Interface And External**
 
 ```rescript
 @react.component
@@ -82,6 +82,8 @@ type props<'x, 'y, 'z> = {x: 'x, @optional y: 'y, @optional z: 'z}
 
 let make: (props<int, int, int>) => React.element
 ```
+
+Since an external is a function declaration, it follows the same rule.
 
 **Component Name**
 
