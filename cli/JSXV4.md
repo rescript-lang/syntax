@@ -1,7 +1,7 @@
 **Abbreviation**
 Tha placement of `@react.component` is an abbreviation as described below.
 
-***Normal Case***
+**_Normal Case_**
 
 ```rescript
 @react.component
@@ -12,7 +12,7 @@ let make = (~x, ~y, ~z) => body
 let make = @react.component (~x, ~y, ~z) => body
 ```
 
-***Forward Ref***
+**_Forward Ref_**
 
 ```rescript
 @react.component
@@ -34,7 +34,7 @@ let make = React.forwardRef({
 Conversion applies to an arrow function definition where all the arguments are labelled.
 It produces a type definition and a new function.
 
-***Definition***
+**_Definition_**
 
 ```rescript
 @react.component (~x, ~y=3+x, ?z) => body
@@ -43,31 +43,32 @@ It produces a type definition and a new function.
 
 type props<'x, 'y, 'z> = {x: 'x, @optional y: 'y, @optional z: 'z, @optional key: string}
 
-(props: props<_>) => {
-  let x = props.x
-  let y = switch props.y { | None => 3+x | Some (y) => y }
-  let z = props.z
-  React.createElement(body: React.element, props)
+({x, y, z}: props<_>) => {
+  let y = switch props.y {
+  | None => 3 + x
+  | Some(y) => y
+  }
+  body
 }
 ```
 
-***Application***
+**_Application_**
 
 ```rescript
 <Comp x>
 // is converted to
-Comp.make({x})
+React.createElement(Comp.make, {x})
 
 <Comp x y=7 ?z>
 // is converted to
-Comp.make({x, y:7, @optional z})
+React.createElement(Comp.make, {x, y:7, @optional z})
 
 <Comp x key="7">
 // is converted to
-Comp.make({x, key: "7"})
+React.createElement(Comp.make, {x, key: "7"})
 ```
 
-***Interface***
+**_Interface_**
 
 ```rescript
 @react.component
