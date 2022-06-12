@@ -80,3 +80,8 @@ type props<'x, 'y, 'z> = {x: 'x, @optional y: 'y, @optional z: 'z}
 
 let make: (props<int, int, int>) => React.element
 ```
+
+**_Component_Name_**
+
+Use the V3 convention for names, and make sure the generated
+function has the name of the enclosing module/file.
