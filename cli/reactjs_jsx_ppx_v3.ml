@@ -242,17 +242,6 @@ let makeModuleName fileName nestedModules fnName =
   constructor and a props external
 *)
 
-(* List.filter_map in 4.08.0 *)
-let filterMap f =
-  let rec aux accu = function
-    | [] -> List.rev accu
-    | x :: l -> (
-      match f x with
-      | None -> aux accu l
-      | Some v -> aux (v :: accu) l)
-  in
-  aux []
-
 (* make record from props and spread props if exists *)
 let recordFromProps {pexp_loc} callArguments =
   let rec removeLastPositionUnitAux props acc =
@@ -302,7 +291,7 @@ let recordFromProps {pexp_loc} callArguments =
 (* make type params for type props<'id, 'name, ...> *)
 let makePropsTypeParamsTvar namedTypeList =
   namedTypeList
-  |> filterMap (fun (_, label, _, _) ->
+  |> List.filter_map (fun (_, label, _, _) ->
          if label = "key" || label = "ref" then None
          else Some (Typ.var label, Invariant))
 
@@ -315,14 +304,14 @@ let extractOptionalCoreType = function
 (* let make = ({id, name, children}: props<'id, 'name, 'children>) *)
 let makePropsTypeParams namedTypeList =
   namedTypeList
-  |> filterMap (fun (_isOptional, label, _, _interiorType) ->
+  |> List.filter_map (fun (_isOptional, label, _, _interiorType) ->
          if label = "key" || label = "ref" then None else Some (Typ.var label))
 
 (* make type params for make sig arguments *)
 (* let make: React.componentLike<props<string, option<string>>, React.element> *)
 let makePropsTypeParamsSig namedTypeList =
   namedTypeList
-  |> filterMap (fun (isOptional, label, _, interiorType) ->
+  |> List.filter_map (fun (isOptional, label, _, interiorType) ->
          if label = "key" || label = "ref" then None
          else if isOptional then Some (extractOptionalCoreType interiorType)
          else Some interiorType)
@@ -963,7 +952,7 @@ let jsxMapper () =
             Vb.mk (Pat.any ()) (Exp.ident (Location.mknoloc (Lident "ref")))
           in
           let namedArgWithDefaultValueList =
-            filterMap argWithDefaultValue namedArgList
+            List.filter_map argWithDefaultValue namedArgList
           in
           let vbMatch (label, default) =
             Vb.mk
