@@ -4973,7 +4973,7 @@ and parsePolymorphicVariantType ~attrs p =
       then begin
         Parser.next p;
         let rec loop p = match p.Parser.token with
-          | Rbracket -> []
+          | Eof | Rbracket -> []
           | _ ->
             let (ident, _loc) = parseHashIdent ~startPos:p.startPos p in
             ident :: loop p
