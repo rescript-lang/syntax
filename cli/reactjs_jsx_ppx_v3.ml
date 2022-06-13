@@ -23,8 +23,9 @@ let optionalAttr = [ ({ txt = "optional"; loc = Location.none }, PStr []) ]
 let constantString ~loc str = Ast_helper.Exp.constant ~loc (Pconst_string (str, None))
 
 let recordWithOnlyKey ~loc = Exp.record ~loc
-                          [({loc; txt = Lident "key"}, Exp.construct {loc; txt = Lident "None"} None)]
-                          None
+                              (* {key: @optional None} *)
+                              [({loc; txt = Lident "key"}, Exp.construct ~attrs:optionalAttr {loc; txt = Lident "None"} None)]
+                              None
 
 let safeTypeFromValue valueStr =
   let valueStr = getLabel valueStr in
@@ -41,8 +42,6 @@ let refType loc = Typ.constr ~loc { loc; txt = Ldot (Lident "React", "ref") }
                   ]
 
 type 'a children = ListLiteral of 'a | Exact of 'a
-
-type componentConfig = { propsName : string }
 
 (* if children is a list, convert it to an array while mapping each element. If not, just map over it, as usual *)
 let transformChildrenIfListUpper ~loc ~mapper theList =
@@ -121,27 +120,6 @@ let makeNewBinding binding expression newName =
         pvb_attributes = [ merlinFocus ];
       }
   | _ -> raise (Invalid_argument "react.component calls cannot be destructured.")
-  [@@raises Invalid_argument]
-
-(* Lookup the value of `props` otherwise raise Invalid_argument error *)
-let getPropsNameValue _acc (loc, exp) =
-  match (loc, exp) with
-  | { txt = Lident "props" }, { pexp_desc = Pexp_ident { txt = Lident str } } -> { propsName = str }
-  | { txt }, _ ->
-      raise (Invalid_argument ("react.component only accepts props as an option, given: " ^ Longident.last txt))
-  [@@raises Invalid_argument]
-
-(* Lookup the `props` record or string as part of [@react.component] and store the name for use when rewriting *)
-let getPropsAttr payload =
-  let defaultProps = { propsName = "Props" } in
-  match payload with
-  | Some (PStr ({ pstr_desc = Pstr_eval ({ pexp_desc = Pexp_record (recordFields, None) }, _) } :: _rest)) ->
-      List.fold_left getPropsNameValue defaultProps recordFields
-  | Some (PStr ({ pstr_desc = Pstr_eval ({ pexp_desc = Pexp_ident { txt = Lident "props" } }, _) } :: _rest)) ->
-      { propsName = "props" }
-  | Some (PStr ({ pstr_desc = Pstr_eval (_, _) } :: _rest)) ->
-      raise (Invalid_argument "react.component accepts a record config with props as an options.")
-  | _ -> defaultProps
   [@@raises Invalid_argument]
 
 (* Lookup the filename from the location information on the AST node and turn it into a valid module identifier *)
@@ -259,26 +237,6 @@ let makePropsRecordTypeSig propsName loc namedTypeList =
         { txt = propsName ; loc }
         ~kind:(Ptype_record labelDeclList);
     ]
-
-(* Build an AST node for the props name when converted to an object inside the function signature  *)
-let makePropsName ~loc name = { ppat_desc = Ppat_var { txt = name; loc }; ppat_loc = loc; ppat_attributes = [] }
-
-let makeObjectField loc (_, str, attrs, type_) = Otag ({ loc; txt = str }, attrs, type_)
-
-(* Build an AST node representing a "closed" object representing a component's props *)
-let makePropsType ~loc namedTypeList =
-  Typ.mk ~loc (Ptyp_object (List.map (makeObjectField loc) namedTypeList, Closed))
-
-let newtypeToVar newtype type_ =
-  let var_desc = Ptyp_var ("type-" ^ newtype) in
-  let typ (mapper : Ast_mapper.mapper) typ =
-    match typ.ptyp_desc with
-    | Ptyp_constr ({txt = Lident name}, _) when name = newtype ->
-      {typ with ptyp_desc = var_desc}
-    | _ -> Ast_mapper.default_mapper.typ mapper typ
-  in
-  let mapper = {Ast_mapper.default_mapper with typ} in
-  mapper.typ mapper type_
 
 (* TODO: some line number might still be wrong *)
 let jsxMapper () =
@@ -656,39 +614,10 @@ let jsxMapper () =
               let wrapExpression, hasUnit, expression = spelunkForFunExpression expression in
               (wrapExpressionWithBinding wrapExpression, hasUnit, expression)
             in
-            let bindingWrapper, hasUnit, expression = modifiedBinding binding in
-            let reactComponentAttribute =
-              try Some (List.find hasAttr binding.pvb_attributes) with Not_found -> None
-            in
-            let _attr_loc, payload =
-              match reactComponentAttribute with
-              | Some (loc, payload) -> (loc.loc, Some payload)
-              | None -> (emptyLoc, None)
-            in
-            let props = getPropsAttr payload in
+            let bindingWrapper, _hasUnit, expression = modifiedBinding binding in
             (* do stuff here! *)
-            let namedArgList, newtypes, forwardRef =
+            let namedArgList, _newtypes, _forwardRef =
               recursivelyTransformNamedArgsForMake mapper (modifiedBindingOld binding) [] []
-            in
-            let namedArgListWithKeyAndRefForNew =
-              match forwardRef with
-              | Some txt -> namedArgList @ [ (nolabel, None, Pat.var { txt; loc = emptyLoc }, txt, emptyLoc, None) ]
-              | None -> namedArgList
-            in
-            let pluckArg (label, _, _, alias, loc, _) =
-              let labelString =
-                match label with label when isOptional label || isLabelled label -> getLabel label | _ -> ""
-              in
-              ( label,
-                match labelString with
-                | "" -> Exp.ident ~loc { txt = Lident alias; loc }
-                | labelString ->
-                    Exp.apply ~loc
-                      (Exp.ident ~loc { txt = Lident "##"; loc })
-                      [
-                        (nolabel, Exp.ident ~loc { txt = Lident props.propsName; loc });
-                        (nolabel, Exp.ident ~loc { txt = Lident labelString; loc });
-                      ] )
             in
             let namedTypeList = List.fold_left argToType [] namedArgList in
             let vbIgnoreUnusedRef = Vb.mk (Pat.any ()) (Exp.ident (Location.mknoloc (Lident "ref"))) in
@@ -706,52 +635,24 @@ let jsxMapper () =
               ])
             in
             let vbMatchList = List.map vbMatch namedArgWithDefaultValueList in
-            let externalTypes = (* translate newtypes to type variables *)
-              List.fold_left
-                (fun args newtype ->
-                   List.map (fun (a, b, c, typ) -> (a, b, c, newtypeToVar newtype.txt typ)) args)
-                namedTypeList
-                newtypes
-            in
             (* type props = { ... } *)
             let propsRecordType =
               makePropsRecordType "props" emptyLoc
                 ((true, "key", [], keyType emptyLoc) :: (true, "ref", [], refType pstr_loc) :: namedTypeList)
             in
-            let innerExpressionArgs =
-              List.map pluckArg namedArgListWithKeyAndRefForNew
-              @ if hasUnit then [ (Nolabel, Exp.construct { loc=emptyLoc; txt = Lident "()" } None) ] else []
-            in
-            let innerExpression =
-              Exp.apply
-                (Exp.ident
-                   { loc=emptyLoc; txt = Lident (match recFlag with Recursive -> internalFnName | Nonrecursive -> fnName) })
-                innerExpressionArgs
-            in
-            let innerExpressionWithRef =
-              match forwardRef with
-              | Some txt ->
-                  {
-                    innerExpression with
-                    pexp_desc =
-                      Pexp_fun
-                        ( nolabel,
-                          None,
-                          { ppat_desc = Ppat_var { txt; loc = emptyLoc }; ppat_loc = emptyLoc; ppat_attributes = [] },
-                          innerExpression );
-                  }
-              | None -> innerExpression
+            let innerExpression = Exp.apply (Exp.ident (Location.mknoloc @@ Lident "make"))
+                                    [(Nolabel, Exp.ident (Location.mknoloc @@ Lident "props"))]
             in
             let fullExpression =
+              (* React component name should start with uppercase letter *)
+              (* let make = { let \"App" = props => make(props); \"App" } *)
               Exp.fun_ nolabel None
-                {
-                  ppat_desc =
-                    Ppat_constraint
-                      (makePropsName ~loc:emptyLoc props.propsName, makePropsType ~loc:emptyLoc externalTypes);
-                  ppat_loc = emptyLoc;
-                  ppat_attributes = [];
-                }
-                innerExpressionWithRef
+              (match namedTypeList with
+              | [] -> (Pat.var @@ Location.mknoloc "props")
+              | _ -> (Pat.constraint_
+                        (Pat.var @@ Location.mknoloc "props")
+                        (Typ.constr (Location.mknoloc @@ Lident "props")([Typ.any ()]))))
+                innerExpression
             in
             let fullExpression =
               match fullModuleName with
@@ -785,10 +686,10 @@ let jsxMapper () =
               expression
             in 
             (* let make = ({id, name, ...}: props<'id, 'name, ...>) => { ... } *)
-            let bindings =
+            let bindings, newBinding =
               match recFlag with
               | Recursive ->
-                [
+                ([
                   bindingWrapper
                     (Exp.let_ ~loc:emptyLoc Recursive
                       [
@@ -796,22 +697,28 @@ let jsxMapper () =
                         Vb.mk (Pat.var { loc = emptyLoc; txt = fnName }) fullExpression;
                       ]
                       (Exp.ident { loc = emptyLoc; txt = Lident fnName }));
-                ]
+                ], None)
               | Nonrecursive ->
-                [ { binding with pvb_expr = expression; pvb_attributes = [] } ]
+                ([ { binding with pvb_expr = expression; pvb_attributes = [] } ], Some (bindingWrapper fullExpression))
             in
-            (Some propsRecordType, bindings)
-          else (None, [ binding ])
+            (Some propsRecordType, bindings, newBinding)
+          else (None, [ binding ], None)
           [@@raises Invalid_argument]
         in (* END of mapBinding fn *)
         let structuresAndBinding = List.map mapBinding valueBindings in
-        let otherStructures (type_, binding) (types, bindings) =
+        let otherStructures (type_, binding, newBinding) (types, bindings, newBindings) =
           let types = match type_ with Some type_ -> type_ :: types | None -> types in
-          (types, binding @ bindings)
+          let newBindings =
+            match newBinding with Some newBinding -> newBinding :: newBindings | None -> newBindings
+          in
+          (types, binding @ bindings, newBindings)
         in
-        let types, bindings = List.fold_right otherStructures structuresAndBinding ([], []) in
+        let types, bindings, newBindings = List.fold_right otherStructures structuresAndBinding ([], [], []) in
         types
         @ [ { pstr_loc; pstr_desc = Pstr_value (recFlag, bindings) } ]
+        @ ( match newBindings with
+          | [] -> []
+          | newBindings -> [ { pstr_loc = emptyLoc; pstr_desc = Pstr_value (recFlag, newBindings) } ] )
         @ returnStructures
     | structure -> structure :: returnStructures
     [@@raises Invalid_argument]
