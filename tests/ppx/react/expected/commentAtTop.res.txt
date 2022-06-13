@@ -1,10 +1,17 @@
-@obj external makeProps: (~msg: 'msg, ~key: string=?, unit) => {"msg": 'msg} = "" // test React JSX file
+type props<'msg> = { // test React JSX file
+  @optional key: string,
+  @optional ref: React.ref<Js.Nullable.t<Dom.element>>,
+  msg: 'msg,
+}
 
-let make =
-  (@warning("-16") ~msg) => {
+let make = ({msg, ref}: props<'msg>) => {
+  let _ = ref
+
+  {
     ReactDOMRe.createDOMElementVariadic("div", [{msg->React.string}])
   }
+}
 let make = {
-  let \"CommentAtTop" = (\"Props": {"msg": 'msg}) => make(~msg=\"Props"["msg"])
+  let \"CommentAtTop" = (props: props<_>) => make(props)
   \"CommentAtTop"
 }
