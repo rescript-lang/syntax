@@ -12,5 +12,8 @@ _build
 # Merlin
 .merlin
 
+# Local opam switch
+_opam/
+
 # Output dir for bootstrap script
 bootstrap/
