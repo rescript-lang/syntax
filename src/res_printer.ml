@@ -471,12 +471,11 @@ let printPolyVarIdent txt =
 let printLident l =
   let flatLidOpt lid =
     let rec flat accu = function
-      | Longident.Lident s -> s :: accu
+      | Longident.Lident s -> Some (s :: accu)
       | Ldot (lid, s) -> flat (s :: accu) lid
-      | Lapply (_, _) -> raise (Invalid_argument "Can not flat Lapply")
-    [@@raises Invalid_argument]
+      | Lapply (_, _) -> None
     in
-    try Some (flat [] lid) with Invalid_argument _ -> None
+    flat [] lid
   in
   match l with
   | Longident.Lident txt -> printIdentLike txt
