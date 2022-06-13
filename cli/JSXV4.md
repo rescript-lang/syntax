@@ -88,3 +88,21 @@ Since an external is a function declaration, it follows the same rule.
 
 Use the V3 convention for names, and make sure the generated
 function has the name of the enclosing module/file.
+
+**Fragment**
+
+```rescript
+@react.component
+let make = () => <> component </>
+
+// is converted to
+
+let make = () => {
+  ReactDOMRe.createElement(
+    ReasonReact.fragment,
+    [
+      component
+    ]
+  )
+}
+```
