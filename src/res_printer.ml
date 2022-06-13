@@ -469,22 +469,28 @@ let printPolyVarIdent txt =
 
 
 let printLident l =
-  let rec hasLapply = function
-  | Longident.Lident _ -> false
-  | Longident.Ldot (path, _) -> hasLapply path
-  | Longident.Lapply _ -> true
+  let flatLidOpt lid =
+    let rec flat accu = function
+      | Longident.Lident s -> s :: accu
+      | Ldot (lid, s) -> flat (s :: accu) lid
+      | Lapply (_, _) -> raise (Invalid_argument "Can not flat Lapply")
+    in
+    try Some (flat [] lid) with Invalid_argument _ -> None
   in
   match l with
   | Longident.Lident txt -> printIdentLike txt
-  | Longident.Ldot (path, txt) when not (hasLapply path) ->
-    let txts = Longident.flatten path in
-    Doc.concat [
-      Doc.join ~sep:Doc.dot (List.map Doc.text txts);
-      Doc.dot;
-      printIdentLike txt;
-    ]
-  | Longident.Ldot _
-  | Longident.Lapply _ -> Doc.text("printLident: Longident.Lapply is not supported")
+  | Longident.Ldot (path, txt) ->
+    let doc = match flatLidOpt path with
+      | Some txts ->
+        Doc.concat [
+          Doc.join ~sep:Doc.dot (List.map Doc.text txts);
+          Doc.dot;
+          printIdentLike txt;
+        ]
+      | None -> Doc.text("printLident: Longident.Lapply is not supported")
+    in
+    doc
+  | Lapply (_, _) -> Doc.text("printLident: Longident.Lapply is not supported")
 
 let printLongidentLocation l cmtTbl =
   let doc = printLongident l.Location.txt in
