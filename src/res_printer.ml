@@ -474,6 +474,7 @@ let printLident l =
       | Longident.Lident s -> s :: accu
       | Ldot (lid, s) -> flat (s :: accu) lid
       | Lapply (_, _) -> raise (Invalid_argument "Can not flat Lapply")
+    [@@raises Invalid_argument]
     in
     try Some (flat [] lid) with Invalid_argument _ -> None
   in
