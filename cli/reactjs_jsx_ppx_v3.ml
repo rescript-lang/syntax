@@ -445,12 +445,17 @@ let jsxMapper () =
     match !childrenArg with
     | None ->
       Exp.apply ~loc ~attrs
-        (Exp.ident ~loc {txt = ident; loc})
-        [(nolabel, props)]
+        (Exp.ident ~loc {loc; txt = Ldot (Lident "React", "createElement")})
+        [(nolabel, Exp.ident ~loc {txt = ident; loc}); (nolabel, props)]
     | Some children ->
       Exp.apply ~loc ~attrs
-        (Exp.ident ~loc {txt = ident; loc})
-        [(nolabel, props); (nolabel, children)]
+        (Exp.ident ~loc
+           {loc; txt = Ldot (Lident "React", "createElementVariadic")})
+        [
+          (nolabel, Exp.ident ~loc {txt = ident; loc});
+          (nolabel, props);
+          (nolabel, children);
+        ]
     [@@raises Invalid_argument]
   in
 
