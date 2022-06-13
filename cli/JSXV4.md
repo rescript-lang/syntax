@@ -92,17 +92,9 @@ function has the name of the enclosing module/file.
 **Fragment**
 
 ```rescript
-@react.component
-let make = () => <> component </>
+<> comp1 comp2 comp3 </>
 
 // is converted to
 
-let make = () => {
-  ReactDOMRe.createElement(
-    ReasonReact.fragment,
-    [
-      component
-    ]
-  )
-}
+ReactDOMRe.createElement(ReasonReact.fragment, [comp1, comp2, comp3])
 ```
