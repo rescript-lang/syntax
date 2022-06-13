@@ -5431,7 +5431,7 @@ and parseStructureItemRegion p =
     | _ ->
       None
     end
-  [@@progress (Parser.expect, Parser.checkProgress)]
+  [@@progress (Parser.next, Parser.expect, Parser.checkProgress)]
 
 and parseJsImport ~startPos ~attrs p =
   Parser.expect Token.Import p;
@@ -6186,7 +6186,7 @@ and parseSignatureItemRegion p =
     | _ ->
      None
     end
-  [@@progress (Parser.expect, Parser.checkProgress)]
+  [@@progress (Parser.next, Parser.expect, Parser.checkProgress)]
 
 (* module rec module-name :  module-type  { and module-name:  module-type } *)
 and parseRecModuleSpec ~attrs ~startPos p =
