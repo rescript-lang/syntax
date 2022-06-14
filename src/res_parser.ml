@@ -48,8 +48,7 @@ let endRegion p =
 (* Advance to the next non-comment token and store any encountered comment
 * in the parser's state. Every comment contains the end position of its
 * previous token to facilite comment interleaving *)
-let rec next ?prevEndPos p =
- if p.token = Eof then assert false;
+let rec next_ ?prevEndPos p =
  let prevEndPos = match prevEndPos with Some pos -> pos | None -> p.endPos in
  let (startPos, endPos, token) = Scanner.scan p.scanner in
  match token with
@@ -58,7 +57,7 @@ let rec next ?prevEndPos p =
    p.comments <- c::p.comments;
    p.prevEndPos <- p.endPos;
    p.endPos <- endPos;
-   next ~prevEndPos p
+   next_ ~prevEndPos p
  | _ ->
    p.token <- token;
    (* p.prevEndPos <- prevEndPos; *)
@@ -66,8 +65,15 @@ let rec next ?prevEndPos p =
    p.startPos <- startPos;
    p.endPos <- endPos
 
+exception Eof
+
+let next p =
+  if p.token = Eof then raise Eof;
+  next_ p
+[@@raises Eof]
+
 let nextUnsafe p =
-  if p.token <> Eof then next p
+  if p.token <> Eof then next_ p
 
 let nextTemplateLiteralToken p =
   let (startPos, endPos, token) = Scanner.scanTemplateLiteralToken p.scanner in
@@ -104,7 +110,7 @@ let make ?(mode=ParseForTypeChecker) src filename =
     in
     parserState.diagnostics <- diagnostic::parserState.diagnostics
   );
-  next parserState;
+  next parserState [@doesNotRaise "initialized with Semicolon"];
   parserState
 
 let leaveBreadcrumb p circumstance =
@@ -118,13 +124,13 @@ let eatBreadcrumb p =
 
 let optional p token =
   if p.token = token then
-    let () = next p in true
+    let () = next p [@doesNotRaise] in true
   else
     false
 
 let expect ?grammar token p =
   if p.token = token then
-    next p
+    next p [@doesNotRaise]
   else
     let error = Diagnostics.expected ?grammar p.prevEndPos token in
     err ~startPos:p.prevEndPos p error

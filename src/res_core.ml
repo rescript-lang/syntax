@@ -6,8 +6,10 @@ module CommentTable = Res_comments_table
 module ResPrinter =  Res_printer
 module Scanner = Res_scanner
 module JsFfi = Res_js_ffi
-module Parser = Res_parser
-
+module Parser = struct
+  include Res_parser
+  let next p = next p [@@raises Eof]
+end
 let mkLoc startLoc endLoc = Location.{
   loc_start = startLoc;
   loc_end = endLoc;
@@ -37,7 +39,7 @@ module Recover = struct
   let recoverEqualGreater p =
     Parser.expect EqualGreater p;
     match p.Parser.token with
-    | MinusGreater -> Parser.next p
+    | MinusGreater -> Parser.expect MinusGreater p
     | _ -> ()
 
   let shouldAbortListParse p =
@@ -179,16 +181,16 @@ let getClosingToken = function
 let rec goToClosing closingToken state =
   match (state.Parser.token, closingToken) with
   | (Rparen, Token.Rparen) | (Rbrace, Rbrace) | (Rbracket, Rbracket) | (GreaterThan, GreaterThan) ->
-    Parser.next state;
+    Parser.next state [@doesNotRaise];
     ()
   | (Token.Lbracket | Lparen | Lbrace | List | LessThan) as t, _ ->
-    Parser.next state;
+    Parser.next state  [@doesNotRaise];
     goToClosing (getClosingToken t) state;
     goToClosing closingToken state
   | ((Rparen | Token.Rbrace | Rbracket | Eof), _)  ->
     () (* TODO: how do report errors here? *)
   | _ ->
-    Parser.next state;
+    Parser.nextUnsafe state;
     goToClosing closingToken state
 
 (* Madness *)
@@ -196,7 +198,7 @@ let isEs6ArrowExpression ~inTernary p =
   Parser.lookahead p (fun state ->
     match state.Parser.token with
     | Lident _ | Underscore ->
-      Parser.next state;
+      Parser.next state [@doesNotRaise];
       begin match state.Parser.token with
       (* Don't think that this valid
        * Imagine: let x = (a: int)
@@ -208,23 +210,23 @@ let isEs6ArrowExpression ~inTernary p =
       end
     | Lparen ->
       let prevEndPos = state.prevEndPos in
-      Parser.next state;
+      Parser.expect Lparen state;
       begin match state.token with
       (* arrived at `()` here *)
       | Rparen ->
-        Parser.next state;
+        Parser.expect Rparen state;
         begin match state.Parser.token with
         (* arrived at `() :` here *)
         | Colon when not inTernary ->
-          Parser.next state;
+          Parser.expect Colon state;
           begin match state.Parser.token with
           (* arrived at `() :typ` here *)
           | Lident _ ->
-            Parser.next state;
+            Parser.next state [@doesNotRaise];
             begin match state.Parser.token with
             (* arrived at `() :typ<` here *)
             | LessThan ->
-              Parser.next state;
+              Parser.expect LessThan state;
               goToClosing GreaterThan state;
             | _ -> ()
             end;
@@ -283,10 +285,10 @@ let isEs6ArrowFunctor p =
       (* | _ -> false *)
       (* end *)
     | Lparen ->
-      Parser.next state;
+      Parser.expect Lparen state;
       begin match state.token with
       | Rparen ->
-        Parser.next state;
+        Parser.expect Rparen state;
         begin match state.token with
         | Colon | EqualGreater -> true
         | _ -> false
@@ -306,10 +308,10 @@ let isEs6ArrowType p =
   Parser.lookahead p (fun state ->
     match state.Parser.token with
     | Lparen ->
-      Parser.next state;
+      Parser.expect Lparen state;
       begin match state.Parser.token with
       | Rparen ->
-        Parser.next state;
+        Parser.expect Rparen state;
         begin match state.Parser.token with
         | EqualGreater -> true
         | _ -> false
@@ -612,25 +614,25 @@ let parseStringLiteral s =
     if parse Start 0 0 then Buffer.contents b else s
 
 let rec parseLident p =
-  let recoverLident p =
+  let recoverLidentNoEof p =
     if (
       Token.isKeyword p.Parser.token &&
       p.Parser.prevEndPos.pos_lnum == p.startPos.pos_lnum
     )
     then (
       Parser.err p (Diagnostics.lident p.Parser.token);
-      Parser.next p;
+      Parser.next p [@doesNotRaise];
       None
     ) else (
       let rec loop p =
-        if not (Recover.shouldAbortListParse p)
+        if not (Recover.shouldAbortListParse p) && p.token <> Eof
         then begin
-          Parser.next p;
+          Parser.next p [@doesNotRaise];
           loop p
         end
       in
       Parser.err p (Diagnostics.lident p.Parser.token);
-      Parser.next p;
+      Parser.next p [@doesNotRaise];
       loop p;
       match p.Parser.token with
       | Lident _ -> Some ()
@@ -640,23 +642,24 @@ let rec parseLident p =
   let startPos = p.Parser.startPos in
   match p.Parser.token with
   | Lident ident ->
-    Parser.next p;
+    Parser.next p [@doesNotRaise];
     let loc = mkLoc startPos p.prevEndPos in
     (ident, loc)
+  | Eof ->
+    ("_", mkLoc startPos p.prevEndPos)
   | _ ->
-    begin match recoverLident p with
+    begin match recoverLidentNoEof p with
     | Some () ->
       parseLident p
     | None ->
       ("_", mkLoc startPos p.prevEndPos)
     end
 
-let parseIdent ~msg ~startPos p =
+let parseIdentNoNext ~msg ~startPos p =
   match p.Parser.token with
   | Lident ident
   | Uident ident ->
-    Parser.next p;
-    let loc = mkLoc startPos p.prevEndPos in
+    let loc = mkLoc startPos p.endPos in
     (ident, loc)
   | token when Token.isKeyword token &&
       p.prevEndPos.pos_lnum == p.startPos.pos_lnum ->
@@ -665,19 +668,23 @@ let parseIdent ~msg ~startPos p =
       "`" ^ tokenTxt ^ "` is a reserved keyword. Keywords need to be escaped: \\\"" ^ tokenTxt ^ "\""
     in
     Parser.err ~startPos p (Diagnostics.message msg);
-    Parser.next p;
     (tokenTxt, mkLoc startPos p.prevEndPos)
   | _token ->
     Parser.err ~startPos p (Diagnostics.message msg);
-    Parser.next p;
     ("", mkLoc startPos p.prevEndPos)
+
+let parseIdent ~msg ~startPos p =
+  let res = parseIdentNoNext ~msg ~startPos p in
+  Parser.nextUnsafe p;
+  res
+
 
 let parseHashIdent ~startPos p =
   Parser.expect Hash p;
   match p.token with
   | String text ->
     let text = if p.mode = ParseForTypeChecker then parseStringLiteral text else text in
-    Parser.next p;
+    Parser.next p [@doesNotRaise];
     (text, mkLoc startPos p.prevEndPos)
   | Int {i; suffix} ->
     let () = match suffix with
@@ -685,19 +692,18 @@ let parseHashIdent ~startPos p =
       Parser.err p (Diagnostics.message (ErrorMessages.polyVarIntWithSuffix i))
     | None -> ()
     in
-    Parser.next p;
+    Parser.next p [@doesNotRaise];
     (i, mkLoc startPos p.prevEndPos)
   | _ ->
     parseIdent ~startPos ~msg:ErrorMessages.variantIdent p
 
 (* Ldot (Ldot (Lident "Foo", "Bar"), "baz") *)
-let parseValuePath p =
-  let startPos = p.Parser.startPos in
+let parseValuePathNoNext p =
   let rec aux p path =
     match p.Parser.token with
     | Lident ident -> Longident.Ldot(path, ident)
     | Uident uident ->
-      Parser.next p;
+      Parser.next p [@doesNotRaise];
       if p.Parser.token = Dot then (
         Parser.expect Dot p;
         aux p (Ldot (path, uident))  
@@ -710,21 +716,33 @@ let parseValuePath p =
       Longident.Ldot (path, "_")
   in
   let ident = match p.Parser.token with
-  | Lident ident -> Longident.Lident ident
-  | Uident ident ->
-    Parser.next p;
-    if p.Parser.token = Dot then (
-      Parser.expect Dot p;
-      aux p (Lident ident)  
-    ) else (
-      Parser.err p (Diagnostics.unexpected p.Parser.token p.breadcrumbs);
+    | Lident ident ->
       Longident.Lident ident
-    )
-  | token ->
-    Parser.err p (Diagnostics.unexpected token p.breadcrumbs);
-    Longident.Lident "_"
+    | Uident ident ->
+      Parser.next p [@doesNotRaise];
+      if p.Parser.token = Dot then (
+        Parser.expect Dot p;
+        aux p (Lident ident)
+      ) else (
+        Parser.err p (Diagnostics.unexpected p.Parser.token p.breadcrumbs);
+        Longident.Lident ident
+      )
+    | token ->
+      Parser.err p (Diagnostics.unexpected token p.breadcrumbs);
+      Longident.Lident "_"
   in
-  Parser.next p;
+  ident
+
+let parseValuePath p =
+  let startPos = p.Parser.startPos in
+  let ident = parseValuePathNoNext p in
+  Parser.nextUnsafe p;
+  Location.mkloc ident (mkLoc startPos p.prevEndPos)
+
+let parseValuePathNotEof p = (* Only call when current token is not Eof *)
+  let startPos = p.Parser.startPos in
+  let ident = parseValuePathNoNext p in
+  Parser.next p [@doesNotRaise];
   Location.mkloc ident (mkLoc startPos p.prevEndPos)
 
 let parseValuePathAfterDot p =
@@ -741,10 +759,10 @@ let parseValuePathTail p startPos ident =
   let rec loop p path =
     match p.Parser.token with
     | Lident ident ->
-      Parser.next p;
+      Parser.next p [@doesNotRaise];
       Location.mkloc (Longident.Ldot(path, ident)) (mkLoc startPos p.prevEndPos)
     | Uident ident ->
-      Parser.next p;
+      Parser.next p [@doesNotRaise];
       Parser.expect Dot p;
       loop p (Longident.Ldot (path, ident))
     | token ->
@@ -757,16 +775,16 @@ let parseModuleLongIdentTail ~lowercase p startPos ident =
   let rec loop p acc =
     match p.Parser.token with
     | Lident ident when lowercase ->
-      Parser.next p;
+      Parser.next p [@doesNotRaise];
       let lident = (Longident.Ldot (acc, ident)) in
       Location.mkloc lident (mkLoc startPos p.prevEndPos)
     | Uident ident ->
-      Parser.next p;
+      Parser.next p [@doesNotRaise];
       let endPos = p.prevEndPos in
       let lident = (Longident.Ldot (acc, ident)) in
       begin match p.Parser.token with
       | Dot ->
-        Parser.next p;
+        Parser.expect Dot p;
         loop p lident
       | _ -> Location.mkloc lident (mkLoc startPos endPos)
       end
@@ -786,15 +804,15 @@ let parseModuleLongIdent ~lowercase p =
   | Lident ident when lowercase ->
     let loc = mkLoc startPos p.endPos in
     let lident = Longident.Lident ident in
-    Parser.next p;
+    Parser.next p [@doesNotRaise];
     Location.mkloc lident loc
   | Uident ident ->
     let lident = Longident.Lident ident in
     let endPos = p.endPos in
-    Parser.next p;
+    Parser.next p [@doesNotRaise];
     begin match p.Parser.token with
     | Dot ->
-      Parser.next p;
+      Parser.expect Dot p;
       parseModuleLongIdentTail ~lowercase p startPos lident
     | _ -> Location.mkloc lident (mkLoc startPos endPos)
     end
@@ -810,11 +828,11 @@ let parseIdentPath p =
   let rec loop p acc =
     match p.Parser.token with
     | Uident ident | Lident ident ->
-      Parser.next p;
+      Parser.next p [@doesNotRaise];
       let lident = (Longident.Ldot (acc, ident)) in
       begin match p.Parser.token with
       | Dot ->
-        Parser.next p;
+        Parser.expect Dot p;
         loop p lident
       | _ -> lident
       end
@@ -822,10 +840,10 @@ let parseIdentPath p =
   in
   match p.Parser.token with
   | Lident ident | Uident ident ->
-    Parser.next p;
+    Parser.next p [@doesNotRaise];
     begin match p.Parser.token with
     | Dot ->
-      Parser.next p;
+      Parser.expect Dot p;
       loop p (Longident.Lident ident)
     | _ -> Longident.Lident ident
     end
@@ -834,7 +852,7 @@ let parseIdentPath p =
 
 let verifyJsxOpeningClosingName p nameExpr =
   let closing = match p.Parser.token with
-  | Lident lident -> Parser.next p; Longident.Lident lident
+  | Lident lident -> Parser.next p [@doesNotRaise]; Longident.Lident lident
   | Uident _ ->
     (parseModuleLongIdent ~lowercase:true p).txt
   | _ -> Longident.Lident ""
@@ -926,8 +944,8 @@ let parseTemplateStringLiteral s =
  (* ∣	 string-literal   *)
 let parseConstant p =
   let isNegative = match p.Parser.token with
-  | Token.Minus -> Parser.next p; true
-  | Plus -> Parser.next p; false
+  | Token.Minus -> Parser.expect Minus p; true
+  | Plus -> Parser.expect Plus p; false
   | _ -> false
   in
   let constant = match p.Parser.token with
@@ -954,7 +972,7 @@ let parseConstant p =
     Parser.err p (Diagnostics.unexpected token p.breadcrumbs);
     Pconst_string("", None)
   in
-  Parser.next p;
+  Parser.nextUnsafe p;
   constant
 
 let parseTemplateConstant ~prefix (p : Parser.t) =
@@ -963,15 +981,17 @@ let parseTemplateConstant ~prefix (p : Parser.t) =
   Parser.nextTemplateLiteralToken p;
   match p.token with
   | TemplateTail txt ->
-    Parser.next p;
+    Parser.next p [@doesNotRaise];
     let txt = if p.mode = ParseForTypeChecker then parseTemplateStringLiteral txt else txt in
     Parsetree.Pconst_string (txt, prefix)
   | _ ->
     let rec skipTokens () =
-      Parser.next p;
-      match p.token with
-      | Backtick -> Parser.next p; ()
-      | _ -> skipTokens ()
+      if p.token <> Eof then (
+        Parser.next p [@doesNotRaise];
+        match p.token with
+        | Backtick -> Parser.expect Backtick p; ()
+        | _ -> skipTokens ()
+      )
     in
     skipTokens ();
     Parser.err ~startPos ~endPos:p.prevEndPos p
@@ -985,7 +1005,7 @@ let parseCommaDelimitedRegion p ~grammar ~closing ~f =
     | Some node ->
       begin match p.Parser.token with
       | Comma ->
-        Parser.next p;
+        Parser.expect Comma p;
         loop (node::nodes)
       | token when token = closing || token = Eof ->
         List.rev (node::nodes)
@@ -1007,7 +1027,7 @@ let parseCommaDelimitedRegion p ~grammar ~closing ~f =
       | _ ->
         if not (p.token = Eof || p.token = closing || Recover.shouldAbortListParse p) then
           Parser.expect Comma p;
-        if p.token = Semicolon then Parser.next p;
+        if p.token = Semicolon then Parser.expect Semicolon p;
         loop (node::nodes)
       end
     | None ->
@@ -1015,7 +1035,7 @@ let parseCommaDelimitedRegion p ~grammar ~closing ~f =
         List.rev nodes
       else (
         Parser.err p (Diagnostics.unexpected p.token p.breadcrumbs);
-        Parser.next p;
+        Parser.next p [@doesNotRaise];
         loop nodes
       );
   in
@@ -1030,7 +1050,7 @@ let parseCommaDelimitedReversedList p ~grammar ~closing ~f =
     | Some node ->
       begin match p.Parser.token with
       | Comma ->
-        Parser.next p;
+        Parser.expect Comma p;
         loop (node::nodes)
       | token when token = closing || token = Eof ->
         (node::nodes)
@@ -1052,7 +1072,7 @@ let parseCommaDelimitedReversedList p ~grammar ~closing ~f =
       | _ ->
         if not (p.token = Eof || p.token = closing || Recover.shouldAbortListParse p) then
           Parser.expect Comma p;
-        if p.token = Semicolon then Parser.next p;
+        if p.token = Semicolon then Parser.expect Semicolon p;
         loop (node::nodes)
       end
     | None ->
@@ -1060,7 +1080,7 @@ let parseCommaDelimitedReversedList p ~grammar ~closing ~f =
         nodes
       else (
         Parser.err p (Diagnostics.unexpected p.token p.breadcrumbs);
-        Parser.next p;
+        Parser.next p [@doesNotRaise];
         loop nodes
       );
   in
@@ -1083,7 +1103,7 @@ let parseDelimitedRegion p ~grammar ~closing ~f =
         List.rev nodes
       else (
         Parser.err p (Diagnostics.unexpected p.token p.breadcrumbs);
-        Parser.next p;
+        Parser.next p [@doesNotRaise];
         loop nodes
       )
     in
@@ -1102,7 +1122,7 @@ let parseRegion p ~grammar ~f =
         List.rev nodes
       else (
         Parser.err p (Diagnostics.unexpected p.token p.breadcrumbs);
-        Parser.next p;
+        Parser.next p [@doesNotRaise];
         loop nodes
       )
   in
@@ -1137,7 +1157,7 @@ let rec parsePattern ?(alias=true) ?(or_=true) p =
   let pat = match p.Parser.token with
   | (True | False) as token ->
     let endPos = p.endPos in
-    Parser.next p;
+    Parser.next p [@doesNotRaise];
     let loc = mkLoc startPos endPos in
     Ast_helper.Pat.construct ~loc
       (Location.mkloc (Longident.Lident (Token.toString token)) loc) None
@@ -1145,7 +1165,7 @@ let rec parsePattern ?(alias=true) ?(or_=true) p =
     let c = parseConstant p in
      begin match p.token with
       | DotDot ->
-        Parser.next p;
+        Parser.expect DotDot p;
         let c2 = parseConstant p in
         Ast_helper.Pat.interval ~loc:(mkLoc startPos p.prevEndPos) c c2
       | _ ->
@@ -1155,10 +1175,10 @@ let rec parsePattern ?(alias=true) ?(or_=true) p =
     let constant = parseTemplateConstant ~prefix:(Some "js") p in
     Ast_helper.Pat.constant ~attrs:[templateLiteralAttr] ~loc:(mkLoc startPos p.prevEndPos) constant
   | Lparen ->
-    Parser.next p;
+    Parser.expect Lparen p;
     begin match p.token with
     | Rparen ->
-      Parser.next p;
+      Parser.expect Rparen p;
       let loc = mkLoc startPos p.prevEndPos in
       let lid = Location.mkloc (Longident.Lident "()") loc in
       Ast_helper.Pat.construct ~loc lid None
@@ -1166,7 +1186,7 @@ let rec parsePattern ?(alias=true) ?(or_=true) p =
       let pat = parseConstrainedPattern p in
       begin match p.token with
       | Comma ->
-        Parser.next p;
+        Parser.expect Comma p;
         parseTuplePattern ~attrs ~first:pat ~startPos p
       | _ ->
         Parser.expect Rparen p;
@@ -1181,12 +1201,12 @@ let rec parsePattern ?(alias=true) ?(or_=true) p =
   | Underscore ->
     let endPos = p.endPos in
     let loc = mkLoc startPos endPos in
-    Parser.next p;
+    Parser.expect Underscore p;
     Ast_helper.Pat.any ~loc ~attrs ()
   | Lident ident ->
     let endPos = p.endPos in
     let loc = mkLoc startPos endPos in
-    Parser.next p;
+    Parser.next p [@doesNotRaise];
     begin match p.token with
     | Backtick ->
       let constant = parseTemplateConstant ~prefix:(Some ident) p in
@@ -1203,9 +1223,9 @@ let rec parsePattern ?(alias=true) ?(or_=true) p =
       Ast_helper.Pat.construct ~loc:constr.loc ~attrs constr None
     end
   | Hash ->
-    Parser.next p;
+    Parser.expect Hash p;
     if p.Parser.token == DotDotDot then (
-      Parser.next p;
+      Parser.expect DotDotDot p;
       let ident = parseValuePath p in
       let loc = mkLoc startPos ident.loc.loc_end in
       Ast_helper.Pat.type_ ~loc ~attrs ident
@@ -1213,7 +1233,7 @@ let rec parsePattern ?(alias=true) ?(or_=true) p =
       let (ident, loc) = match p.token with
       | String text ->
         let text = if p.mode = ParseForTypeChecker then parseStringLiteral text else text in
-        Parser.next p;
+        Parser.next p [@doesNotRaise];
         (text, mkLoc startPos p.prevEndPos)
       | Int {i; suffix} ->
         let () = match suffix with
@@ -1221,7 +1241,7 @@ let rec parsePattern ?(alias=true) ?(or_=true) p =
           Parser.err p (Diagnostics.message (ErrorMessages.polyVarIntWithSuffix i))
         | None -> ()
         in
-        Parser.next p;
+        Parser.next p [@doesNotRaise];
         (i, mkLoc startPos p.prevEndPos)
       | _ ->
         parseIdent ~msg:ErrorMessages.variantIdent ~startPos p
@@ -1234,17 +1254,17 @@ let rec parsePattern ?(alias=true) ?(or_=true) p =
       end
     )
   | Exception ->
-    Parser.next p;
+    Parser.expect Exception p;
     let pat = parsePattern ~alias:false ~or_:false p in
     let loc = mkLoc startPos p.prevEndPos in
     Ast_helper.Pat.exception_ ~loc ~attrs pat
   | Lazy ->
-    Parser.next p;
+    Parser.expect Lazy p;
     let pat = parsePattern ~alias:false ~or_:false p in
     let loc = mkLoc startPos p.prevEndPos in
     Ast_helper.Pat.lazy_ ~loc ~attrs pat
   | List ->
-    Parser.next p;
+    Parser.expect List p;
     parseListPattern ~startPos ~attrs p
   | Module ->
     parseModulePattern ~attrs p
@@ -1268,26 +1288,28 @@ and skipTokensAndMaybeRetry p ~isStartOfGrammar =
   if Token.isKeyword p.Parser.token
       && p.Parser.prevEndPos.pos_lnum == p.startPos.pos_lnum
   then (
-    Parser.next p;
+    Parser.next p [@doesNotRaise];
     None
   ) else (
     if Recover.shouldAbortListParse p then
       begin
         if isStartOfGrammar p.Parser.token then
           begin
-            Parser.next p;
+            Parser.next p [@doesNotRaise];
             Some ()
           end
         else
           None
       end
+    else if p.token = Eof then
+      None
     else
       begin
-        Parser.next p;
+        Parser.next p [@doesNotRaise];
         let rec loop p =
-          if not (Recover.shouldAbortListParse p)
+          if not (Recover.shouldAbortListParse p) && p.token <> Eof
           then begin
-            Parser.next p;
+            Parser.next p [@doesNotraise];
             loop p
           end in
         loop p;
@@ -1302,7 +1324,7 @@ and skipTokensAndMaybeRetry p ~isStartOfGrammar =
 and parseAliasPattern ~attrs pattern p =
   match p.Parser.token with
   | As ->
-    Parser.next p;
+    Parser.expect As p;
     let (name, loc) = parseLident p in
     let name = Location.mkloc name loc in
     Ast_helper.Pat.alias
@@ -1318,7 +1340,7 @@ and parseOrPattern pattern1 p =
   let rec loop pattern1 =
     match p.Parser.token with
     | Bar ->
-      Parser.next p;
+      Parser.expect Bar p;
       let pattern2 = parsePattern ~or_:false p in
       let loc = { pattern1.Parsetree.ppat_loc with
         loc_end = pattern2.ppat_loc.loc_end
@@ -1332,7 +1354,7 @@ and parseNonSpreadPattern ~msg p =
   let () = match p.Parser.token with
   | DotDotDot ->
     Parser.err p (Diagnostics.message msg);
-    Parser.next p;
+    Parser.expect DotDotDot p;
   | _ -> ()
   in
   match p.Parser.token with
@@ -1340,7 +1362,7 @@ and parseNonSpreadPattern ~msg p =
     let pat = parsePattern p in
     begin match p.Parser.token with
     | Colon ->
-      Parser.next p;
+      Parser.expect Colon p;
       let typ = parseTypExpr p in
       let loc = mkLoc pat.ppat_loc.loc_start typ.Parsetree.ptyp_loc.loc_end in
       Some (Ast_helper.Pat.constraint_ ~loc pat typ)
@@ -1352,7 +1374,7 @@ and parseConstrainedPattern p =
   let pat = parsePattern p in
   match p.Parser.token with
   | Colon ->
-    Parser.next p;
+    Parser.expect Colon p;
     let typ = parseTypExpr p in
     let loc = mkLoc pat.ppat_loc.loc_start typ.Parsetree.ptyp_loc.loc_end in
     Ast_helper.Pat.constraint_ ~loc pat typ
@@ -1374,11 +1396,10 @@ and parseConstrainedPatternRegion p =
  *	 | field , _
  *	 | field , _,
  *)
-and parseRecordPatternField p =
-  let label = parseValuePath p in
+and parseRecordPatternField ~(label: Longident.t Location.loc) p =
   let pattern = match p.Parser.token with
   | Colon ->
-    Parser.next p;
+    Parser.expect Colon p;
     parsePattern p
   | _ ->
     Ast_helper.Pat.var
@@ -1391,12 +1412,12 @@ and parseRecordPatternField p =
 and parseRecordPatternItem p =
   match p.Parser.token with
   | DotDotDot ->
-    Parser.next p;
-    Some (true, PatField (parseRecordPatternField p))
+    Parser.expect DotDotDot p;
+    Some (true, PatField (parseRecordPatternField ~label:(parseValuePath p) p))
   | Uident _ | Lident _ ->
-    Some (false, PatField (parseRecordPatternField p))
+    Some (false, PatField (parseRecordPatternField ~label:(parseValuePathNotEof p) p))
   | Underscore ->
-    Parser.next p;
+    Parser.expect Underscore p;
     Some (false, PatUnderscore)
   | _ ->
     None
@@ -1456,7 +1477,7 @@ and parseTuplePattern ~attrs ~first ~startPos p =
 and parsePatternRegion p =
   match p.Parser.token with
   | DotDotDot ->
-    Parser.next p;
+    Parser.expect DotDotDot p;
     Some (true, parseConstrainedPattern p)
   | token when Grammar.isPatternStart token ->
     Some (false, parseConstrainedPattern p)
@@ -1469,7 +1490,7 @@ and parseModulePattern ~attrs p =
   let uident = match p.token with
   | Uident uident ->
     let loc = mkLoc p.startPos p.endPos in
-    Parser.next p;
+    Parser.next p [@doesNotRaise];
     Location.mkloc uident loc
   | _ -> (* TODO: error recovery *)
     Location.mknoloc "_"
@@ -1477,7 +1498,7 @@ and parseModulePattern ~attrs p =
   begin match p.token with
   | Colon ->
     let colonStart = p.Parser.startPos in
-    Parser.next p;
+    Parser.expect Colon p;
     let packageTypAttrs = parseAttributes p in
     let packageType = parsePackageType ~startPos:colonStart ~attrs:packageTypAttrs p in
     Parser.expect Rparen p;
@@ -1600,7 +1621,7 @@ and parseTernaryExpr leftOperand p =
   match p.Parser.token with
   | Question ->
     Parser.leaveBreadcrumb p Grammar.Ternary;
-    Parser.next p;
+    Parser.expect Question p;
     let trueBranch = parseExpr ~context:TernaryTrueBranchExpr p in
     Parser.expect Colon p;
     let falseBranch = parseExpr p in
@@ -1624,7 +1645,7 @@ and parseEs6ArrowExpression ?context ?parameters p =
   in
   let returnType = match p.Parser.token with
   | Colon ->
-    Parser.next p;
+    Parser.expect Colon p;
     Some (parseTypExpr ~es6Arrow:false p)
   | _ ->
     None
@@ -1689,13 +1710,13 @@ and parseParameter p =
      *  *)
     let attrs = parseAttributes p in
     if p.Parser.token = Typ then (
-      Parser.next p;
+      Parser.expect Typ p;
       let lidents = parseLidentList p in
       Some (TypeParameter {uncurried; attrs; locs = lidents; pos = startPos})
     ) else (
     let (attrs, lbl, pat) = match p.Parser.token with
     | Tilde ->
-      Parser.next p;
+      Parser.expect Tilde p;
       let (lblName, loc) = parseLident p in
       let propLocAttr = (Location.mkloc "ns.namedArgLoc" loc, Parsetree.PStr []) in
       begin match p.Parser.token with
@@ -1708,7 +1729,7 @@ and parseParameter p =
         )
       | Colon ->
         let lblEnd = p.prevEndPos in
-        Parser.next p;
+        Parser.expect Colon p;
         let typ = parseTypExpr p in
         let loc = mkLoc startPos lblEnd in
         let pat =
@@ -1717,7 +1738,7 @@ and parseParameter p =
           Ast_helper.Pat.constraint_ ~attrs:[propLocAttr] ~loc pat typ in
         (attrs, Asttypes.Labelled lblName, pat)
       | As ->
-        Parser.next p;
+        Parser.expect As p;
         let pat =
           let pat = parseConstrainedPattern p in
           {pat with ppat_attributes = propLocAttr::pat.ppat_attributes}
@@ -1739,7 +1760,7 @@ and parseParameter p =
     in
     match p.Parser.token with
     | Equal ->
-      Parser.next p;
+      Parser.expect Equal p;
       let lbl = match lbl with
       | Asttypes.Labelled lblName -> Asttypes.Optional lblName
       | Asttypes.Nolabel ->
@@ -1752,7 +1773,7 @@ and parseParameter p =
       in
       begin match p.Parser.token with
       | Question ->
-        Parser.next p;
+        Parser.expect Question p;
         Some (TermParameter {uncurried; attrs; label = lbl; expr = None; pat; pos = startPos})
       | _ ->
         let expr = parseConstrainedOrCoercedExpr p in
@@ -1785,7 +1806,7 @@ and parseParameters p =
   let startPos = p.Parser.startPos in
   match p.Parser.token with
   | Lident ident ->
-    Parser.next p;
+    Parser.next p [@doesNotRaise];
     let loc = mkLoc startPos p.Parser.prevEndPos in
     [TermParameter {
       uncurried = false;
@@ -1796,24 +1817,24 @@ and parseParameters p =
       pos = startPos;
     }]
   | Underscore ->
-    Parser.next p;
+    Parser.expect Underscore p;
     let loc = mkLoc startPos p.Parser.prevEndPos in
     [TermParameter {uncurried = false; attrs = []; label = Asttypes.Nolabel; expr = None; pat = Ast_helper.Pat.any ~loc (); pos = startPos}]
   | Lparen ->
-    Parser.next p;
+    Parser.expect Lparen p;
     begin match p.Parser.token with
     | Rparen ->
-      Parser.next p;
+      Parser.expect Rparen p;
       let loc = mkLoc startPos p.Parser.prevEndPos in
       let unitPattern = Ast_helper.Pat.construct
         ~loc (Location.mkloc (Longident.Lident "()") loc) None
       in
       [TermParameter {uncurried = false; attrs = []; label = Asttypes.Nolabel; expr = None; pat = unitPattern; pos = startPos}]
     | Dot ->
-      Parser.next p;
+      Parser.expect Dot p;
       begin match p.token with
       | Rparen ->
-        Parser.next p;
+        Parser.expect Rparen p;
         let loc = mkLoc startPos p.Parser.prevEndPos in
         let unitPattern = Ast_helper.Pat.construct
           ~loc (Location.mkloc (Longident.Lident "()") loc) None
@@ -1844,7 +1865,7 @@ and parseConstrainedOrCoercedExpr p =
   | ColonGreaterThan ->
     parseCoercedExpr ~expr p
   | Colon ->
-    Parser.next p;
+    Parser.expect Colon p;
     begin match p.token with
     | _ ->
       let typ = parseTypExpr p in
@@ -1866,7 +1887,7 @@ and parseConstrainedExprRegion p =
     let expr = parseExpr p in
     begin match p.Parser.token with
     | Colon ->
-      Parser.next p;
+      Parser.expect Colon p;
       let typ = parseTypExpr p in
       let loc = mkLoc expr.pexp_loc.loc_start typ.ptyp_loc.loc_end in
       Some (Ast_helper.Exp.constraint_ ~loc expr typ)
@@ -1882,7 +1903,7 @@ and parseAtomicExpr p =
   let startPos = p.Parser.startPos in
   let expr = match p.Parser.token with
     | (True | False) as token ->
-      Parser.next p;
+      Parser.next p [@doesNotRaise];
       let loc = mkLoc startPos p.prevEndPos in
       Ast_helper.Exp.construct ~loc
         (Location.mkloc (Longident.Lident (Token.toString token)) loc) None
@@ -1898,10 +1919,10 @@ and parseAtomicExpr p =
     | Hash ->
       parsePolyVariantExpr p
     | Lparen ->
-      Parser.next p;
+      Parser.expect Lparen p;
       begin match p.Parser.token with
       | Rparen ->
-        Parser.next p;
+        Parser.expect Rparen p;
         let loc = mkLoc startPos p.prevEndPos in
         Ast_helper.Exp.construct
           ~loc (Location.mkloc (Longident.Lident "()") loc) None
@@ -1909,7 +1930,7 @@ and parseAtomicExpr p =
         let expr = parseConstrainedOrCoercedExpr p in
         begin match p.token with
         | Comma ->
-          Parser.next p;
+          Parser.expect Comma p;
           parseTupleExpr ~startPos ~first:expr p
         | _ ->
           Parser.expect Rparen p;
@@ -1923,10 +1944,10 @@ and parseAtomicExpr p =
         end
       end
     | List ->
-      Parser.next p;
+      Parser.expect List p;
       parseListExpr ~startPos  p
     | Module ->
-      Parser.next p;
+      Parser.expect Module p;
       parseFirstClassModuleExpr ~startPos p
     | Lbracket ->
       parseArrayExp p
@@ -1941,7 +1962,7 @@ and parseAtomicExpr p =
     | Underscore as token ->
       (* This case is for error recovery. Not sure if it's the correct place *)
       Parser.err p (Diagnostics.lident token);
-      Parser.next p;
+      Parser.expect Underscore p;
       Recover.defaultExpr ()
     | token ->
       let errPos = p.prevEndPos in
@@ -1964,7 +1985,7 @@ and parseFirstClassModuleExpr ~startPos p =
   begin match p.Parser.token with
   | Colon ->
     let colonStart = p.Parser.startPos in
-    Parser.next p;
+    Parser.expect Colon p;
     let attrs = parseAttributes p in
     let packageType = parsePackageType ~startPos:colonStart ~attrs p in
     Parser.expect Rparen p;
@@ -1978,15 +1999,12 @@ and parseFirstClassModuleExpr ~startPos p =
     Ast_helper.Exp.pack ~loc modExpr
   end
 
-and parseBracketAccess p expr startPos =
-  Parser.leaveBreadcrumb p Grammar.ExprArrayAccess;
-  let lbracket = p.startPos in
-  Parser.next p;
-  let stringStart = p.startPos in
+and parseBracketAccess p ~lbracket expr startPos =
+  let stringStart = p.Parser.startPos in
   match p.Parser.token with
   | String s ->
     let s = if p.mode = ParseForTypeChecker then parseStringLiteral s else s in
-    Parser.next p;
+    Parser.next p [@doesNotRaise];
     let stringEnd = p.prevEndPos in
     Parser.expect Rbracket p;
     Parser.eatBreadcrumb p;
@@ -2000,7 +2018,7 @@ and parseBracketAccess p expr startPos =
     let equalStart = p.startPos in
     begin match p.token with
     | Equal ->
-      Parser.next p;
+      Parser.expect Equal p;
       let equalEnd = p.prevEndPos in
       let rhsExpr = parseExpr p in
       let loc = mkLoc startPos rhsExpr.pexp_loc.loc_end in
@@ -2019,7 +2037,7 @@ and parseBracketAccess p expr startPos =
     begin match p.token with
     | Equal ->
       Parser.leaveBreadcrumb p ExprArrayMutation;
-      Parser.next p;
+      Parser.expect Equal p;
       let rhsExpr = parseExpr p in
       let arraySet = Location.mkloc
         (Longident.Ldot(Lident "Array", "set"))
@@ -2060,12 +2078,12 @@ and parsePrimaryExpr ~operand ?(noCall=false) p =
   let rec loop p expr =
     match p.Parser.token with
     | Dot ->
-      Parser.next p;
+      Parser.expect Dot p;
       let lident = parseValuePathAfterDot p in
       begin match p.Parser.token with
       | Equal when noCall = false ->
         Parser.leaveBreadcrumb p Grammar.ExprSetField;
-        Parser.next p;
+        Parser.expect Equal p;
         let targetExpr = parseExpr p in
         let loc = mkLoc startPos p.prevEndPos in
         let setfield = Ast_helper.Exp.setfield ~loc expr lident targetExpr  in
@@ -2077,7 +2095,10 @@ and parsePrimaryExpr ~operand ?(noCall=false) p =
         loop p (Ast_helper.Exp.field ~loc expr lident)
       end
     | Lbracket when noCall = false && p.prevEndPos.pos_lnum == p.startPos.pos_lnum ->
-      parseBracketAccess p expr startPos
+      Parser.leaveBreadcrumb p Grammar.ExprArrayAccess;
+      let lbracket = p.startPos in
+      Parser.expect Lbracket p;    
+      parseBracketAccess p ~lbracket expr startPos
     | Lparen when noCall = false && p.prevEndPos.pos_lnum == p.startPos.pos_lnum ->
       loop p (parseCallExpr p expr)
     | Backtick when noCall = false && p.prevEndPos.pos_lnum == p.startPos.pos_lnum ->
@@ -2108,7 +2129,7 @@ and parseUnaryExpr p =
   | (Minus | MinusDot | Plus | PlusDot | Bang) as token ->
     Parser.leaveBreadcrumb p Grammar.ExprUnary;
     let tokenEnd = p.endPos in
-    Parser.next p;
+    Parser.next p [@doesNotRaise];
     let operand = parseUnaryExpr p in
     let unaryExpr = makeUnaryExpr startPos tokenEnd token operand  in
     Parser.eatBreadcrumb p;
@@ -2124,12 +2145,12 @@ and parseOperandExpr ~context p =
   let attrs = parseAttributes p in
   let expr = match p.Parser.token with
   | Assert ->
-    Parser.next p;
+    Parser.expect Assert p;
     let expr = parseUnaryExpr p in
     let loc = mkLoc startPos p.prevEndPos in
     Ast_helper.Exp.assert_ ~loc expr
   | Lazy ->
-    Parser.next p;
+    Parser.expect Lazy p;
     let expr = parseUnaryExpr p in
     let loc = mkLoc startPos p.prevEndPos in
     Ast_helper.Exp.lazy_ ~loc expr
@@ -2189,11 +2210,11 @@ and parseBinaryExpr ?(context=OrdinaryExpr) ?a p prec =
         ) && p.startPos.pos_lnum > p.prevEndPos.pos_lnum -> -1
       | token -> Token.precedence token
     in
-    if tokenPrec < prec then a
+    if tokenPrec < prec || token = Eof then a
     else begin
       Parser.leaveBreadcrumb p (Grammar.ExprBinaryAfterOp token);
       let startPos = p.startPos in
-      Parser.next p;
+      Parser.next p [@doesNotRaise];
       let endPos = p.prevEndPos in
       let b = parseBinaryExpr ~context p (tokenPrec + 1) in
       let loc = mkLoc a.Parsetree.pexp_loc.loc_start b.pexp_loc.loc_end in
@@ -2251,14 +2272,14 @@ and parseTemplateExpr ?(prefix="js") p =
     Parser.nextTemplateLiteralToken p;
     match p.token with
     | TemplateTail txt ->
-      Parser.next p;
+      Parser.next p [@doesNotRaise];
       let loc = mkLoc startPos p.prevEndPos in
       let txt = if p.mode = ParseForTypeChecker then parseTemplateStringLiteral txt else txt in
       let str = Ast_helper.Exp.constant ~attrs:[templateLiteralAttr] ~loc (Pconst_string(txt, Some prefix)) in
       Ast_helper.Exp.apply ~attrs:[templateLiteralAttr] ~loc hiddenOperator
         [Nolabel, acc; Nolabel, str]
     | TemplatePart txt ->
-      Parser.next p;
+      Parser.next p [@doesNotRaise];
       let loc = mkLoc startPos p.prevEndPos in
       let expr = parseExprBlock p in
       let fullLoc = mkLoc startPos p.prevEndPos in
@@ -2278,11 +2299,11 @@ and parseTemplateExpr ?(prefix="js") p =
   Parser.nextTemplateLiteralToken p;
   match p.token with
   | TemplateTail txt ->
-    Parser.next p;
+    Parser.next p [@doesNotRaise];
     let txt = if p.mode = ParseForTypeChecker then parseTemplateStringLiteral txt else txt in
     Ast_helper.Exp.constant ~attrs:[templateLiteralAttr] ~loc:(mkLoc startPos p.prevEndPos) (Pconst_string(txt, Some prefix))
   | TemplatePart txt ->
-    Parser.next p;
+    Parser.next p [@doesNotRaise];
     let constantLoc = mkLoc startPos p.prevEndPos in
     let expr = parseExprBlock p in
     let fullLoc = mkLoc startPos p.prevEndPos in
@@ -2310,11 +2331,11 @@ and overParseConstrainedOrCoercedOrArrowExpression p expr =
   | ColonGreaterThan ->
     parseCoercedExpr ~expr p
   | Colon ->
-    Parser.next p;
+    Parser.expect Colon p;
     let typ = parseTypExpr ~es6Arrow:false p in
     begin match p.Parser.token with
     | EqualGreater ->
-      Parser.next p;
+      Parser.expect EqualGreater p;
       let body = parseExpr p in
       let pat = match expr.pexp_desc with
       | Pexp_ident longident ->
@@ -2395,10 +2416,10 @@ and parseLetBindingBody ~startPos ~attrs p =
     Parser.eatBreadcrumb p;
     match p.Parser.token with
     | Colon ->
-      Parser.next p;
+      Parser.expect Colon p;
       begin match p.token with
       | Typ -> (* locally abstract types *)
-        Parser.next p;
+        Parser.expect Typ p;
         let newtypes = parseLidentList p in
         Parser.expect Dot p;
         let typ = parseTypExpr p in
@@ -2500,11 +2521,11 @@ and parseLetBindings ~attrs p =
     let attrs = parseAttributesAndBinding p in
     match p.Parser.token with
     | And ->
-      Parser.next p;
+      Parser.expect And p;
       let attrs = match p.token with
       | Export ->
         let exportLoc = mkLoc p.startPos p.endPos in
-        Parser.next p;
+        Parser.expect Export p;
         let genTypeAttr = (Location.mkloc "genType" exportLoc, Parsetree.PStr []) in
         genTypeAttr::attrs
       | _ -> attrs
@@ -2527,7 +2548,7 @@ and parseJsxName p =
   | Lident ident ->
     let identStart = p.startPos in
     let identEnd = p.endPos in
-    Parser.next p;
+    Parser.next p [@doesNotRaise];
     let loc = mkLoc identStart identEnd in
     Location.mkloc (Longident.Lident ident) loc
   | Uident _ ->
@@ -2548,7 +2569,7 @@ and parseJsxOpeningOrSelfClosingElement ~startPos p =
   let children = match p.Parser.token with
   | Forwardslash -> (* <foo a=b /> *)
     let childrenStartPos = p.Parser.startPos in
-    Parser.next p;
+    Parser.expect Forwardslash p;
     let childrenEndPos = p.Parser.startPos in
     Parser.expect GreaterThan p;
     let loc = mkLoc childrenStartPos childrenEndPos in
@@ -2556,12 +2577,12 @@ and parseJsxOpeningOrSelfClosingElement ~startPos p =
   | GreaterThan -> (* <foo a=b> bar </foo> *)
     let childrenStartPos = p.Parser.startPos in
     Scanner.setJsxMode p.scanner;
-    Parser.next p;
+    Parser.expect GreaterThan p;
     let (spread, children) = parseJsxChildren p in
     let childrenEndPos = p.Parser.startPos in
     let () = match p.token with
-    | LessThanSlash -> Parser.next p
-    | LessThan -> Parser.next p; Parser.expect Forwardslash p
+    | LessThanSlash -> Parser.expect LessThanSlash p
+    | LessThan -> Parser.expect LessThan p; Parser.expect Forwardslash p
     | token when Grammar.isStructureItemStart token -> ()
     | _ -> Parser.expect LessThanSlash p
     in
@@ -2672,7 +2693,7 @@ and parseJsxProp p =
     else begin
       match p.Parser.token with
       | Equal ->
-        Parser.next p;
+        Parser.expect Equal p;
         (* no punning *)
         let optional = Parser.optional p Question in
         let attrExpr =
@@ -2731,7 +2752,7 @@ and parseJsxChildren p =
   in
   match p.Parser.token with
   | DotDotDot ->
-    Parser.next p;
+    Parser.expect DotDotDot p;
     (true, [parsePrimaryExpr ~operand:(parseAtomicExpr p) ~noCall:true p])
   | _ -> (false, loop p [])
 
@@ -2741,14 +2762,14 @@ and parseBracedOrRecordExpr  p =
   match p.Parser.token with
   | Rbrace ->
     Parser.err p (Diagnostics.unexpected Rbrace p.breadcrumbs);
-    Parser.next p;
+    Parser.expect Rbrace p;
     let loc = mkLoc startPos p.prevEndPos in
     let braces = makeBracesAttr loc in
     Ast_helper.Exp.construct ~attrs:[braces] ~loc
       (Location.mkloc (Longident.Lident "()") loc) None
   | DotDotDot ->
     (* beginning of record spread, parse record *)
-    Parser.next p;
+    Parser.expect DotDotDot p;
     let spreadExpr = parseConstrainedOrCoercedExpr p in
     Parser.expect Comma p;
     let expr = parseRecordExpr ~startPos ~spread:(Some spreadExpr) [] p in
@@ -2758,12 +2779,12 @@ and parseBracedOrRecordExpr  p =
     let s = if p.mode = ParseForTypeChecker then parseStringLiteral s else s in
     let field =
       let loc = mkLoc p.startPos p.endPos in
-      Parser.next p;
+      Parser.next p [@doesNotRaise];
       Location.mkloc (Longident.Lident s) loc
     in
     begin match p.Parser.token with
     | Colon ->
-      Parser.next p;
+      Parser.expect Colon p;
       let fieldExpr = parseExpr p in
       Parser.optional p Comma |> ignore;
       let expr = parseRecordExprWithStringKeys ~startPos (field, fieldExpr) p in
@@ -2783,7 +2804,7 @@ and parseBracedOrRecordExpr  p =
         let braces = makeBracesAttr loc in
         {expr with Parsetree.pexp_attributes = braces::expr.Parsetree.pexp_attributes}
       | Rbrace ->
-        Parser.next p;
+        Parser.expect Rbrace p;
         let loc = mkLoc startPos p.prevEndPos in
         let braces = makeBracesAttr loc in
         {e with pexp_attributes = braces::e.pexp_attributes}
@@ -2803,7 +2824,7 @@ and parseBracedOrRecordExpr  p =
       let identEndPos = p.prevEndPos in
       begin match p.Parser.token with
       | Comma ->
-        Parser.next p;
+        Parser.expect Comma p;
         let valueOrConstructor = match startToken with
         | Uident _ -> removeModuleNameFromPunnedFieldValue(valueOrConstructor)
         | _ -> valueOrConstructor
@@ -2812,11 +2833,11 @@ and parseBracedOrRecordExpr  p =
         Parser.expect Rbrace p;
         expr
       | Colon ->
-        Parser.next p;
+        Parser.expect Colon p;
         let fieldExpr = parseExpr p in
         begin match p.token with
         | Rbrace ->
-          Parser.next p;
+          Parser.expect Rbrace p;
           let loc = mkLoc startPos p.prevEndPos in
           Ast_helper.Exp.record ~loc [(pathIdent, fieldExpr)] None
         | _ ->
@@ -2845,7 +2866,7 @@ and parseBracedOrRecordExpr  p =
         let braces = makeBracesAttr loc in
         {expr with pexp_attributes = braces::expr.pexp_attributes}
       | Rbrace ->
-        Parser.next p;
+        Parser.expect Rbrace p;
         let expr = Ast_helper.Exp.ident ~loc:pathIdent.loc pathIdent in
         let loc = mkLoc startPos p.prevEndPos in
         let braces = makeBracesAttr loc in
@@ -2874,7 +2895,7 @@ and parseBracedOrRecordExpr  p =
           let braces = makeBracesAttr loc in
           {expr with pexp_attributes = braces::expr.pexp_attributes}
         | Rbrace ->
-          Parser.next p;
+          Parser.expect Rbrace p;
           let loc = mkLoc startPos p.prevEndPos in
           let braces = makeBracesAttr loc in
           {e with pexp_attributes = braces::e.pexp_attributes}
@@ -2899,7 +2920,7 @@ and parseBracedOrRecordExpr  p =
           let braces = makeBracesAttr loc in
           {expr with pexp_attributes = braces::expr.pexp_attributes}
         | Rbrace ->
-          Parser.next p;
+          Parser.expect Rbrace p;
           let loc = mkLoc startPos p.prevEndPos in
           let braces = makeBracesAttr loc in
           {e with pexp_attributes = braces::e.pexp_attributes}
@@ -2925,7 +2946,7 @@ and parseBracedOrRecordExpr  p =
         let braces = makeBracesAttr loc in
         {expr with pexp_attributes = braces::expr.pexp_attributes}
       | Rbrace ->
-        Parser.next p;
+        Parser.expect Rbrace p;
         let loc = mkLoc startPos p.prevEndPos in
         let braces = makeBracesAttr loc in
         {e with pexp_attributes = braces::e.pexp_attributes}
@@ -2948,11 +2969,11 @@ and parseRecordRowWithStringKey p =
   match p.Parser.token with
   | String s ->
     let loc = mkLoc p.startPos p.endPos in
-    Parser.next p;
+    Parser.next p [@doesNotRaise];
     let field = Location.mkloc (Longident.Lident s) loc in
     begin match p.Parser.token with
     | Colon ->
-      Parser.next p;
+      Parser.expect Colon p;
       let fieldExpr = parseExpr p in
       Some (field, fieldExpr)
     | _ ->
@@ -2964,16 +2985,16 @@ and parseRecordRow p =
   let () = match p.Parser.token with
   | Token.DotDotDot ->
     Parser.err p (Diagnostics.message ErrorMessages.recordExprSpread);
-    Parser.next p;
+    Parser.expect DotDotDot p;
   | _ -> ()
   in
   match p.Parser.token with
   | Lident _ | Uident _ ->
     let startToken = p.token in
-    let field = parseValuePath p in
+    let field = parseValuePathNotEof p in
     begin match p.Parser.token with
     | Colon ->
-      Parser.next p;
+      Parser.expect Colon p;
       let fieldExpr = parseExpr p in
       Some (field, fieldExpr)
     | _ ->
@@ -3018,7 +3039,7 @@ and parseRecordExpr ~startPos ?(spread=None) rows p =
 and parseNewlineOrSemicolonExprBlock p =
   match p.Parser.token with
   | Semicolon ->
-    Parser.next p
+    Parser.expect Semicolon p
   | token when Grammar.isBlockExprStart token ->
     if p.prevEndPos.pos_lnum < p.startPos.pos_lnum then ()
     else
@@ -3034,7 +3055,7 @@ and parseExprBlockItem p =
   let attrs = parseAttributes p in
   match p.Parser.token with
   | Module ->
-    Parser.next p;
+    Parser.expect Module p;
     begin match p.token with
     | Lparen ->
       let expr = parseFirstClassModuleExpr ~startPos p in
@@ -3045,7 +3066,7 @@ and parseExprBlockItem p =
       let name = match p.Parser.token with
       | Uident ident ->
         let loc = mkLoc p.startPos p.endPos in
-        Parser.next p;
+        Parser.next p [@doesNotRaise];
         Location.mkloc ident loc
       | t ->
         Parser.err p (Diagnostics.uident t);
@@ -3162,7 +3183,7 @@ and parseIfExpr startPos p =
   | Else ->
     Parser.endRegion p;
     Parser.leaveBreadcrumb p Grammar.ElseBranch;
-    Parser.next p;
+    Parser.expect Else p;
     Parser.beginRegion p;
     let elseExpr = match p.token with
     | If ->
@@ -3189,7 +3210,7 @@ and parseIfLetExpr startPos p =
   | Else ->
     Parser.endRegion p;
     Parser.leaveBreadcrumb p Grammar.ElseBranch;
-    Parser.next p;
+    Parser.expect Else p;
     Parser.beginRegion p;
     let elseExpr = match p.token with
     | If ->
@@ -3219,7 +3240,7 @@ and parseIfOrIfLetExpression p =
   Parser.expect If p;
   let expr = match p.Parser.token with
     | Let ->
-      Parser.next p;
+      Parser.expect Let p;
       let ifLetExpr = parseIfLetExpr startPos p in
       Parser.err
         ~startPos:ifLetExpr.pexp_loc.loc_start
@@ -3243,7 +3264,7 @@ and parseForRest hasOpeningParen pattern startPos p =
     Parser.err p (Diagnostics.unexpected token p.breadcrumbs);
     Asttypes.Upto
   in
-  Parser.next p;
+  Parser.nextUnsafe p;
   let e2 = parseExpr ~context:WhenExpr p in
   if hasOpeningParen then Parser.expect Rparen p;
   Parser.expect Lbrace p;
@@ -3260,10 +3281,10 @@ and parseForExpression p =
   let forExpr = match p.token with
   | Lparen ->
     let lparen = p.startPos in
-    Parser.next p;
+    Parser.expect Lparen p;
     begin match p.token with
     | Rparen ->
-      Parser.next p;
+      Parser.expect Rparen p;
       let unitPattern =
         let loc = mkLoc lparen p.prevEndPos in
         let lid = Location.mkloc (Longident.Lident "()") loc in
@@ -3276,7 +3297,7 @@ and parseForExpression p =
       Parser.eatBreadcrumb p;
       begin match p.token with
       | Comma ->
-        Parser.next p;
+        Parser.expect Comma p;
         let tuplePattern =
           parseTuplePattern ~attrs:[] ~startPos:lparen ~first:pat p
         in
@@ -3310,7 +3331,7 @@ and parseWhileExpression p =
 and parsePatternGuard p =
   match p.Parser.token with
     | When | If ->
-      Parser.next p;
+      Parser.next p [@doesNotRaise];
       Some (parseExpr ~context:WhenExpr p)
     | _ ->
       None
@@ -3320,13 +3341,13 @@ and parsePatternMatchCase p =
   Parser.leaveBreadcrumb p Grammar.PatternMatchCase;
   match p.Parser.token with
   | Token.Bar ->
-    Parser.next p;
+    Parser.expect Bar p;
     Parser.leaveBreadcrumb p Grammar.Pattern;
     let lhs = parsePattern p in
     Parser.eatBreadcrumb p;
     let guard = parsePatternGuard p in
     let () = match p.token with
-    | EqualGreater -> Parser.next p
+    | EqualGreater -> Parser.expect EqualGreater p
     | _ -> Recover.recoverEqualGreater p
     in
     let rhs = parseExprBlock p in
@@ -3392,7 +3413,7 @@ and parseArgument p =
     match p.Parser.token with
     | Dot ->
       let uncurried = true in
-      Parser.next(p);
+      Parser.expect Dot p;
       begin match p.token with
         (* apply(.) *)
         | Rparen ->
@@ -3414,18 +3435,18 @@ and parseArgument2 p ~uncurried =
   (* foo(_), do not confuse with foo(_ => x), TODO: performance *)
   | Underscore when not (isEs6ArrowExpression ~inTernary:false p) ->
     let loc = mkLoc p.startPos p.endPos in
-    Parser.next p;
+    Parser.expect Underscore p;
     let exp = Ast_helper.Exp.ident ~loc (
       Location.mkloc (Longident.Lident "_") loc
     ) in
     Some (uncurried, Asttypes.Nolabel, exp)
   | Tilde ->
-    Parser.next p;
+    Parser.expect Tilde p;
     (* TODO: nesting of pattern matches not intuitive for error recovery *)
     begin match p.Parser.token with
     | Lident ident ->
       let startPos = p.startPos in
-      Parser.next p;
+      Parser.next p [@doesNotRaise];
       let endPos = p.prevEndPos in
       let loc = mkLoc startPos endPos in
       let propLocAttr = (Location.mkloc "ns.namedArgLoc" loc, Parsetree.PStr []) in
@@ -3434,13 +3455,13 @@ and parseArgument2 p ~uncurried =
       ) in
       begin match p.Parser.token with
       | Question ->
-        Parser.next p;
+        Parser.expect Question p;
         Some (uncurried, Asttypes.Optional ident, identExpr)
       | Equal ->
-        Parser.next p;
+        Parser.expect Equal p;
         let label = match p.Parser.token with
         | Question ->
-          Parser.next p;
+          Parser.expect Question p;
           Asttypes.Optional ident
         | _ ->
           Labelled ident
@@ -3448,7 +3469,7 @@ and parseArgument2 p ~uncurried =
         let expr = match p.Parser.token with
         | Underscore when not (isEs6ArrowExpression ~inTernary:false p) ->
           let loc = mkLoc p.startPos p.endPos in
-          Parser.next p;
+          Parser.expect Underscore p;
           Ast_helper.Exp.ident ~loc (
             Location.mkloc (Longident.Lident "_") loc
           )
@@ -3458,7 +3479,7 @@ and parseArgument2 p ~uncurried =
         in
         Some (uncurried, label, expr)
       | Colon ->
-        Parser.next p;
+        Parser.expect Colon p;
         let typ = parseTypExpr p in
         let loc = mkLoc startPos p.prevEndPos in
         let expr = Ast_helper.Exp.constraint_ ~attrs:[propLocAttr] ~loc identExpr typ in
@@ -3560,10 +3581,10 @@ and parseValueOrConstructor p =
     match p.Parser.token with
     | Uident ident ->
       let endPosLident = p.endPos in
-      Parser.next p;
+      Parser.next p [@doesNotRaise];
       begin match p.Parser.token with
       | Dot ->
-        Parser.next p;
+        Parser.expect Dot p;
         aux p (ident::acc)
       | Lparen when p.prevEndPos.pos_lnum == p.startPos.pos_lnum ->
         let lparen = p.startPos in
@@ -3595,13 +3616,13 @@ and parseValueOrConstructor p =
         Ast_helper.Exp.construct ~loc (Location.mkloc lident loc) None
       end
     | Lident ident ->
-      Parser.next p;
+      Parser.next p [@doesNotRaise];
       let loc = mkLoc startPos p.prevEndPos in
       let lident = buildLongident (ident::acc) in
       Ast_helper.Exp.ident ~loc (Location.mkloc lident loc)
     | token ->
       if acc = [] then (
-        Parser.next p;
+        Parser.nextUnsafe p;
         Parser.err p (Diagnostics.unexpected token p.breadcrumbs);
         Recover.defaultExpr()
       ) else (
@@ -3681,7 +3702,7 @@ and parseTupleExpr ~first ~startPos p =
 and parseSpreadExprRegion p =
   match p.Parser.token with
   | DotDotDot ->
-    Parser.next p;
+    Parser.expect DotDotDot p;
     let expr = parseConstrainedOrCoercedExpr p in
     Some (true, expr)
   | token when Grammar.isExprStart token ->
@@ -3715,7 +3736,7 @@ and parseNonSpreadExp ~msg p =
   let () = match p.Parser.token with
   | DotDotDot ->
     Parser.err p (Diagnostics.message msg);
-    Parser.next p;
+    Parser.expect DotDotDot p;
   | _ -> ()
   in
   match p.Parser.token with
@@ -3723,7 +3744,7 @@ and parseNonSpreadExp ~msg p =
     let expr = parseExpr p in
     begin match p.Parser.token with
     | Colon ->
-      Parser.next p;
+      Parser.expect Colon p;
       let typ = parseTypExpr p in
       let loc = mkLoc expr.pexp_loc.loc_start typ.ptyp_loc.loc_end in
       Some (Ast_helper.Exp.constraint_ ~loc expr typ)
@@ -3760,12 +3781,12 @@ and parsePolyTypeExpr p =
     | [var] ->
       begin match p.Parser.token with
       | Dot ->
-        Parser.next p;
+        Parser.expect Dot p;
         let typ = parseTypExpr p in
         let loc = mkLoc startPos p.prevEndPos in
         Ast_helper.Typ.poly ~loc vars typ
       | EqualGreater ->
-        Parser.next p;
+        Parser.expect EqualGreater p;
         let typ = Ast_helper.Typ.var ~loc:var.loc var.txt in
         let returnType = parseTypExpr ~alias:false p in
         let loc = mkLoc typ.Parsetree.ptyp_loc.loc_start p.prevEndPos in
@@ -3783,7 +3804,7 @@ and parseTypeVarList p =
   let rec loop p vars =
     match p.Parser.token with
     | SingleQuote ->
-      Parser.next p;
+      Parser.expect SingleQuote p;
       let (lident, loc) = parseLident p in
       let var = Location.mkloc lident loc in
       loop p (var::vars)
@@ -3797,7 +3818,7 @@ and parseLidentList p =
     match p.Parser.token with
     | Lident lident ->
       let loc = mkLoc p.startPos p.endPos in
-      Parser.next p;
+      Parser.next p [@doesNotRaise];
       loop p ((Location.mkloc lident loc)::ls)
     | _ ->
       List.rev ls
@@ -3809,18 +3830,18 @@ and parseAtomicTypExpr ~attrs p =
   let startPos = p.Parser.startPos in
   let typ = match p.Parser.token with
   | SingleQuote ->
-    Parser.next p;
+    Parser.expect SingleQuote p;
     let (ident, loc) = parseIdent ~msg:ErrorMessages.typeVar ~startPos:p.startPos p in
     Ast_helper.Typ.var ~loc ~attrs ident
   | Underscore ->
     let endPos = p.endPos in
-    Parser.next p;
+    Parser.expect Underscore p;
     Ast_helper.Typ.any ~loc:(mkLoc startPos endPos) ~attrs ()
   | Lparen ->
-    Parser.next p;
+    Parser.expect Lparen p;
     begin match p.Parser.token with
     | Rparen ->
-      Parser.next p;
+      Parser.expect Rparen p;
       let loc = mkLoc startPos p.prevEndPos in
       let unitConstr = Location.mkloc (Longident.Lident "unit") loc in
       Ast_helper.Typ.constr ~attrs unitConstr []
@@ -3828,7 +3849,7 @@ and parseAtomicTypExpr ~attrs p =
       let t = parseTypExpr p in
       begin match p.token with
       | Comma ->
-        Parser.next p;
+        Parser.expect Comma p;
         parseTupleType ~attrs ~first:t ~startPos p
       | _ ->
         Parser.expect Rparen p;
@@ -3844,7 +3865,7 @@ and parseAtomicTypExpr ~attrs p =
     let args =  parseTypeConstructorArgs ~constrName:constr p in
     Ast_helper.Typ.constr ~loc:(mkLoc startPos p.prevEndPos) ~attrs constr args
   | Module ->
-    Parser.next p;
+    Parser.expect Module p;
     Parser.expect Lparen p;
     let packageType = parsePackageType ~startPos ~attrs p in
     Parser.expect Rparen p;
@@ -3876,7 +3897,7 @@ and parsePackageType ~startPos ~attrs p =
   let modTypePath = parseModuleLongIdent ~lowercase:true p in
   begin match p.Parser.token with
   | Lident "with" ->
-    Parser.next p;
+    Parser.next p [@doesNotRaise];
     let constraints = parsePackageConstraints p in
     let loc = mkLoc startPos p.prevEndPos in
     Ast_helper.Typ.package ~loc ~attrs modTypePath constraints
@@ -3905,7 +3926,7 @@ and parsePackageConstraints p =
 and parsePackageConstraint p =
   match p.Parser.token with
   | And ->
-    Parser.next p;
+    Parser.expect And p;
     Parser.expect Typ p;
     let typeConstr = parseValuePath p in
     Parser.expect Equal p;
@@ -3918,8 +3939,8 @@ and parseRecordOrObjectType ~attrs p =
   let startPos = p.Parser.startPos in
   Parser.expect Lbrace p;
   let closedFlag = match p.token with
-  | DotDot -> Parser.next p; Asttypes.Open
-  | Dot -> Parser.next p; Asttypes.Closed
+  | DotDot -> Parser.expect DotDot p; Asttypes.Open
+  | Dot -> Parser.expect Dot p; Asttypes.Closed
   | _ -> Asttypes.Closed
   in
   let () = match p.token with
@@ -3950,7 +3971,7 @@ and parseRecordOrObjectType ~attrs p =
 and parseTypeAlias p typ =
   match p.Parser.token with
   | As ->
-    Parser.next p;
+    Parser.expect As p;
     Parser.expect SingleQuote p;
     let (ident, _loc) = parseLident p in
     (* TODO: how do we parse attributes here? *)
@@ -3981,7 +4002,7 @@ and parseTypeParameter p =
     let attrs = parseAttributes p in
     match p.Parser.token with
     | Tilde ->
-      Parser.next p;
+      Parser.expect Tilde p;
       let (name, loc) = parseLident p in
       let lblLocAttr = (Location.mkloc "ns.namedArgLoc" loc, Parsetree.PStr []) in
       Parser.expect ~grammar:Grammar.TypeExpression Colon p;
@@ -3991,7 +4012,7 @@ and parseTypeParameter p =
       in
       begin match p.Parser.token with
       | Equal ->
-        Parser.next p;
+        Parser.expect Equal p;
         Parser.expect Question p;
         Some (uncurried, attrs, Asttypes.Optional name, typ, startPos)
       | _ ->
@@ -4007,11 +4028,11 @@ and parseTypeParameter p =
           ) in
           Parser.err ~startPos:loc.loc_start ~endPos:loc.loc_end p error
         in
-        Parser.next p;
+        Parser.expect Colon p;
         let typ = parseTypExpr p in
         begin match p.Parser.token with
         | Equal ->
-          Parser.next p;
+          Parser.expect Equal p;
           Parser.expect Question p;
           Some (uncurried, attrs, Asttypes.Optional name, typ, startPos)
         | _ ->
@@ -4040,7 +4061,7 @@ and parseTypeParameters p =
   Parser.expect Lparen p;
   match p.Parser.token with
   | Rparen ->
-    Parser.next p;
+    Parser.expect Rparen p;
     let loc = mkLoc startPos p.prevEndPos in
     let unitConstr = Location.mkloc (Longident.Lident "unit") loc in
     let typ = Ast_helper.Typ.constr unitConstr [] in
@@ -4056,7 +4077,7 @@ and parseEs6ArrowType ~attrs p =
   let startPos = p.Parser.startPos in
   match p.Parser.token with
   | Tilde ->
-    Parser.next p;
+    Parser.expect Tilde p;
     let (name, loc) = parseLident p in
     let lblLocAttr = (Location.mkloc "ns.namedArgLoc" loc, Parsetree.PStr []) in
     Parser.expect ~grammar:Grammar.TypeExpression Colon p;
@@ -4066,7 +4087,7 @@ and parseEs6ArrowType ~attrs p =
     in
     let arg = match p.Parser.token with
     | Equal ->
-      Parser.next p;
+      Parser.expect Equal p;
       Parser.expect Question p;
       Asttypes.Optional name
     | _ ->
@@ -4135,7 +4156,7 @@ and parseArrowTypeRest ~es6Arrow ~startPos typ p =
     if token = MinusGreater then (
       Parser.expect EqualGreater p;
     );
-    Parser.next p;
+    Parser.nextUnsafe p;
     let returnType = parseTypExpr ~alias:false p in
     let loc = mkLoc startPos p.prevEndPos in
     Ast_helper.Typ.arrow ~loc Asttypes.Nolabel typ returnType
@@ -4171,7 +4192,7 @@ and parseTypeConstructorArgRegion p =
   if Grammar.isTypExprStart p.Parser.token then
     Some (parseTypExpr p)
   else if p.token = LessThan then (
-    Parser.next p;
+    Parser.expect LessThan p;
     parseTypeConstructorArgRegion p
   ) else
     None
@@ -4183,7 +4204,7 @@ and parseTypeConstructorArgs ~constrName p =
   match opening with
   | LessThan | Lparen ->
     Scanner.setDiamondMode p.scanner;
-    Parser.next p;
+    Parser.next p [@doesNotRaise];
     let typeArgs =
       (* TODO: change Grammar.TypExprList to TypArgList!!! Why did I wrote this? *)
       parseCommaDelimitedRegion
@@ -4209,7 +4230,7 @@ and parseTypeConstructorArgs ~constrName p =
         ) |> Doc.toString ~width:80
       in
       Parser.err ~startPos:openingStartPos p (Diagnostics.message msg);
-      Parser.next p
+      Parser.expect Rparen p
     | _ ->
       Parser.expect GreaterThan p
     in
@@ -4226,19 +4247,19 @@ and parseStringFieldDeclaration p =
   | String name ->
     let nameStartPos = p.startPos in
     let nameEndPos = p.endPos in
-    Parser.next p;
+    Parser.next p [@doesNotRaise];
     let fieldName = Location.mkloc name (mkLoc nameStartPos nameEndPos) in
     Parser.expect ~grammar:Grammar.TypeExpression Colon p;
     let typ = parsePolyTypeExpr p in
     Some(Parsetree.Otag (fieldName, attrs, typ))
   | DotDotDot ->
-    Parser.next p;
+    Parser.expect DotDotDot p;
     let typ = parseTypExpr p in
     Some(Parsetree.Oinherit typ)
   | Lident name ->
     let nameLoc = mkLoc p.startPos p.endPos in
     Parser.err p (Diagnostics.message (ErrorMessages.objectQuotedFieldName name));
-    Parser.next p;
+    Parser.next p [@doesNotRaise];
     let fieldName = Location.mkloc name nameLoc in
     Parser.expect ~grammar:Grammar.TypeExpression Colon p;
     let typ = parsePolyTypeExpr p in
@@ -4263,7 +4284,7 @@ and parseFieldDeclaration p =
   let name = Location.mkloc lident loc in
   let typ = match p.Parser.token with
   | Colon ->
-    Parser.next p;
+    Parser.expect Colon p;
     parsePolyTypeExpr p
   | _ ->
     Ast_helper.Typ.constr ~loc:name.loc {name with txt = Lident name.txt} []
@@ -4286,7 +4307,7 @@ and parseFieldDeclarationRegion p =
     let name = Location.mkloc lident loc in
     let typ = match p.Parser.token with
     | Colon ->
-      Parser.next p;
+      Parser.expect Colon p;
       parsePolyTypeExpr p
     | _ ->
       Ast_helper.Typ.constr ~loc:name.loc {name with txt = Lident name.txt} []
@@ -4327,18 +4348,18 @@ and parseRecordDeclaration p =
 and parseConstrDeclArgs p =
   let constrArgs = match p.Parser.token with
   | Lparen ->
-    Parser.next p;
+    Parser.expect Lparen p;
     (* TODO: this could use some cleanup/stratification *)
     begin match p.Parser.token with
     | Lbrace ->
       let lbrace = p.startPos in
-      Parser.next p;
+      Parser.expect Lbrace p;
       let startPos = p.Parser.startPos in
       begin match p.Parser.token with
       | DotDot | Dot ->
         let closedFlag = match p.token with
-        | DotDot -> Parser.next p; Asttypes.Open
-        | Dot -> Parser.next p; Asttypes.Closed
+        | DotDot -> Parser.expect DotDot p; Asttypes.Open
+        | Dot -> Parser.expect Dot p; Asttypes.Closed
         | _ -> Asttypes.Closed
         in
         let fields =
@@ -4365,14 +4386,14 @@ and parseConstrDeclArgs p =
         let dotdotdotStart = p.startPos in
         let dotdotdotEnd = p.endPos in
         (* start of object type spreading, e.g. `User({...a, "u": int})` *)
-        Parser.next p;
+        Parser.expect DotDotDot p;
         let typ = parseTypExpr p in
         let () = match p.token with
         | Rbrace ->
           (* {...x}, spread without extra fields *)
           Parser.err ~startPos:dotdotdotStart ~endPos:dotdotdotEnd p
             (Diagnostics.message ErrorMessages.sameTypeSpread);
-          Parser.next p;
+          Parser.expect Rbrace p;
         | _ -> Parser.expect Comma p
         in
         let () = match p.token with
@@ -4427,7 +4448,7 @@ and parseConstrDeclArgs p =
               (* parse comma after first *)
               let () = match p.Parser.token with
               | Rbrace | Eof -> ()
-              | Comma -> Parser.next p
+              | Comma -> Parser.expect Comma p
               | _ -> Parser.expect Comma p
               in
               Parser.eatBreadcrumb p;
@@ -4508,7 +4529,7 @@ and parseConstrDeclArgs p =
   in
   let res = match p.Parser.token with
   | Colon ->
-    Parser.next p;
+    Parser.expect Colon p;
     Some (parseTypExpr p)
   | _ -> None
   in
@@ -4523,7 +4544,7 @@ and parseConstrDeclArgs p =
   match p.Parser.token with
   | Bar ->
     let startPos = p.Parser.startPos in
-    Parser.next p;
+    Parser.expect Bar p;
     Some (parseTypeConstructorDeclaration ~startPos p)
   | _ -> None
 
@@ -4533,7 +4554,7 @@ and parseConstrDeclArgs p =
    match p.Parser.token with
    | Uident uident ->
      let uidentLoc = mkLoc p.startPos p.endPos in
-     Parser.next p;
+     Parser.next p [@doesNotRaise];
      let (args, res) = parseConstrDeclArgs p in
      Parser.eatBreadcrumb p;
      let loc = mkLoc startPos p.prevEndPos in
@@ -4583,7 +4604,7 @@ and parseTypeRepresentation p =
   | Lbrace ->
     Parsetree.Ptype_record (parseRecordDeclaration p)
   | DotDot ->
-    Parser.next p;
+    Parser.expect DotDot p;
     Ptype_open
   | token ->
     Parser.err p (Diagnostics.unexpected token p.breadcrumbs);
@@ -4605,26 +4626,27 @@ and parseTypeRepresentation p =
  *)
 and parseTypeParam p =
   let variance = match p.Parser.token with
-  | Plus -> Parser.next p; Asttypes.Covariant
-  | Minus -> Parser.next p; Contravariant
+  | Plus -> Parser.expect Plus p; Asttypes.Covariant
+  | Minus -> Parser.expect Minus p; Contravariant
   | _ -> Invariant
   in
   match p.Parser.token with
   | SingleQuote ->
-    Parser.next p;
+    Parser.expect SingleQuote p;
     let (ident, loc) =
       parseIdent ~msg:ErrorMessages.typeParam ~startPos:p.startPos p in
     Some (Ast_helper.Typ.var ~loc ident, variance)
   | Underscore ->
     let loc = mkLoc p.startPos p.endPos in
-    Parser.next p;
+    Parser.expect Underscore p;
     Some (Ast_helper.Typ.any ~loc (), variance)
   | (Uident _ | Lident _) as token ->
     Parser.err p (Diagnostics.message (
       "Type params start with a singlequote: '" ^ (Token.toString token)
     ));
     let (ident, loc) =
-      parseIdent ~msg:ErrorMessages.typeParam ~startPos:p.startPos p in
+      parseIdentNoNext ~msg:ErrorMessages.typeParam ~startPos:p.startPos p in
+    Parser.next p [@doesNotRaise];
     Some (Ast_helper.Typ.var ~loc ident, variance)
   | _token ->
     None
@@ -4644,7 +4666,7 @@ and parseTypeParams ~parent p =
     Scanner.setDiamondMode p.scanner;
     let openingStartPos = p.startPos in
     Parser.leaveBreadcrumb p Grammar.TypeParams;
-    Parser.next p;
+    Parser.next p [@doesNotRaise];
     let params =
       parseCommaDelimitedRegion
         ~grammar:Grammar.TypeParams
@@ -4671,7 +4693,7 @@ and parseTypeParams ~parent p =
         ) |> Doc.toString ~width:80
       in
       Parser.err ~startPos:openingStartPos p (Diagnostics.message msg);
-      Parser.next p
+      Parser.nextUnsafe p
     | _ ->
       Parser.expect GreaterThan p
     in
@@ -4684,13 +4706,13 @@ and parseTypeParams ~parent p =
 and parseTypeConstraint p =
   let startPos = p.Parser.startPos in
   match p.Parser.token with
-  | Token.Constraint ->
-    Parser.next p;
+  | Constraint ->
+    Parser.expect Constraint p;
     Parser.expect SingleQuote p;
     begin match p.Parser.token with
     | Lident ident ->
       let identLoc = mkLoc startPos p.endPos in
-      Parser.next p;
+      Parser.next p [@doesNotRaise];
       Parser.expect Equal p;
       let typ = parseTypExpr p in
       let loc = mkLoc startPos p.prevEndPos in
@@ -4718,10 +4740,10 @@ and parseTypeEquationOrConstrDecl p =
   let uidentStartPos = p.Parser.startPos in
   match p.Parser.token with
   | Uident uident ->
-    Parser.next p;
+    Parser.next p [@doesNotRaise];
     begin match p.Parser.token with
     | Dot ->
-      Parser.next p;
+      Parser.expect Dot p;
       let typeConstr =
         parseValuePathTail p uidentStartPos (Longident.Lident uident)
       in
@@ -4731,11 +4753,11 @@ and parseTypeEquationOrConstrDecl p =
       ) in
       begin match p.token with
       | Equal ->
-        Parser.next p;
+        Parser.expect Equal p;
         let (priv, kind) = parseTypeRepresentation p in
         (Some typ, priv, kind)
       | EqualGreater ->
-        Parser.next p;
+        Parser.expect EqualGreater p;
         let returnType = parseTypExpr ~alias:false p in
         let loc = mkLoc uidentStartPos p.prevEndPos in
         let arrowType = Ast_helper.Typ.arrow ~loc Asttypes.Nolabel typ returnType in
@@ -4767,8 +4789,8 @@ and parseRecordOrObjectDecl p =
   match p.Parser.token with
   | DotDot | Dot ->
     let closedFlag = match p.token with
-    | DotDot -> Parser.next p; Asttypes.Open
-    | Dot -> Parser.next p; Asttypes.Closed
+    | DotDot -> Parser.expect DotDot p; Asttypes.Open
+    | Dot -> Parser.expect Dot p; Asttypes.Closed
     | _ -> Asttypes.Closed
     in
     let fields =
@@ -4790,14 +4812,14 @@ and parseRecordOrObjectDecl p =
     let dotdotdotStart = p.startPos in
     let dotdotdotEnd = p.endPos in
     (* start of object type spreading, e.g. `type u = {...a, "u": int}` *)
-    Parser.next p;
+    Parser.expect DotDotDot p;
     let typ = parseTypExpr p in
     let () = match p.token with
     | Rbrace ->
       (* {...x}, spread without extra fields *)
       Parser.err ~startPos:dotdotdotStart ~endPos:dotdotdotEnd p
         (Diagnostics.message ErrorMessages.sameTypeSpread);
-      Parser.next p;
+      Parser.expect Rbrace p;
     | _ -> Parser.expect Comma p
     in
     let () = match p.token with
@@ -4844,7 +4866,7 @@ and parseRecordOrObjectDecl p =
           (* parse comma after first *)
           let () = match p.Parser.token with
           | Rbrace | Eof -> ()
-          | Comma -> Parser.next p
+          | Comma -> Parser.expect Comma p
           | _ -> Parser.expect Comma p
           in
           Parser.eatBreadcrumb p;
@@ -4946,7 +4968,7 @@ and parsePolymorphicVariantType ~attrs p =
   Parser.expect Lbracket p;
   match p.token with
   | GreaterThan ->
-    Parser.next p;
+    Parser.expect GreaterThan p;
     let rowFields =
       begin match p.token with
       | Rbracket ->
@@ -4964,14 +4986,14 @@ and parsePolymorphicVariantType ~attrs p =
     Parser.expect Rbracket p;
     variant
   | LessThan ->
-    Parser.next p;
+    Parser.expect LessThan p;
     Parser.optional p Bar |> ignore;
     let rowField = parseTagSpecFull p in
     let rowFields = parseTagSpecFulls p in
     let tagNames =
       if p.token == GreaterThan
       then begin
-        Parser.next p;
+        Parser.nextUnsafe p;
         let rec loop p = match p.Parser.token with
           | Rbracket -> []
           | _ ->
@@ -5002,7 +5024,7 @@ and parseTagSpecFulls p =
   | GreaterThan ->
     []
   | Bar ->
-    Parser.next p;
+    Parser.expect Bar p;
     let rowField = parseTagSpecFull p in
     rowField ::parseTagSpecFulls p
   | _ ->
@@ -5020,7 +5042,7 @@ and parseTagSpecFull p =
 and parseTagSpecs p =
   match p.Parser.token with
   | Bar ->
-    Parser.next p;
+    Parser.expect Bar p;
     let rowField = parseTagSpec p in
     rowField :: parseTagSpecs p
   | _ ->
@@ -5039,7 +5061,7 @@ and parseTagSpecFirst p =
   let attrs = parseAttributes p in
   match p.Parser.token with
   | Bar ->
-    Parser.next p;
+    Parser.expect Bar p;
     [parseTagSpec p]
   | Hash ->
     [parsePolymorphicVariantTypeSpecHash ~attrs ~full:false p]
@@ -5060,7 +5082,7 @@ and parsePolymorphicVariantTypeSpecHash ~attrs ~full p : Parsetree.row_field =
   let rec loop p =
     match p.Parser.token with
     | Band when full ->
-      Parser.next p;
+      Parser.expect Band p;
       let rowField = parsePolymorphicVariantTypeArgs p in
       rowField :: loop p
     | _ ->
@@ -5069,7 +5091,7 @@ and parsePolymorphicVariantTypeSpecHash ~attrs ~full p : Parsetree.row_field =
   let firstTuple, tagContainsAConstantEmptyConstructor =
     match p.Parser.token with
     | Band when full ->
-      Parser.next p;
+      Parser.expect Band p;
       [parsePolymorphicVariantTypeArgs p], true
     | Lparen ->
       [parsePolymorphicVariantTypeArgs p], false
@@ -5109,7 +5131,7 @@ and parseTypeEquationAndRepresentation p =
   match p.Parser.token with
   | Equal | Bar as token ->
     if token = Bar then Parser.expect Equal p;
-    Parser.next p;
+    Parser.next p [@doesNotRaise];
     begin match p.Parser.token with
     | Uident _ ->
       parseTypeEquationOrConstrDecl p
@@ -5124,7 +5146,7 @@ and parseTypeEquationAndRepresentation p =
       let manifest = Some (parseTypExpr p) in
       begin match p.Parser.token with
       | Equal ->
-        Parser.next p;
+        Parser.expect Equal p;
         let (priv, kind) = parseTypeRepresentation p in
         (manifest, priv, kind)
       | _ ->
@@ -5169,7 +5191,7 @@ and parseTypeExtension ~params ~attrs ~name p =
   let first =
     let (attrs, name, kind) = match p.Parser.token with
     | Bar ->
-      Parser.next p;
+      Parser.expect Bar p;
       parseConstrDef ~parseAttrs:true p
     | _ ->
       parseConstrDef ~parseAttrs:true p
@@ -5181,7 +5203,7 @@ and parseTypeExtension ~params ~attrs ~name p =
     match p.Parser.token with
     | Bar ->
       let startPos = p.Parser.startPos in
-      Parser.next p;
+      Parser.expect Bar p;
       let (attrs, name, kind) = parseConstrDef ~parseAttrs:true p in
       let extConstr =
         Ast_helper.Te.constructor ~attrs ~loc:(mkLoc startPos p.prevEndPos) name kind
@@ -5207,11 +5229,11 @@ and parseTypeDefinitions ~attrs ~name ~params ~startPos p =
       let attrs = parseAttributesAndBinding p in
       match p.Parser.token with
       | And ->
-        Parser.next p;
+        Parser.expect And p;
         let attrs = match p.token with
         | Export ->
           let exportLoc = mkLoc p.startPos p.endPos in
-          Parser.next p;
+          Parser.expect Export p;
           let genTypeAttr = (Location.mkloc "genType" exportLoc, Parsetree.PStr []) in
           genTypeAttr::attrs
         | _ -> attrs
@@ -5231,9 +5253,9 @@ and parseTypeDefinitionOrExtension ~attrs p =
   let startPos = p.Parser.startPos in
   Parser.expect Token.Typ p;
   let recFlag = match p.token with
-    | Rec -> Parser.next p; Asttypes.Recursive
+    | Rec -> Parser.expect Rec p; Asttypes.Recursive
     | Lident "nonrec" ->
-      Parser.next p;
+      Parser.next p [@doesNotRaise];
       Asttypes.Nonrecursive
     | _ -> Asttypes.Nonrecursive
   in
@@ -5265,7 +5287,7 @@ and parseExternalDef ~attrs ~startPos p =
   let equalEnd = p.endPos in
   Parser.expect Equal p;
   let prim = match p.token with
-  | String s -> Parser.next p; [s]
+  | String s -> Parser.next p [@doesNotRaise]; [s]
   | _ ->
       Parser.err ~startPos:equalStart ~endPos:equalEnd p
         (Diagnostics.message
@@ -5290,7 +5312,7 @@ and parseConstrDef ~parseAttrs p =
   let name = match p.Parser.token with
   | Uident name ->
     let loc = mkLoc p.startPos p.endPos in
-    Parser.next p;
+    Parser.next p [@doesNotRaise];
     Location.mkloc name loc
   | t ->
     Parser.err p (Diagnostics.uident t);
@@ -5301,11 +5323,11 @@ and parseConstrDef ~parseAttrs p =
     let (args, res) = parseConstrDeclArgs p in
     Parsetree.Pext_decl (args, res)
   | Equal ->
-    Parser.next p;
+    Parser.expect Equal p;
     let longident = parseModuleLongIdent ~lowercase:false p in
     Parsetree.Pext_rebind longident
   | Colon ->
-    Parser.next p;
+    Parser.expect Colon p;
     let typ = parseTypExpr p in
     Parsetree.Pext_decl (Pcstr_tuple [], Some typ)
   | _ ->
@@ -5330,7 +5352,7 @@ and parseExceptionDef ~attrs p =
 and parseNewlineOrSemicolonStructure p =
   match p.Parser.token with
   | Semicolon ->
-    Parser.next p
+    Parser.expect Semicolon p
   | token when Grammar.isStructureItemStart token ->
     if p.prevEndPos.pos_lnum < p.startPos.pos_lnum then ()
     else
@@ -5490,9 +5512,9 @@ and parseSignJsExport ~attrs p =
 and parseJsFfiScope p =
   match p.Parser.token with
   | Token.Lident "from" ->
-    Parser.next p;
+    Parser.next p [@doesNotRaise];
     begin match p.token with
-    | String s -> Parser.next p; JsFfi.Module s
+    | String s -> Parser.next p [@doesNotRaise]; JsFfi.Module s
     | Uident _ | Lident _ ->
       let value = parseIdentPath p in
       JsFfi.Scope value
@@ -5519,7 +5541,7 @@ and parseJsFfiDeclaration p =
     let (ident, _) = parseLident p in
     let alias = match p.token with
     | As ->
-      Parser.next p;
+      Parser.expect As p;
       let (ident, _) = parseLident p in
       ident
     | _ ->
@@ -5546,7 +5568,7 @@ and parseAtomicModuleExpr p =
     let longident = parseModuleLongIdent ~lowercase:false p in
     Ast_helper.Mod.ident ~loc:longident.loc longident
   | Lbrace ->
-    Parser.next p;
+    Parser.expect Lbrace p;
     let structure = Ast_helper.Mod.structure (
       parseDelimitedRegion
         ~grammar:Grammar.Structure
@@ -5558,7 +5580,7 @@ and parseAtomicModuleExpr p =
     let endPos = p.prevEndPos in
     {structure with pmod_loc = mkLoc startPos endPos}
   | Lparen ->
-    Parser.next p;
+    Parser.expect Lparen p;
     let modExpr = match p.token with
     | Rparen ->
       Ast_helper.Mod.structure ~loc:(mkLoc startPos p.prevEndPos) []
@@ -5568,13 +5590,13 @@ and parseAtomicModuleExpr p =
     Parser.expect Rparen p;
     modExpr
   | Lident "unpack" -> (* TODO: should this be made a keyword?? *)
-    Parser.next p;
+    Parser.next p [@doesNotRaise];
     Parser.expect Lparen p;
     let expr = parseExpr p in
     begin match p.Parser.token with
     | Colon ->
       let colonStart = p.Parser.startPos in
-      Parser.next p;
+      Parser.expect Colon p;
       let attrs = parseAttributes p in
       let packageType = parsePackageType ~startPos:colonStart ~attrs p in
       Parser.expect Rparen p;
@@ -5621,17 +5643,17 @@ and parseFunctorArg p =
   let attrs = parseAttributes p in
   match p.Parser.token with
   | Uident ident ->
-    Parser.next p;
+    Parser.next p [@doesNotRaise];
     let uidentEndPos = p.prevEndPos in
     begin match p.Parser.token with
     | Colon ->
-      Parser.next p;
+      Parser.expect Colon p;
       let moduleType = parseModuleType p in
       let loc = mkLoc startPos uidentEndPos in
       let argName = Location.mkloc ident loc in
       Some (attrs, argName, Some moduleType, startPos)
     | Dot ->
-      Parser.next p;
+      Parser.expect Dot p;
       let moduleType =
         let moduleLongIdent =
           parseModuleLongIdentTail ~lowercase:false p startPos (Longident.Lident ident) in
@@ -5647,13 +5669,13 @@ and parseFunctorArg p =
       Some (attrs, argName, Some moduleType, startPos)
     end
   | Underscore ->
-    Parser.next p;
+    Parser.expect Underscore p;
     let argName = Location.mkloc "_" (mkLoc startPos p.prevEndPos) in
     Parser.expect Colon p;
     let moduleType = parseModuleType p in
     Some (attrs, argName, Some moduleType, startPos)
   | Lparen ->
-    Parser.next p;
+    Parser.expect Lparen p;
     Parser.expect Rparen p;
     let argName = Location.mkloc "*" (mkLoc startPos p.prevEndPos) in
     Some (attrs, argName, None, startPos)
@@ -5681,7 +5703,7 @@ and parseFunctorModuleExpr p =
   let args = parseFunctorArgs p in
   let returnType = match p.Parser.token with
   | Colon ->
-    Parser.next p;
+    Parser.expect Colon p;
     Some (parseModuleType ~es6Arrow:false p)
   | _ -> None
   in
@@ -5727,7 +5749,7 @@ and parseConstrainedModExpr p =
   let modExpr = parseModuleExpr p in
   match p.Parser.token with
   | Colon ->
-    Parser.next p;
+    Parser.expect Colon p;
     let modType = parseModuleType p in
     let loc = mkLoc modExpr.pmod_loc.loc_start modType.pmty_loc.loc_end in
     Ast_helper.Mod.constraint_ ~loc modExpr modType
@@ -5780,11 +5802,11 @@ and parseModuleTypeImpl ~attrs startPos p =
   let nameStart = p.Parser.startPos in
   let name = match p.Parser.token with
   | Lident ident ->
-    Parser.next p;
+    Parser.next p [@doesNotRaise];
     let loc = mkLoc nameStart p.prevEndPos in
     Location.mkloc ident loc
   | Uident ident ->
-    Parser.next p;
+    Parser.next p [@doesNotRaise];
     let loc = mkLoc nameStart p.prevEndPos in
     Location.mkloc ident loc
   | t ->
@@ -5808,8 +5830,8 @@ and parseModuleTypeImpl ~attrs startPos p =
   :  module-type =  module-expr } *)
 and parseMaybeRecModuleBinding ~attrs ~startPos p =
   match p.Parser.token with
-  | Token.Rec ->
-    Parser.next p;
+  | Rec ->
+    Parser.expect Rec p;
     Ast_helper.Str.rec_module (parseModuleBindings ~startPos ~attrs p)
   | _ ->
     Ast_helper.Str.module_ (parseModuleBinding ~attrs ~startPos:p.Parser.startPos p)
@@ -5818,7 +5840,7 @@ and parseModuleBinding ~attrs ~startPos p =
   let name = match p.Parser.token with
   | Uident ident ->
     let startPos = p.Parser.startPos in
-    Parser.next p;
+    Parser.next p [@doesNotRaise];
     let loc = mkLoc startPos p.prevEndPos in
     Location.mkloc ident loc
   | t ->
@@ -5833,7 +5855,7 @@ and parseModuleBindingBody p =
   (* TODO: make required with good error message when rec module binding *)
   let returnModType = match p.Parser.token with
   | Colon ->
-    Parser.next p;
+    Parser.expect Colon p;
     Some (parseModuleType p)
   | _ -> None
   in
@@ -5855,7 +5877,7 @@ and parseModuleBindings ~attrs ~startPos p =
     let attrs = parseAttributesAndBinding p in
     match p.Parser.token with
     | And ->
-      Parser.next p;
+      Parser.expect And p;
       ignore(Parser.optional p Module); (* over-parse for fault-tolerance *)
       let modBinding = parseModuleBinding ~attrs ~startPos p in
       loop p (modBinding::acc)
@@ -5873,12 +5895,12 @@ and parseAtomicModuleType p =
     let moduleLongIdent = parseModuleLongIdent ~lowercase:true p in
     Ast_helper.Mty.ident ~loc:moduleLongIdent.loc moduleLongIdent
   | Lparen ->
-    Parser.next p;
+    Parser.expect Lparen p;
     let mty = parseModuleType p in
     Parser.expect Rparen p;
     {mty with pmty_loc = mkLoc startPos p.prevEndPos}
   | Lbrace ->
-    Parser.next p;
+    Parser.expect Lbrace p;
     let spec =
       parseDelimitedRegion
         ~grammar:Grammar.Signature
@@ -5939,7 +5961,7 @@ and parseFunctorModuleType p =
     let modty = parseAtomicModuleType p in
     match p.Parser.token with
     | EqualGreater when es6Arrow == true ->
-      Parser.next p;
+      Parser.expect EqualGreater p;
       let rhs = parseModuleType ~with_:false p in
       let str = Location.mknoloc "_" in
       let loc = mkLoc modty.pmty_loc.loc_start p.prevEndPos in
@@ -5957,12 +5979,12 @@ and parseFunctorModuleType p =
 and parseWithConstraints moduleType p =
   match p.Parser.token with
   | Lident "with" ->
-    Parser.next p;
+    Parser.next p [@doesNotRaise];
     let first = parseWithConstraint p in
     let rec loop p acc =
       match p.Parser.token with
       | And ->
-        Parser.next p;
+        Parser.expect And p;
         loop p ((parseWithConstraint p)::acc)
       | _ ->
         List.rev acc
@@ -5983,15 +6005,15 @@ and parseWithConstraints moduleType p =
 and parseWithConstraint p =
   match p.Parser.token with
   | Module ->
-    Parser.next p;
+    Parser.expect Module p;
     let modulePath = parseModuleLongIdent ~lowercase:false p in
     begin match p.Parser.token with
     | ColonEqual ->
-      Parser.next p;
+      Parser.expect ColonEqual p;
       let lident = parseModuleLongIdent ~lowercase:false p in
       Parsetree.Pwith_modsubst (modulePath, lident)
     | Equal ->
-      Parser.next p;
+      Parser.expect Equal p;
       let lident = parseModuleLongIdent ~lowercase:false p in
       Parsetree.Pwith_module (modulePath, lident)
     | token ->
@@ -6001,12 +6023,12 @@ and parseWithConstraint p =
       Parsetree.Pwith_modsubst (modulePath, lident)
     end
   | Typ ->
-    Parser.next p;
+    Parser.expect Typ p;
     let typeConstr = parseValuePath p in
     let params = parseTypeParams ~parent:typeConstr p in
     begin match p.Parser.token with
     | ColonEqual ->
-      Parser.next p;
+      Parser.expect ColonEqual p;
       let typExpr = parseTypExpr p in
       Parsetree.Pwith_typesubst (
         typeConstr,
@@ -6017,7 +6039,7 @@ and parseWithConstraint p =
           (Location.mkloc (Longident.last typeConstr.txt) typeConstr.loc)
       )
     | Equal ->
-      Parser.next p;
+      Parser.expect Equal p;
       let typExpr = parseTypExpr p in
       let typeConstraints = parseTypeConstraints p in
       Parsetree.Pwith_type (
@@ -6067,7 +6089,7 @@ and parseModuleTypeOf p =
 and parseNewlineOrSemicolonSignature p =
   match p.Parser.token with
   | Semicolon ->
-    Parser.next p
+    Parser.expect Semicolon p
   | token when Grammar.isSignatureItemStart token ->
     if p.prevEndPos.pos_lnum < p.startPos.pos_lnum then ()
     else
@@ -6124,7 +6146,7 @@ and parseSignatureItemRegion p =
     let loc = mkLoc startPos p.prevEndPos in
     Some (Ast_helper.Sig.open_ ~loc openDescription)
   | Include ->
-    Parser.next p;
+    Parser.expect Include p;
     let moduleType = parseModuleType p in
     let includeDescription = Ast_helper.Incl.mk
       ~loc:(mkLoc startPos p.prevEndPos)
@@ -6136,7 +6158,7 @@ and parseSignatureItemRegion p =
     Some (Ast_helper.Sig.include_ ~loc includeDescription)
   | Module ->
     Parser.beginRegion p;
-    Parser.next p;
+    Parser.expect Module p;
     begin match p.Parser.token with
     | Uident _ ->
       let modDecl = parseModuleDeclarationOrAlias ~attrs p in
@@ -6172,7 +6194,7 @@ and parseSignatureItemRegion p =
     let loc = mkLoc startPos p.prevEndPos in
     Some (Ast_helper.Sig.extension ~attrs ~loc extension)
   | Import ->
-    Parser.next p;
+    Parser.expect Import p;
     parseSignatureItemRegion p
   | _ ->
     begin match attrs with
@@ -6216,7 +6238,7 @@ and parseRecModuleDeclaration ~attrs ~startPos p =
   let name = match p.Parser.token with
   | Uident modName ->
     let loc = mkLoc p.startPos p.endPos in
-    Parser.next p;
+    Parser.next p [@doesNotRaise];
     Location.mkloc modName loc
   | t ->
     Parser.err p (Diagnostics.uident t);
@@ -6231,7 +6253,7 @@ and parseModuleDeclarationOrAlias ~attrs p =
   let moduleName = match p.Parser.token with
   | Uident ident ->
     let loc = mkLoc p.Parser.startPos p.endPos in
-    Parser.next p;
+    Parser.next p [@doesNotRaise];
     Location.mkloc ident loc
   | t ->
     Parser.err p (Diagnostics.uident t);
@@ -6239,10 +6261,10 @@ and parseModuleDeclarationOrAlias ~attrs p =
   in
   let body = match p.Parser.token with
   | Colon ->
-    Parser.next p;
+    Parser.expect Colon p;
     parseModuleType p
   | Equal ->
-    Parser.next p;
+    Parser.expect Equal p;
     let lident = parseModuleLongIdent ~lowercase:false p in
     Ast_helper.Mty.alias lident
   | token ->
@@ -6257,11 +6279,11 @@ and parseModuleTypeDeclaration ~attrs ~startPos p =
   let moduleName = match p.Parser.token with
   | Uident ident ->
     let loc = mkLoc p.startPos p.endPos in
-    Parser.next p;
+    Parser.next p [@doesNotRaise];
     Location.mkloc ident loc
   | Lident ident ->
     let loc = mkLoc p.startPos p.endPos in
-    Parser.next p;
+    Parser.next p [@doesNotRaise];
     Location.mkloc ident loc
   | t ->
     Parser.err p (Diagnostics.uident t);
@@ -6269,7 +6291,7 @@ and parseModuleTypeDeclaration ~attrs ~startPos p =
   in
   let typ = match p.Parser.token with
   | Equal ->
-    Parser.next p;
+    Parser.expect Equal p;
     Some (parseModuleType p)
   | _ -> None
   in
@@ -6293,17 +6315,17 @@ and parseAttributeId ~startPos p =
   let rec loop p acc =
     match p.Parser.token with
     | Lident ident | Uident ident ->
-      Parser.next p;
+      Parser.next p [@doesNotRaise];
       let id = acc ^ ident in
       begin match p.Parser.token with
-      | Dot -> Parser.next p; loop p (id ^ ".")
+      | Dot -> Parser.expect Dot p; loop p (id ^ ".")
       | _ -> id
       end
     | token when Token.isKeyword token ->
-      Parser.next p;
+      Parser.next p [@doesNotRaise];
       let id = acc ^ (Token.toString token) in
       begin match p.Parser.token with
-      | Dot -> Parser.next p; loop p (id ^ ".")
+      | Dot -> Parser.expect Dot p; loop p (id ^ ".")
       | _ -> id
       end
     | token ->
@@ -6328,10 +6350,10 @@ and parsePayload p =
   match p.Parser.token with
   | Lparen when p.startPos.pos_cnum = p.prevEndPos.pos_cnum  ->
     Parser.leaveBreadcrumb p Grammar.AttributePayload;
-    Parser.next p;
+    Parser.expect Lparen p;
     begin match p.token with
     | Colon ->
-      Parser.next p;
+      Parser.expect Colon p;
       let payload = if Grammar.isSignatureItemStart p.token then
         Parsetree.PSig (
           parseDelimitedRegion
@@ -6347,11 +6369,11 @@ and parsePayload p =
       Parser.eatBreadcrumb p;
       payload
     | Question ->
-      Parser.next p;
+      Parser.expect Question p;
       let pattern = parsePattern p in
       let expr = match p.token with
       | When | If ->
-        Parser.next p;
+        Parser.next p [@doesNotRaise];
         Some (parseExpr p)
       | _ ->
         None
@@ -6377,7 +6399,7 @@ and parseAttribute p =
   match p.Parser.token with
   | At ->
     let startPos = p.startPos in
-    Parser.next p;
+    Parser.expect At p;
     let attrId = parseAttributeId ~startPos p in
     let payload = parsePayload p in
     Some(attrId, payload)

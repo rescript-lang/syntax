@@ -27,8 +27,16 @@ val make: ?mode:mode -> string -> string -> t
 
 val expect: ?grammar:Grammar.t -> Token.t -> t -> unit
 val optional: t -> Token.t -> bool
-val next: ?prevEndPos:Lexing.position -> t -> unit
-val nextUnsafe: t -> unit (* Does not assert on Eof, makes no progress *)
+
+exception Eof
+
+(* The function raises Eof if called when the current token is Eof *)
+val next: t -> unit
+[@@raises Eof]
+
+(* Does not raise on Eof: makes no progress for termination analysis. *)
+val nextUnsafe: t -> unit
+
 val nextTemplateLiteralToken: t -> unit
 val lookahead: t -> (t -> 'a) -> 'a
 val err:
