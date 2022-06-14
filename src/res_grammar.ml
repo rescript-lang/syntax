@@ -58,6 +58,7 @@ type t =
   | JsFfiImport
   | Pattern
   | AttributePayload
+  | TagNames
 
 let toString = function
   | OpenDescription -> "an open description"
@@ -118,6 +119,7 @@ let toString = function
   | Pattern -> "pattern"
   | ExprFor -> "a for expression"
   | AttributePayload -> "an attribute payload"
+  | TagNames -> "tag names"
 
 let isSignatureItemStart = function
   | Token.At
@@ -336,6 +338,7 @@ let isListElement grammar token =
   | JsxAttribute -> isJsxAttributeStart token
   | JsFfiImport -> isJsFfiImportStart token
   | AttributePayload -> token = Lparen
+  | TagNames -> token = Hash
   | _ -> false
 
 let isListTerminator grammar token =
@@ -361,6 +364,7 @@ let isListTerminator grammar token =
   | PackageConstraint, token when token <> And -> true
   | ConstructorDeclaration, token when token <> Bar -> true
   | AttributePayload, Rparen -> true
+  | TagNames, Rbracket -> true
 
   | _ -> false
 
