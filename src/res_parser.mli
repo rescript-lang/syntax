@@ -25,8 +25,10 @@ type t = {
 
 val make: ?mode:mode -> string -> string -> t
 
+(* To be used when it's clear the token is not Eof *)
 val expect: Token.t -> t -> unit
 
+(* To be used when it's unclear whether the token is Eof *)
 val expectUnsafe: ?grammar:Grammar.t -> Token.t -> t -> unit
 
 val optional: t -> Token.t -> bool
