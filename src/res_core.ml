@@ -5143,7 +5143,7 @@ and parsePolymorphicVariantTypeArgs p =
 and parseTypeEquationAndRepresentation p =
   match p.Parser.token with
   | Equal | Bar as token ->
-    if token = Bar then Parser.expect Equal p;
+    if token = Bar then Parser.expectUnsafe Equal p;
     Parser.next p [@doesNotRaise];
     begin match p.Parser.token with
     | Uident _ ->
@@ -5193,7 +5193,7 @@ and parseTypeDef ~attrs ~startPos p =
   typeDef
 
 and parseTypeExtension ~params ~attrs ~name p =
-  Parser.expect PlusEqual p;
+  Parser.expectUnsafe PlusEqual p;
   let priv =
     if Parser.optional p Token.Private
     then Asttypes.Private
@@ -5264,7 +5264,7 @@ and parseTypeDefinitions ~attrs ~name ~params ~startPos p =
  * this territory of the grammar *)
 and parseTypeDefinitionOrExtension ~attrs p =
   let startPos = p.Parser.startPos in
-  Parser.expect Token.Typ p;
+  Parser.expectUnsafe Typ p;
   let recFlag = match p.token with
     | Rec -> Parser.expect Rec p; Asttypes.Recursive
     | Lident "nonrec" ->
@@ -5291,14 +5291,14 @@ and parseTypeDefinitionOrExtension ~attrs p =
 (* external value-name : typexp = external-declaration *)
 and parseExternalDef ~attrs ~startPos p =
   Parser.leaveBreadcrumb p Grammar.External;
-  Parser.expect Token.External p;
+  Parser.expectUnsafe Token.External p;
   let (name, loc) = parseLident p in
   let name = Location.mkloc name loc in
-  Parser.expect ~grammar:(Grammar.TypeExpression) Colon p;
+  Parser.expectUnsafe ~grammar:(Grammar.TypeExpression) Colon p;
   let typExpr = parseTypExpr p in
   let equalStart = p.startPos in
   let equalEnd = p.endPos in
-  Parser.expect Equal p;
+  Parser.expectUnsafe Equal p;
   let prim = match p.token with
   | String s -> Parser.next p [@doesNotRaise]; [s]
   | _ ->
@@ -5357,7 +5357,7 @@ and parseConstrDef ~parseAttrs p =
  *  constr ::= long_uident *)
 and parseExceptionDef ~attrs p =
   let startPos = p.Parser.startPos in
-  Parser.expect Token.Exception p;
+  Parser.expectUnsafe Token.Exception p;
   let (_, name, kind) = parseConstrDef ~parseAttrs:false p in
   let loc = mkLoc startPos p.prevEndPos in
   Ast_helper.Te.constructor ~loc ~attrs name kind
@@ -5469,9 +5469,9 @@ and parseStructureItemRegion p =
   [@@progress (Parser.next, Parser.expect, Parser.checkProgress)]
 
 and parseJsImport ~startPos ~attrs p =
-  Parser.expect Token.Import p;
+  Parser.expectUnsafe Import p;
   let importSpec = match p.Parser.token with
-  | Token.Lident _ | Token.At ->
+  | Lident _ | At ->
     let decl = match parseJsFfiDeclaration p with
     | Some decl -> decl
     | None -> assert false
@@ -5485,7 +5485,7 @@ and parseJsImport ~startPos ~attrs p =
 
 and parseJsExport ~attrs p =
   let exportStart = p.Parser.startPos in
-  Parser.expect Token.Export p;
+  Parser.expectUnsafe Export p;
   let exportLoc = mkLoc exportStart p.prevEndPos in
   let genTypeAttr = (Location.mkloc "genType" exportLoc, Parsetree.PStr []) in
   let attrs = genTypeAttr::attrs in
@@ -5503,7 +5503,7 @@ and parseJsExport ~attrs p =
 
 and parseSignJsExport ~attrs p =
   let exportStart = p.Parser.startPos in
-  Parser.expect Token.Export p;
+  Parser.expectUnsafe Export p;
   let exportLoc = mkLoc exportStart p.prevEndPos in
   let genTypeAttr = (Location.mkloc "genType" exportLoc, Parsetree.PStr []) in
   let attrs = genTypeAttr::attrs in
@@ -5536,14 +5536,14 @@ and parseJsFfiScope p =
   | _ -> JsFfi.Global
 
 and parseJsFfiDeclarations p =
-  Parser.expect Token.Lbrace p;
+  Parser.expectUnsafe Lbrace p;
   let decls = parseCommaDelimitedRegion
     ~grammar:Grammar.JsFfiImport
     ~closing:Rbrace
     ~f:parseJsFfiDeclaration
     p
   in
-  Parser.expect Rbrace p;
+  Parser.expectUnsafe Rbrace p;
   decls
 
 and parseJsFfiDeclaration p =
@@ -5560,7 +5560,7 @@ and parseJsFfiDeclaration p =
     | _ ->
       ident
     in
-    Parser.expect Token.Colon p;
+    Parser.expectUnsafe Colon p;
     let typ = parseTypExpr p in
     let loc = mkLoc startPos p.prevEndPos in
     Some (JsFfi.decl ~loc ~alias ~attrs ~name:ident ~typ)
@@ -5569,7 +5569,7 @@ and parseJsFfiDeclaration p =
 (* include-statement ::= include module-expr *)
 and parseIncludeStatement ~attrs p =
   let startPos = p.Parser.startPos in
-  Parser.expect Token.Include p;
+  Parser.expectUnsafe Include p;
   let modExpr = parseModuleExpr p in
   let loc = mkLoc startPos p.prevEndPos in
   Ast_helper.Incl.mk ~loc ~attrs modExpr
@@ -5600,7 +5600,7 @@ and parseAtomicModuleExpr p =
     | _ ->
       parseConstrainedModExpr p
     in
-    Parser.expect Rparen p;
+    Parser.expectUnsafe Rparen p;
     modExpr
   | Lident "unpack" -> (* TODO: should this be made a keyword?? *)
     Parser.next p [@doesNotRaise];
@@ -5612,7 +5612,7 @@ and parseAtomicModuleExpr p =
       Parser.expect Colon p;
       let attrs = parseAttributes p in
       let packageType = parsePackageType ~startPos:colonStart ~attrs p in
-      Parser.expect Rparen p;
+      Parser.expectUnsafe Rparen p;
       let loc = mkLoc startPos p.prevEndPos in
       let constraintExpr = Ast_helper.Exp.constraint_
         ~loc
@@ -5620,7 +5620,7 @@ and parseAtomicModuleExpr p =
       in
       Ast_helper.Mod.unpack ~loc constraintExpr
     | _ ->
-      Parser.expect Rparen p;
+      Parser.expectUnsafe Rparen p;
       let loc = mkLoc startPos p.prevEndPos in
       Ast_helper.Mod.unpack ~loc expr
     end
@@ -5684,12 +5684,12 @@ and parseFunctorArg p =
   | Underscore ->
     Parser.expect Underscore p;
     let argName = Location.mkloc "_" (mkLoc startPos p.prevEndPos) in
-    Parser.expect Colon p;
+    Parser.expectUnsafe Colon p;
     let moduleType = parseModuleType p in
     Some (attrs, argName, Some moduleType, startPos)
   | Lparen ->
     Parser.expect Lparen p;
-    Parser.expect Rparen p;
+    Parser.expectUnsafe Rparen p;
     let argName = Location.mkloc "*" (mkLoc startPos p.prevEndPos) in
     Some (attrs, argName, None, startPos)
   | _ ->
@@ -5697,7 +5697,7 @@ and parseFunctorArg p =
 
 and parseFunctorArgs p =
   let startPos = p.Parser.startPos in
-  Parser.expect Lparen p;
+  Parser.expectUnsafe Lparen p;
   let args =
     parseCommaDelimitedRegion
       ~grammar:Grammar.FunctorArgs
@@ -5705,7 +5705,7 @@ and parseFunctorArgs p =
       ~f:parseFunctorArg
       p
   in
-  Parser.expect Rparen p;
+  Parser.expectUnsafe Rparen p;
   match args with
   | [] ->
     [[], Location.mkloc "*" (mkLoc startPos p.prevEndPos), None, startPos]
@@ -5720,7 +5720,7 @@ and parseFunctorModuleExpr p =
     Some (parseModuleType ~es6Arrow:false p)
   | _ -> None
   in
-  Parser.expect EqualGreater p;
+  Parser.expectUnsafe EqualGreater p;
   let rhsModuleExpr =
     let modExpr = parseModuleExpr p in
     match returnType with
@@ -5784,7 +5784,7 @@ and parseModuleApplication p modExpr =
       ~f:parseConstrainedModExprRegion
       p
   in
-  Parser.expect Rparen p;
+  Parser.expectUnsafe Rparen p;
   let args = match args with
   | [] ->
     let loc = mkLoc startPos p.prevEndPos in
@@ -5799,7 +5799,7 @@ and parseModuleApplication p modExpr =
 
 and parseModuleOrModuleTypeImplOrPackExpr ~attrs p =
   let startPos = p.Parser.startPos in
-  Parser.expect Module p;
+  Parser.expectUnsafe Module p;
   match p.Parser.token with
   | Typ -> parseModuleTypeImpl ~attrs startPos p
   | Lparen ->
@@ -5811,7 +5811,7 @@ and parseModuleOrModuleTypeImplOrPackExpr ~attrs p =
   | _ -> parseMaybeRecModuleBinding ~attrs ~startPos p
 
 and parseModuleTypeImpl ~attrs startPos p =
-  Parser.expect Typ p;
+  Parser.expectUnsafe Typ p;
   let nameStart = p.Parser.startPos in
   let name = match p.Parser.token with
   | Lident ident ->
@@ -5826,7 +5826,7 @@ and parseModuleTypeImpl ~attrs startPos p =
     Parser.err p (Diagnostics.uident t);
     Location.mknoloc "_"
   in
-  Parser.expect Equal p;
+  Parser.expectUnsafe Equal p;
   let moduleType = parseModuleType p in
   let moduleTypeDeclaration =
     Ast_helper.Mtd.mk
@@ -5872,7 +5872,7 @@ and parseModuleBindingBody p =
     Some (parseModuleType p)
   | _ -> None
   in
-  Parser.expect Equal p;
+  Parser.expectUnsafe Equal p;
   let modExpr = parseModuleExpr p in
   match returnModType with
   | Some modType ->
@@ -5910,7 +5910,7 @@ and parseAtomicModuleType p =
   | Lparen ->
     Parser.expect Lparen p;
     let mty = parseModuleType p in
-    Parser.expect Rparen p;
+    Parser.expectUnsafe Rparen p;
     {mty with pmty_loc = mkLoc startPos p.prevEndPos}
   | Lbrace ->
     Parser.expect Lbrace p;
@@ -5921,7 +5921,7 @@ and parseAtomicModuleType p =
         ~f:parseSignatureItemRegion
         p
     in
-    Parser.expect Rbrace p;
+    Parser.expectUnsafe Rbrace p;
     let loc = mkLoc startPos p.prevEndPos in
     Ast_helper.Mty.signature ~loc spec
   | Module -> (* TODO: check if this is still atomic when implementing first class modules*)
@@ -5940,7 +5940,7 @@ and parseAtomicModuleType p =
 and parseFunctorModuleType p =
   let startPos = p.Parser.startPos in
   let args = parseFunctorArgs p in
-  Parser.expect EqualGreater p;
+  Parser.expectUnsafe EqualGreater p;
   let rhs = parseModuleType p in
   let endPos = p.prevEndPos in
   let modType = List.fold_right (fun (attrs, name, moduleType, startPos) acc ->
@@ -6093,9 +6093,9 @@ and parseWithConstraint p =
 
 and parseModuleTypeOf p =
   let startPos = p.Parser.startPos in
-  Parser.expect Module p;
-  Parser.expect Typ p;
-  Parser.expect Of p;
+  Parser.expectUnsafe Module p;
+  Parser.expectUnsafe Typ p;
+  Parser.expectUnsafe Of p;
   let moduleExpr = parseModuleExpr p in
   Ast_helper.Mty.typeof_ ~loc:(mkLoc startPos p.prevEndPos) moduleExpr
 
@@ -6225,7 +6225,7 @@ and parseSignatureItemRegion p =
 
 (* module rec module-name :  module-type  { and module-name:  module-type } *)
 and parseRecModuleSpec ~attrs ~startPos p =
-  Parser.expect Rec p;
+  Parser.expectUnsafe Rec p;
   let rec loop p spec =
     let startPos = p.Parser.startPos in
     let attrs = parseAttributesAndBinding p in
@@ -6257,7 +6257,7 @@ and parseRecModuleDeclaration ~attrs ~startPos p =
     Parser.err p (Diagnostics.uident t);
     Location.mknoloc "_"
   in
-  Parser.expect Colon p;
+  Parser.expectUnsafe Colon p;
   let modType = parseModuleType p in
   Ast_helper.Md.mk ~loc:(mkLoc startPos p.prevEndPos) ~attrs name modType
 
@@ -6288,7 +6288,7 @@ and parseModuleDeclarationOrAlias ~attrs p =
   Ast_helper.Md.mk ~loc ~attrs moduleName body
 
 and parseModuleTypeDeclaration ~attrs ~startPos p =
-  Parser.expect Typ p;
+  Parser.expectUnsafe Typ p;
   let moduleName = match p.Parser.token with
   | Uident ident ->
     let loc = mkLoc p.startPos p.endPos in
@@ -6316,7 +6316,7 @@ and parseSignLetDesc ~attrs p =
   Parser.optional p Let |> ignore;
   let (name, loc) = parseLident p in
   let name = Location.mkloc name loc in
-  Parser.expect Colon p;
+  Parser.expectUnsafe Colon p;
   let typExpr = parsePolyTypeExpr p in
   let loc = mkLoc startPos p.prevEndPos in
   Ast_helper.Val.mk ~loc ~attrs name typExpr
@@ -6378,7 +6378,7 @@ and parsePayload p =
       else
         Parsetree.PTyp (parseTypExpr p)
       in
-      Parser.expect Rparen p;
+      Parser.expectUnsafe Rparen p;
       Parser.eatBreadcrumb p;
       payload
     | Question ->
@@ -6391,7 +6391,7 @@ and parsePayload p =
       | _ ->
         None
       in
-      Parser.expect Rparen p;
+      Parser.expectUnsafe Rparen p;
       Parser.eatBreadcrumb p;
       Parsetree.PPat (pattern, expr)
     | _ ->
@@ -6401,7 +6401,7 @@ and parsePayload p =
         ~f:parseStructureItemRegion
         p
       in
-      Parser.expect Rparen p;
+      Parser.expectUnsafe Rparen p;
       Parser.eatBreadcrumb p;
       Parsetree.PStr items
     end
@@ -6430,7 +6430,7 @@ and parseAttributes p =
  *)
 and parseStandaloneAttribute p =
   let startPos = p.startPos in
-  Parser.expect AtAt p;
+  Parser.expectUnsafe AtAt p;
   let attrId = parseAttributeId ~startPos p in
   let payload = parsePayload p in
   (attrId, payload)
@@ -6471,9 +6471,9 @@ and parseStandaloneAttribute p =
 and parseExtension ?(moduleLanguage=false) p =
   let startPos = p.Parser.startPos in
   if moduleLanguage then
-    Parser.expect PercentPercent p
+    Parser.expectUnsafe PercentPercent p
   else
-    Parser.expect Percent p;
+    Parser.expectUnsafe Percent p;
   let attrId = parseAttributeId ~startPos p in
   let payload = parsePayload p in
   (attrId, payload)
