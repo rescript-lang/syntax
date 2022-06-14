@@ -4104,7 +4104,7 @@ and parseEs6ArrowType ~attrs p =
     Ast_helper.Typ.arrow ~loc ~attrs arg typ returnType
   | _ ->
     let parameters = parseTypeParameters p in
-    if p.token = EqualGreater then (
+    if p.token <> Eof then (
       Parser.expect EqualGreater p;
       let returnType = parseTypExpr ~alias:false p in
       let endPos = p.prevEndPos in
