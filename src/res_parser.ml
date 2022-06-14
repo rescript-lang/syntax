@@ -128,12 +128,16 @@ let optional p token =
   else
     false
 
-let expect ?grammar token p =
+let expectUnsafe ?grammar token p =
   if p.token = token then
-    next p [@doesNotRaise]
+    nextUnsafe p
   else
     let error = Diagnostics.expected ?grammar p.prevEndPos token in
     err ~startPos:p.prevEndPos p error
+
+let expect ?grammar token p =
+  if p.token = Eof then raise Eof [@doesNotRaise];
+  expectUnsafe ?grammar token p
 
 (* Don't use immutable copies here, it trashes certain heuristics
  * in the ocaml compiler, resulting in massive slowdowns of the parser *)

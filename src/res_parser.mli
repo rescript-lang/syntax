@@ -26,6 +26,9 @@ type t = {
 val make: ?mode:mode -> string -> string -> t
 
 val expect: ?grammar:Grammar.t -> Token.t -> t -> unit
+
+val expectUnsafe: ?grammar:Grammar.t -> Token.t -> t -> unit
+
 val optional: t -> Token.t -> bool
 
 exception Eof

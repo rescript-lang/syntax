@@ -37,7 +37,7 @@ module Recover = struct
     Ast_helper.Sig.extension (id, PStr [])
 
   let recoverEqualGreater p =
-    Parser.expect EqualGreater p;
+    Parser.expectUnsafe EqualGreater p;
     match p.Parser.token with
     | MinusGreater -> Parser.expect MinusGreater p
     | _ -> ()
@@ -680,23 +680,26 @@ let parseIdent ~msg ~startPos p =
 
 
 let parseHashIdent ~startPos p =
-  Parser.expect Hash p;
-  match p.token with
-  | String text ->
-    let text = if p.mode = ParseForTypeChecker then parseStringLiteral text else text in
-    Parser.next p [@doesNotRaise];
-    (text, mkLoc startPos p.prevEndPos)
-  | Int {i; suffix} ->
-    let () = match suffix with
-    | Some _ ->
-      Parser.err p (Diagnostics.message (ErrorMessages.polyVarIntWithSuffix i))
-    | None -> ()
-    in
-    Parser.next p [@doesNotRaise];
-    (i, mkLoc startPos p.prevEndPos)
-  | _ ->
-    parseIdent ~startPos ~msg:ErrorMessages.variantIdent p
-
+  if p.Parser.token <> Hash then
+    None
+  else Some (
+    Parser.expect Hash p;
+    match p.token with
+    | String text ->
+      let text = if p.mode = ParseForTypeChecker then parseStringLiteral text else text in
+      Parser.next p [@doesNotRaise];
+      (text, mkLoc startPos p.prevEndPos)
+    | Int {i; suffix} ->
+      let () = match suffix with
+      | Some _ ->
+        Parser.err p (Diagnostics.message (ErrorMessages.polyVarIntWithSuffix i))
+      | None -> ()
+      in
+      Parser.next p [@doesNotRaise];
+      (i, mkLoc startPos p.prevEndPos)
+    | _ ->
+      parseIdent ~startPos ~msg:ErrorMessages.variantIdent p
+  )
 (* Ldot (Ldot (Lident "Foo", "Bar"), "baz") *)
 let parseValuePathNoNext p =
   let rec aux p path =
@@ -763,7 +766,7 @@ let parseValuePathTail p startPos ident =
       Location.mkloc (Longident.Ldot(path, ident)) (mkLoc startPos p.prevEndPos)
     | Uident ident ->
       Parser.next p [@doesNotRaise];
-      Parser.expect Dot p;
+      Parser.expectUnsafe Dot p;
       loop p (Longident.Ldot (path, ident))
     | token ->
       Parser.err p (Diagnostics.unexpected token p.breadcrumbs);
@@ -885,7 +888,7 @@ let string_of_pexp_ident nameExpr =
 let parseOpenDescription ~attrs p =
   Parser.leaveBreadcrumb p Grammar.OpenDescription;
   let startPos = p.Parser.startPos in
-  Parser.expect Open p;
+  Parser.expectUnsafe Open p;
   let override = if Parser.optional p Token.Bang then
     Asttypes.Override
   else
@@ -1189,7 +1192,7 @@ let rec parsePattern ?(alias=true) ?(or_=true) p =
         Parser.expect Comma p;
         parseTuplePattern ~attrs ~first:pat ~startPos p
       | _ ->
-        Parser.expect Rparen p;
+        Parser.expectUnsafe Rparen p;
         let loc = mkLoc startPos p.prevEndPos in
         {pat with ppat_loc = loc}
       end
@@ -1424,14 +1427,14 @@ and parseRecordPatternItem p =
 
 and parseRecordPattern ~attrs p =
   let startPos = p.startPos in
-  Parser.expect Lbrace p;
+  Parser.expectUnsafe Lbrace p;
   let rawFields =
     parseCommaDelimitedReversedList p
      ~grammar:PatternRecord
      ~closing:Rbrace
      ~f:parseRecordPatternItem
   in
-  Parser.expect Rbrace p;
+  Parser.expectUnsafe Rbrace p;
   let (fields, closedFlag) =
     let (rawFields, flag) = match rawFields with
     | (_hasSpread, PatUnderscore)::rest ->
@@ -1464,7 +1467,7 @@ and parseTuplePattern ~attrs ~first ~startPos p =
         ~f:parseConstrainedPatternRegion
     )
   in
-  Parser.expect Rparen p;
+  Parser.expectUnsafe Rparen p;
   let () = match patterns with
   | [_] ->
     Parser.err ~startPos ~endPos:p.prevEndPos p
@@ -1485,8 +1488,8 @@ and parsePatternRegion p =
 
 and parseModulePattern ~attrs p =
   let startPos = p.Parser.startPos in
-  Parser.expect Module p;
-  Parser.expect Lparen p;
+  Parser.expectUnsafe Module p;
+  Parser.expectUnsafe Lparen p;
   let uident = match p.token with
   | Uident uident ->
     let loc = mkLoc p.startPos p.endPos in
@@ -1501,7 +1504,7 @@ and parseModulePattern ~attrs p =
     Parser.expect Colon p;
     let packageTypAttrs = parseAttributes p in
     let packageType = parsePackageType ~startPos:colonStart ~attrs:packageTypAttrs p in
-    Parser.expect Rparen p;
+    Parser.expectUnsafe Rparen p;
     let loc = mkLoc startPos p.prevEndPos in
     let unpack = Ast_helper.Pat.unpack ~loc:uident.loc uident in
     Ast_helper.Pat.constraint_
@@ -1510,7 +1513,7 @@ and parseModulePattern ~attrs p =
       unpack
       packageType
   | _ ->
-    Parser.expect Rparen p;
+    Parser.expectUnsafe Rparen p;
     let loc = mkLoc startPos p.prevEndPos in
     Ast_helper.Pat.unpack ~loc ~attrs uident
   end
@@ -1522,7 +1525,7 @@ and parseListPattern ~startPos ~attrs p =
       ~closing:Rbrace
       ~f:parsePatternRegion
   in
-  Parser.expect Rbrace p;
+  Parser.expectUnsafe Rbrace p;
   let loc = mkLoc startPos p.prevEndPos in
   let filterSpread (hasSpread, pattern) =
     if hasSpread then (
@@ -1546,7 +1549,7 @@ and parseListPattern ~startPos ~attrs p =
 
 and parseArrayPattern ~attrs p =
   let startPos = p.startPos in
-  Parser.expect Lbracket p;
+  Parser.expectUnsafe Lbracket p;
   let patterns =
     parseCommaDelimitedRegion
       p
@@ -1554,17 +1557,17 @@ and parseArrayPattern ~attrs p =
       ~closing:Rbracket
       ~f:(parseNonSpreadPattern ~msg:ErrorMessages.arrayPatternSpread)
   in
-  Parser.expect Rbracket p;
+  Parser.expectUnsafe Rbracket p;
   let loc = mkLoc startPos p.prevEndPos in
   Ast_helper.Pat.array ~loc ~attrs patterns
 
 and parseConstructorPatternArgs p constr startPos attrs =
   let lparen = p.startPos in
-  Parser.expect Lparen p;
+  Parser.expectUnsafe Lparen p;
   let args = parseCommaDelimitedRegion
     p ~grammar:Grammar.PatternList ~closing:Rparen ~f:parseConstrainedPatternRegion
   in
-  Parser.expect Rparen p;
+  Parser.expectUnsafe Rparen p;
   let args = match args with
   | [] ->
     let loc = mkLoc lparen p.prevEndPos in
@@ -1586,7 +1589,7 @@ and parseConstructorPatternArgs p constr startPos attrs =
 
 and parseVariantPatternArgs p ident startPos attrs =
   let lparen = p.startPos in
-  Parser.expect Lparen p;
+  Parser.expectUnsafe Lparen p;
   let patterns =
     parseCommaDelimitedRegion
       p ~grammar:Grammar.PatternList ~closing:Rparen ~f:parseConstrainedPatternRegion in
@@ -1608,7 +1611,7 @@ and parseVariantPatternArgs p ident startPos attrs =
     | patterns ->
       Some (Ast_helper.Pat.tuple ~loc:(mkLoc lparen p.endPos) patterns)
   in
-  Parser.expect Rparen p;
+  Parser.expectUnsafe Rparen p;
   Ast_helper.Pat.variant ~loc:(mkLoc startPos p.prevEndPos) ~attrs ident args
 
 and parseExpr ?(context=OrdinaryExpr) p =
@@ -1623,7 +1626,7 @@ and parseTernaryExpr leftOperand p =
     Parser.leaveBreadcrumb p Grammar.Ternary;
     Parser.expect Question p;
     let trueBranch = parseExpr ~context:TernaryTrueBranchExpr p in
-    Parser.expect Colon p;
+    Parser.expectUnsafe Colon p;
     let falseBranch = parseExpr p in
     Parser.eatBreadcrumb p;
     let loc = {leftOperand.Parsetree.pexp_loc with
@@ -1650,7 +1653,7 @@ and parseEs6ArrowExpression ?context ?parameters p =
   | _ ->
     None
   in
-  Parser.expect EqualGreater p;
+  Parser.expectUnsafe EqualGreater p;
   let body =
     let expr = parseExpr ?context p in
     match returnType with
@@ -1792,7 +1795,7 @@ and parseParameterList p =
       ~closing:Rparen
       p
   in
-  Parser.expect Rparen p;
+  Parser.expectUnsafe Rparen p;
   parameters
 
 (* parameters ::=
@@ -1854,7 +1857,7 @@ and parseParameters p =
     []
 
 and parseCoercedExpr ~(expr: Parsetree.expression) p =
-  Parser.expect ColonGreaterThan p;
+  Parser.expectUnsafe ColonGreaterThan p;
   let typ = parseTypExpr p in
   let loc = mkLoc expr.pexp_loc.loc_start p.prevEndPos in
   Ast_helper.Exp.coerce ~loc expr None typ
@@ -1933,7 +1936,7 @@ and parseAtomicExpr p =
           Parser.expect Comma p;
           parseTupleExpr ~startPos ~first:expr p
         | _ ->
-          Parser.expect Rparen p;
+          Parser.expectUnsafe Rparen p;
           expr
           (* {expr with pexp_loc = mkLoc startPos p.prevEndPos}
            * What does this location mean here? It means that when there's
@@ -1978,7 +1981,7 @@ and parseAtomicExpr p =
 (* module(module-expr)
  * module(module-expr : package-type) *)
 and parseFirstClassModuleExpr ~startPos p =
-  Parser.expect Lparen p;
+  Parser.expectUnsafe Lparen p;
 
   let modExpr = parseModuleExpr p in
   let modEndLoc = p.prevEndPos in
@@ -1988,13 +1991,13 @@ and parseFirstClassModuleExpr ~startPos p =
     Parser.expect Colon p;
     let attrs = parseAttributes p in
     let packageType = parsePackageType ~startPos:colonStart ~attrs p in
-    Parser.expect Rparen p;
+    Parser.expectUnsafe Rparen p;
     let loc = mkLoc startPos modEndLoc in
     let firstClassModule = Ast_helper.Exp.pack ~loc modExpr in
     let loc = mkLoc startPos p.prevEndPos in
     Ast_helper.Exp.constraint_ ~loc firstClassModule packageType
   | _ ->
-    Parser.expect Rparen p;
+    Parser.expectUnsafe Rparen p;
     let loc = mkLoc startPos p.prevEndPos in
     Ast_helper.Exp.pack ~loc modExpr
   end
@@ -2006,7 +2009,7 @@ and parseBracketAccess p ~lbracket expr startPos =
     let s = if p.mode = ParseForTypeChecker then parseStringLiteral s else s in
     Parser.next p [@doesNotRaise];
     let stringEnd = p.prevEndPos in
-    Parser.expect Rbracket p;
+    Parser.expectUnsafe Rbracket p;
     Parser.eatBreadcrumb p;
     let rbracket = p.prevEndPos in
     let e =
@@ -2030,7 +2033,7 @@ and parseBracketAccess p ~lbracket expr startPos =
     end
   | _ ->
     let accessExpr = parseConstrainedOrCoercedExpr p in
-    Parser.expect Rbracket p;
+    Parser.expectUnsafe Rbracket p;
     Parser.eatBreadcrumb p;
     let rbracket = p.prevEndPos in
     let arrayLoc = mkLoc lbracket rbracket in
@@ -2421,9 +2424,9 @@ and parseLetBindingBody ~startPos ~attrs p =
       | Typ -> (* locally abstract types *)
         Parser.expect Typ p;
         let newtypes = parseLidentList p in
-        Parser.expect Dot p;
+        Parser.expectUnsafe Dot p;
         let typ = parseTypExpr p in
-        Parser.expect Equal p;
+        Parser.expectUnsafe Equal p;
         let expr = parseExpr p in
         let loc = mkLoc startPos p.prevEndPos in
         let exp, poly = wrapTypeAnnotation ~loc newtypes typ expr in
@@ -2433,13 +2436,13 @@ and parseLetBindingBody ~startPos ~attrs p =
         let polyType = parsePolyTypeExpr p in
         let loc = {pat.ppat_loc with loc_end = polyType.Parsetree.ptyp_loc.loc_end} in
         let pat = Ast_helper.Pat.constraint_ ~loc pat polyType in
-        Parser.expect Token.Equal p;
+        Parser.expectUnsafe Equal p;
         let exp = parseExpr p in
         let exp = overParseConstrainedOrCoercedOrArrowExpression p exp in
         (pat, exp)
       end
     | _ ->
-      Parser.expect Token.Equal p;
+      Parser.expectUnsafe Equal p;
       let exp = overParseConstrainedOrCoercedOrArrowExpression p (parseExpr p) in
       (pat, exp)
   in
@@ -2571,7 +2574,7 @@ and parseJsxOpeningOrSelfClosingElement ~startPos p =
     let childrenStartPos = p.Parser.startPos in
     Parser.expect Forwardslash p;
     let childrenEndPos = p.Parser.startPos in
-    Parser.expect GreaterThan p;
+    Parser.expectUnsafe GreaterThan p;
     let loc = mkLoc childrenStartPos childrenEndPos in
     makeListExpression loc [] None (* no children *)
   | GreaterThan -> (* <foo a=b> bar </foo> *)
@@ -2582,13 +2585,13 @@ and parseJsxOpeningOrSelfClosingElement ~startPos p =
     let childrenEndPos = p.Parser.startPos in
     let () = match p.token with
     | LessThanSlash -> Parser.expect LessThanSlash p
-    | LessThan -> Parser.expect LessThan p; Parser.expect Forwardslash p
+    | LessThan -> Parser.expect LessThan p; Parser.expectUnsafe Forwardslash p
     | token when Grammar.isStructureItemStart token -> ()
-    | _ -> Parser.expect LessThanSlash p
+    | _ -> Parser.expectUnsafe LessThanSlash p
     in
     begin match p.Parser.token with
     | Lident _ | Uident _ when verifyJsxOpeningClosingName p name ->
-      Parser.expect GreaterThan p;
+      Parser.expectUnsafe GreaterThan p;
       let loc = mkLoc childrenStartPos childrenEndPos in
       ( match spread, children with
         | true, child :: _ ->
@@ -2605,7 +2608,7 @@ and parseJsxOpeningOrSelfClosingElement ~startPos p =
         let opening = "</" ^ (string_of_pexp_ident name) ^ ">" in
         let msg = "Closing jsx name should be the same as the opening name. Did you mean " ^ opening ^ " ?" in
         Parser.err ~startPos ~endPos:p.prevEndPos p (Diagnostics.message msg);
-        Parser.expect GreaterThan p
+        Parser.expectUnsafe GreaterThan p
       )
       in
       let loc = mkLoc childrenStartPos childrenEndPos in
@@ -2641,7 +2644,7 @@ and parseJsxOpeningOrSelfClosingElement ~startPos p =
 and parseJsx p =
   Parser.leaveBreadcrumb p Grammar.Jsx;
   let startPos = p.Parser.startPos in
-  Parser.expect LessThan p;
+  Parser.expectUnsafe LessThan p;
   let jsxExpr = match p.Parser.token with
   | Lident _ | Uident _ ->
     parseJsxOpeningOrSelfClosingElement ~startPos p
@@ -2661,11 +2664,11 @@ and parseJsx p =
 and parseJsxFragment p =
   let childrenStartPos = p.Parser.startPos in
   Scanner.setJsxMode p.scanner;
-  Parser.expect GreaterThan p;
+  Parser.expectUnsafe GreaterThan p;
   let (_spread, children) = parseJsxChildren p in
   let childrenEndPos = p.Parser.startPos in
-  Parser.expect LessThanSlash p;
-  Parser.expect GreaterThan p;
+  Parser.expectUnsafe LessThanSlash p;
+  Parser.expectUnsafe GreaterThan p;
   let loc = mkLoc childrenStartPos childrenEndPos in
   makeListExpression loc children None
 
@@ -2758,7 +2761,7 @@ and parseJsxChildren p =
 
 and parseBracedOrRecordExpr  p =
   let startPos = p.Parser.startPos in
-  Parser.expect Lbrace p;
+  Parser.expectUnsafe Lbrace p;
   match p.Parser.token with
   | Rbrace ->
     Parser.err p (Diagnostics.unexpected Rbrace p.breadcrumbs);
@@ -2771,9 +2774,9 @@ and parseBracedOrRecordExpr  p =
     (* beginning of record spread, parse record *)
     Parser.expect DotDotDot p;
     let spreadExpr = parseConstrainedOrCoercedExpr p in
-    Parser.expect Comma p;
+    Parser.expectUnsafe Comma p;
     let expr = parseRecordExpr ~startPos ~spread:(Some spreadExpr) [] p in
-    Parser.expect Rbrace p;
+    Parser.expectUnsafe Rbrace p;
     expr
   | String s ->
     let s = if p.mode = ParseForTypeChecker then parseStringLiteral s else s in
@@ -2788,7 +2791,7 @@ and parseBracedOrRecordExpr  p =
       let fieldExpr = parseExpr p in
       Parser.optional p Comma |> ignore;
       let expr = parseRecordExprWithStringKeys ~startPos (field, fieldExpr) p in
-      Parser.expect Rbrace p;
+      Parser.expectUnsafe Rbrace p;
       expr
     | _ ->
       let tag = if p.mode = ParseForTypeChecker then Some "js" else None in
@@ -2799,7 +2802,7 @@ and parseBracedOrRecordExpr  p =
       begin match p.Parser.token with
       | Semicolon ->
         let expr = parseExprBlock ~first:e p in
-        Parser.expect Rbrace p;
+        Parser.expectUnsafe Rbrace p;
         let loc = mkLoc startPos p.prevEndPos in
         let braces = makeBracesAttr loc in
         {expr with Parsetree.pexp_attributes = braces::expr.Parsetree.pexp_attributes}
@@ -2810,7 +2813,7 @@ and parseBracedOrRecordExpr  p =
         {e with pexp_attributes = braces::e.pexp_attributes}
       | _ ->
         let expr = parseExprBlock ~first:e p in
-        Parser.expect Rbrace p;
+        Parser.expectUnsafe Rbrace p;
         let loc = mkLoc startPos p.prevEndPos in
         let braces = makeBracesAttr loc in
         {expr with pexp_attributes = braces::expr.pexp_attributes}
@@ -2830,7 +2833,7 @@ and parseBracedOrRecordExpr  p =
         | _ -> valueOrConstructor
         in
         let expr = parseRecordExpr ~startPos [(pathIdent, valueOrConstructor)] p in
-        Parser.expect Rbrace p;
+        Parser.expectUnsafe Rbrace p;
         expr
       | Colon ->
         Parser.expect Colon p;
@@ -2841,27 +2844,27 @@ and parseBracedOrRecordExpr  p =
           let loc = mkLoc startPos p.prevEndPos in
           Ast_helper.Exp.record ~loc [(pathIdent, fieldExpr)] None
         | _ ->
-          Parser.expect Comma p;
+          Parser.expectUnsafe Comma p;
           let expr = parseRecordExpr ~startPos [(pathIdent, fieldExpr)] p in
-          Parser.expect Rbrace p;
+          Parser.expectUnsafe Rbrace p;
           expr
         end
       (* error case *)
       | Lident _ ->
         if p.prevEndPos.pos_lnum < p.startPos.pos_lnum then (
-          Parser.expect Comma p;
+          Parser.expectUnsafe Comma p;
           let expr = parseRecordExpr ~startPos [(pathIdent, valueOrConstructor)] p in
-          Parser.expect Rbrace p;
+          Parser.expectUnsafe Rbrace p;
           expr
         ) else (
-          Parser.expect Colon p;
+          Parser.expectUnsafe Colon p;
           let expr = parseRecordExpr ~startPos [(pathIdent, valueOrConstructor)] p in
-          Parser.expect Rbrace p;
+          Parser.expectUnsafe Rbrace p;
           expr
         )
       | Semicolon ->
         let expr = parseExprBlock ~first:(Ast_helper.Exp.ident pathIdent) p in
-        Parser.expect Rbrace p;
+        Parser.expectUnsafe Rbrace p;
         let loc = mkLoc startPos p.prevEndPos in
         let braces = makeBracesAttr loc in
         {expr with pexp_attributes = braces::expr.pexp_attributes}
@@ -2890,7 +2893,7 @@ and parseBracedOrRecordExpr  p =
         begin match p.Parser.token with
         | Semicolon ->
           let expr = parseExprBlock ~first:e p in
-          Parser.expect Rbrace p;
+          Parser.expectUnsafe Rbrace p;
           let loc = mkLoc startPos p.prevEndPos in
           let braces = makeBracesAttr loc in
           {expr with pexp_attributes = braces::expr.pexp_attributes}
@@ -2901,7 +2904,7 @@ and parseBracedOrRecordExpr  p =
           {e with pexp_attributes = braces::e.pexp_attributes}
         | _ ->
           let expr = parseExprBlock ~first:e p in
-          Parser.expect Rbrace p;
+          Parser.expectUnsafe Rbrace p;
           let loc = mkLoc startPos p.prevEndPos in
           let braces = makeBracesAttr loc in
           {expr with pexp_attributes = braces::expr.pexp_attributes}
@@ -2915,7 +2918,7 @@ and parseBracedOrRecordExpr  p =
         begin match p.Parser.token with
         | Semicolon ->
           let expr = parseExprBlock ~first:e p in
-          Parser.expect Rbrace p;
+          Parser.expectUnsafe Rbrace p;
           let loc = mkLoc startPos p.prevEndPos in
           let braces = makeBracesAttr loc in
           {expr with pexp_attributes = braces::expr.pexp_attributes}
@@ -2926,7 +2929,7 @@ and parseBracedOrRecordExpr  p =
           {e with pexp_attributes = braces::e.pexp_attributes}
         | _ ->
           let expr = parseExprBlock ~first:e p in
-          Parser.expect Rbrace p;
+          Parser.expectUnsafe Rbrace p;
           let loc = mkLoc startPos p.prevEndPos in
           let braces = makeBracesAttr loc in
           {expr with pexp_attributes = braces::expr.pexp_attributes}
@@ -2941,7 +2944,7 @@ and parseBracedOrRecordExpr  p =
       begin match p.Parser.token with
       | Semicolon ->
         let expr = parseExprBlock ~first:e p in
-        Parser.expect Rbrace p;
+        Parser.expectUnsafe Rbrace p;
         let loc = mkLoc startPos p.prevEndPos in
         let braces = makeBracesAttr loc in
         {expr with pexp_attributes = braces::expr.pexp_attributes}
@@ -2952,7 +2955,7 @@ and parseBracedOrRecordExpr  p =
         {e with pexp_attributes = braces::e.pexp_attributes}
       | _ ->
         let expr = parseExprBlock ~first:e p in
-        Parser.expect Rbrace p;
+        Parser.expectUnsafe Rbrace p;
         let loc = mkLoc startPos p.prevEndPos in
         let braces = makeBracesAttr loc in
         {expr with pexp_attributes = braces::expr.pexp_attributes}
@@ -2960,7 +2963,7 @@ and parseBracedOrRecordExpr  p =
        end
   | _ ->
     let expr = parseExprBlock p in
-    Parser.expect Rbrace p;
+    Parser.expectUnsafe Rbrace p;
     let loc = mkLoc startPos p.prevEndPos in
     let braces = makeBracesAttr loc in
     {expr with pexp_attributes = braces::expr.pexp_attributes}
@@ -3146,12 +3149,12 @@ and parseExprBlock ?first p =
 
 and parseTryExpression p =
   let startPos = p.Parser.startPos in
-  Parser.expect Try p;
+  Parser.expectUnsafe Try p;
   let expr = parseExpr ~context:WhenExpr p in
-  Parser.expect Res_token.catch p;
-  Parser.expect Lbrace p;
+  Parser.expectUnsafe Res_token.catch p;
+  Parser.expectUnsafe Lbrace p;
   let cases = parsePatternMatching p in
-  Parser.expect Rbrace p;
+  Parser.expectUnsafe Rbrace p;
   let loc = mkLoc startPos p.prevEndPos in
   Ast_helper.Exp.try_ ~loc expr cases
 
@@ -3164,16 +3167,16 @@ and parseIfCondition p =
 
 and parseThenBranch p =
   Parser.leaveBreadcrumb p IfBranch;
-  Parser.expect Lbrace p;
+  Parser.expectUnsafe Lbrace p;
   let thenExpr = parseExprBlock p in
-  Parser.expect Rbrace p;
+  Parser.expectUnsafe Rbrace p;
   Parser.eatBreadcrumb p;
   thenExpr
 
 and parseElseBranch p =
-  Parser.expect Lbrace p;
+  Parser.expectUnsafe Lbrace p;
   let blockExpr = parseExprBlock p in
-  Parser.expect Rbrace p;
+  Parser.expectUnsafe Rbrace p;
   blockExpr;
 
 and parseIfExpr startPos p =
@@ -3203,7 +3206,7 @@ and parseIfExpr startPos p =
 
 and parseIfLetExpr startPos p =
   let pattern = parsePattern p in
-  Parser.expect Equal p;
+  Parser.expectUnsafe Equal p;
   let conditionExpr = parseIfCondition p in
   let thenExpr = parseThenBranch p in
   let elseExpr = match p.Parser.token with
@@ -3237,7 +3240,7 @@ and parseIfOrIfLetExpression p =
   Parser.beginRegion p;
   Parser.leaveBreadcrumb p Grammar.ExprIf;
   let startPos = p.Parser.startPos in
-  Parser.expect If p;
+  Parser.expectUnsafe If p;
   let expr = match p.Parser.token with
     | Let ->
       Parser.expect Let p;
@@ -3255,7 +3258,7 @@ and parseIfOrIfLetExpression p =
   expr;
 
 and parseForRest hasOpeningParen pattern startPos p =
-  Parser.expect In p;
+  Parser.expectUnsafe In p;
   let e1 = parseExpr p in
   let direction = match p.Parser.token with
   | Lident "to" -> Asttypes.Upto
@@ -3266,17 +3269,17 @@ and parseForRest hasOpeningParen pattern startPos p =
   in
   Parser.nextUnsafe p;
   let e2 = parseExpr ~context:WhenExpr p in
-  if hasOpeningParen then Parser.expect Rparen p;
-  Parser.expect Lbrace p;
+  if hasOpeningParen then Parser.expectUnsafe Rparen p;
+  Parser.expectUnsafe Lbrace p;
   let bodyExpr = parseExprBlock p in
-  Parser.expect Rbrace p;
+  Parser.expectUnsafe Rbrace p;
   let loc = mkLoc startPos p.prevEndPos in
   Ast_helper.Exp.for_ ~loc pattern e1 e2 direction bodyExpr
 
 and parseForExpression p =
   let startPos = p.Parser.startPos in
   Parser.leaveBreadcrumb p Grammar.ExprFor;
-  Parser.expect For p;
+  Parser.expectUnsafe For p;
   Parser.beginRegion p;
   let forExpr = match p.token with
   | Lparen ->
@@ -3320,11 +3323,11 @@ and parseForExpression p =
 
 and parseWhileExpression p =
   let startPos = p.Parser.startPos in
-  Parser.expect While p;
+  Parser.expectUnsafe While p;
   let expr1 = parseExpr ~context:WhenExpr p in
-  Parser.expect Lbrace p;
+  Parser.expectUnsafe Lbrace p;
   let expr2 = parseExprBlock p in
-  Parser.expect Rbrace p;
+  Parser.expectUnsafe Rbrace p;
   let loc = mkLoc startPos p.prevEndPos in
   Ast_helper.Exp.while_ ~loc expr1 expr2
 
@@ -3377,11 +3380,11 @@ and parsePatternMatching p =
 
 and parseSwitchExpression p =
   let startPos = p.Parser.startPos in
-  Parser.expect Switch p;
+  Parser.expectUnsafe Switch p;
   let switchExpr = parseExpr ~context:WhenExpr p in
-  Parser.expect Lbrace p;
+  Parser.expectUnsafe Lbrace p;
   let cases = parsePatternMatching p in
-  Parser.expect Rbrace p;
+  Parser.expectUnsafe Rbrace p;
   let loc = mkLoc startPos p.prevEndPos in
   Ast_helper.Exp.match_ ~loc switchExpr cases
 
@@ -3494,7 +3497,7 @@ and parseArgument2 p ~uncurried =
   | _ -> Some (uncurried, Nolabel, parseConstrainedOrCoercedExpr p)
 
 and parseCallExpr p funExpr =
-  Parser.expect Lparen p;
+  Parser.expectUnsafe Lparen p;
   let startPos = p.Parser.startPos in
   Parser.leaveBreadcrumb p Grammar.ExprCall;
   let args =
@@ -3636,7 +3639,9 @@ and parseValueOrConstructor p =
 
 and parsePolyVariantExpr p =
   let startPos = p.startPos in
-  let (ident, _loc) = parseHashIdent ~startPos p in
+  let (ident, _loc) = match parseHashIdent ~startPos p with
+    | Some  x -> x
+    | None -> assert false in
   begin match p.Parser.token with
   | Lparen when p.prevEndPos.pos_lnum == p.startPos.pos_lnum ->
     let lparen = p.startPos in
@@ -4249,7 +4254,7 @@ and parseStringFieldDeclaration p =
     let nameEndPos = p.endPos in
     Parser.next p [@doesNotRaise];
     let fieldName = Location.mkloc name (mkLoc nameStartPos nameEndPos) in
-    Parser.expect ~grammar:Grammar.TypeExpression Colon p;
+    Parser.expectUnsafe ~grammar:Grammar.TypeExpression Colon p;
     let typ = parsePolyTypeExpr p in
     Some(Parsetree.Otag (fieldName, attrs, typ))
   | DotDotDot ->
@@ -4883,7 +4888,7 @@ and parseRecordOrObjectDecl p =
             p
         )
         in
-        Parser.expect Rbrace p;
+        Parser.expectUnsafe Rbrace p;
         let loc = mkLoc startPos p.prevEndPos in
         let typ =
           Ast_helper.Typ.object_ ~loc ~attrs:[] fields closedFlag |> parseTypeAlias p
@@ -4925,7 +4930,7 @@ and parseRecordOrObjectDecl p =
         )
       | _ -> ()
       in
-      Parser.expect Rbrace p;
+      Parser.expectUnsafe Rbrace p;
       Parser.eatBreadcrumb p;
       (None, Asttypes.Public, Parsetree.Ptype_record fields)
     end
@@ -4997,8 +5002,9 @@ and parsePolymorphicVariantType ~attrs p =
         let rec loop p = match p.Parser.token with
           | Rbracket -> []
           | _ ->
-            let (ident, _loc) = parseHashIdent ~startPos:p.startPos p in
-            ident :: loop p
+            (match parseHashIdent ~startPos:p.startPos p  with
+            | Some (ident, _loc) -> ident :: loop p
+            | None -> [])
         in
         loop p
       end
@@ -5006,7 +5012,7 @@ and parsePolymorphicVariantType ~attrs p =
     let variant =
       let loc = mkLoc startPos p.prevEndPos in
       Ast_helper.Typ.variant ~attrs ~loc (rowField :: rowFields) Closed (Some tagNames) in
-    Parser.expect Rbracket p;
+    Parser.expectUnsafe Rbracket p;
     variant
   | _ ->
     let rowFields1 = parseTagSpecFirst p in
@@ -5014,7 +5020,7 @@ and parsePolymorphicVariantType ~attrs p =
     let variant =
       let loc = mkLoc startPos p.prevEndPos in
       Ast_helper.Typ.variant ~attrs ~loc (rowFields1 @ rowFields2) Closed None in
-    Parser.expect Rbracket p;
+    Parser.expectUnsafe Rbracket p;
     variant
 
 and parseTagSpecFulls p =
@@ -5072,13 +5078,15 @@ and parseTagSpecFirst p =
       (* example: [ListStyleType.t] *)
       [Parsetree.Rinherit typ;]
     | _ ->
-      Parser.expect Bar p;
+      Parser.expectUnsafe Bar p;
       [Parsetree.Rinherit typ; parseTagSpec p]
     end
 
 and parsePolymorphicVariantTypeSpecHash ~attrs ~full p : Parsetree.row_field =
   let startPos = p.Parser.startPos in
-  let (ident, loc) = parseHashIdent ~startPos p in
+  let (ident, loc) = match parseHashIdent ~startPos p with
+    | None -> assert false
+    | Some x -> x in
   let rec loop p =
     match p.Parser.token with
     | Band when full ->
@@ -5576,7 +5584,7 @@ and parseAtomicModuleExpr p =
         ~f:parseStructureItemRegion
         p
     ) in
-    Parser.expect Rbrace p;
+    Parser.expectUnsafe Rbrace p;
     let endPos = p.prevEndPos in
     {structure with pmod_loc = mkLoc startPos endPos}
   | Lparen ->

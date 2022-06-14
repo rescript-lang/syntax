@@ -1,0 +1,11 @@
+
+  Syntax error!
+  tests/parsing/infiniteLoops/poly.res:1:14-3:0
+
+  1 │ type x = [<y>
+  2 │ 
+  3 │ 
+
+  Did you forget a `]` here?
+
+type nonrec x = [< y]
