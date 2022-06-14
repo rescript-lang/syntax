@@ -36,11 +36,9 @@
 external add_nat : nat -> int = "add_nat_bytecode"
 module Error2 =
   struct
-    type nonrec observation =
-      {
+    type nonrec observation = {
       observed: int ;
-      onStep:
-        currentValue:((unit)[@ns.namedArgLoc ]) -> [%rescript.typehole ] }
+      onStep: [%rescript.typehole ] }
   end
 module Error3 =
   struct
