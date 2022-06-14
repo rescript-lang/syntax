@@ -259,7 +259,7 @@ let isEs6ArrowExpression ~inTernary p =
            * *)
           false
         | _ ->
-          Parser.next state;
+          Parser.nextUnsafe state;
           (* error recovery, peek at the next token,
            * (elements, providerId] => {
            *  in the example above, we have an unbalanced ] here
