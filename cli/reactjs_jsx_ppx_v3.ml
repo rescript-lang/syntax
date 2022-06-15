@@ -22,6 +22,10 @@ let isLabelled str =
   | Labelled _ -> true
   | _ -> false
 
+let isForwardRef = function
+  | {pexp_desc = Pexp_ident {txt = Ldot (Lident "React", "forwardRef")}} -> true
+  | _ -> false
+
 let getLabel str =
   match str with
   | Optional str | Labelled str -> str
@@ -54,12 +58,8 @@ let keyType loc = Typ.constr ~loc {loc; txt = Lident "string"} []
 
 let refType loc =
   Typ.constr ~loc
-    {loc; txt = Ldot (Lident "React", "ref")}
-    [
-      Typ.constr ~loc
-        {loc; txt = Ldot (Ldot (Lident "Js", "Nullable"), "t")}
-        [Typ.constr ~loc {loc; txt = Ldot (Lident "Dom", "element")} []];
-    ]
+    {loc; txt = Ldot (Ldot (Lident "ReactDOM", "Ref"), "currentDomRef")}
+    []
 
 type 'a children = ListLiteral of 'a | Exact of 'a
 
@@ -754,11 +754,12 @@ let jsxMapper () =
                      pattern,
                      ({pexp_desc = Pexp_fun _} as internalExpression) );
               } ->
-                let wrap, hasUnit, exp =
+                let wrap, hasUnit, hasForwardRef, exp =
                   spelunkForFunExpression internalExpression
                 in
                 ( wrap,
                   hasUnit,
+                  hasForwardRef,
                   unerasableIgnoreExp
                     {
                       expression with
@@ -777,7 +778,7 @@ let jsxMapper () =
                      },
                      _internalExpression );
               } ->
-                ((fun a -> a), true, expression)
+                ((fun a -> a), true, false, expression)
               (* let make = (~prop) => ... *)
               | {
                pexp_desc =
@@ -787,14 +788,14 @@ let jsxMapper () =
                      _pattern,
                      _internalExpression );
               } ->
-                ((fun a -> a), false, unerasableIgnoreExp expression)
+                ((fun a -> a), false, false, unerasableIgnoreExp expression)
               (* let make = (prop) => ... *)
               | {
                pexp_desc =
                  Pexp_fun (_nolabel, _default, pattern, _internalExpression);
               } ->
-                if hasApplication.contents then
-                  ((fun a -> a), false, unerasableIgnoreExp expression)
+                if !hasApplication then
+                  ((fun a -> a), false, false, unerasableIgnoreExp expression)
                 else
                   Location.raise_errorf ~loc:pattern.ppat_loc
                     "React: props need to be labelled arguments.\n\
@@ -805,11 +806,12 @@ let jsxMapper () =
               (* let make = {let foo = bar in (~prop) => ...} *)
               | {pexp_desc = Pexp_let (recursive, vbs, internalExpression)} ->
                 (* here's where we spelunk! *)
-                let wrap, hasUnit, exp =
+                let wrap, hasUnit, hasForwardRef, exp =
                   spelunkForFunExpression internalExpression
                 in
                 ( wrap,
                   hasUnit,
+                  hasForwardRef,
                   {expression with pexp_desc = Pexp_let (recursive, vbs, exp)}
                 )
               (* let make = React.forwardRef((~prop) => ...) *)
@@ -818,32 +820,40 @@ let jsxMapper () =
                  Pexp_apply (wrapperExpression, [(Nolabel, internalExpression)]);
               } ->
                 let () = hasApplication := true in
-                let _, hasUnit, exp =
+                let _, hasUnit, _, exp =
                   spelunkForFunExpression internalExpression
                 in
+                let hasForwardRef = isForwardRef wrapperExpression in
                 ( (fun exp -> Exp.apply wrapperExpression [(nolabel, exp)]),
                   hasUnit,
+                  hasForwardRef,
                   exp )
               | {
                pexp_desc = Pexp_sequence (wrapperExpression, internalExpression);
               } ->
-                let wrap, hasUnit, exp =
+                let wrap, hasUnit, hasForwardRef, exp =
                   spelunkForFunExpression internalExpression
                 in
                 ( wrap,
                   hasUnit,
+                  hasForwardRef,
                   {
                     expression with
                     pexp_desc = Pexp_sequence (wrapperExpression, exp);
                   } )
-              | e -> ((fun a -> a), false, e)
+              | e -> ((fun a -> a), false, false, e)
             in
-            let wrapExpression, hasUnit, expression =
+            let wrapExpression, hasUnit, hasForwardRef, expression =
               spelunkForFunExpression expression
             in
-            (wrapExpressionWithBinding wrapExpression, hasUnit, expression)
+            ( wrapExpressionWithBinding wrapExpression,
+              hasUnit,
+              hasForwardRef,
+              expression )
           in
-          let bindingWrapper, _hasUnit, expression = modifiedBinding binding in
+          let bindingWrapper, _hasUnit, hasForwardRef, expression =
+            modifiedBinding binding
+          in
           (* do stuff here! *)
           let namedArgList, _newtypes, _forwardRef =
             recursivelyTransformNamedArgsForMake mapper
@@ -851,8 +861,19 @@ let jsxMapper () =
               [] []
           in
           let namedTypeList = List.fold_left argToType [] namedArgList in
+          (* let _ = ref *)
           let vbIgnoreUnusedRef =
             Vb.mk (Pat.any ()) (Exp.ident (Location.mknoloc (Lident "ref")))
+          in
+          (* let ref = ref->Js.Nullable.fromOption *)
+          let vbRefFromOption =
+            Vb.mk
+              (Pat.var @@ Location.mknoloc "ref")
+              (Exp.apply
+                 (Exp.ident
+                    (Location.mknoloc
+                       (Ldot (Ldot (Lident "Js", "Nullable"), "fromOption"))))
+                 [(Nolabel, Exp.ident (Location.mknoloc @@ Lident "ref"))])
           in
           let namedArgWithDefaultValueList =
             List.filter_map argWithDefaultValue namedArgList
@@ -882,13 +903,37 @@ let jsxMapper () =
               :: namedTypeList)
           in
           let innerExpression =
-            Exp.apply
-              (Exp.ident (Location.mknoloc @@ Lident "make"))
-              [(Nolabel, Exp.ident (Location.mknoloc @@ Lident "props"))]
+            if hasForwardRef then
+              Exp.apply
+                (Exp.ident @@ Location.mknoloc @@ Lident "make")
+                [
+                  ( Nolabel,
+                    Exp.record
+                      [
+                        ( Location.mknoloc @@ Lident "ref",
+                          Exp.apply ~attrs:optionalAttr
+                            (Exp.ident
+                               (Location.mknoloc
+                                  (Ldot
+                                     (Ldot (Lident "Js", "Nullable"), "toOption"))))
+                            [
+                              ( Nolabel,
+                                Exp.ident (Location.mknoloc @@ Lident "ref") );
+                            ] );
+                      ]
+                      (Some (Exp.ident (Location.mknoloc @@ Lident "props"))) );
+                ]
+            else
+              Exp.apply
+                (Exp.ident (Location.mknoloc @@ Lident "make"))
+                [(Nolabel, Exp.ident (Location.mknoloc @@ Lident "props"))]
           in
           let fullExpression =
             (* React component name should start with uppercase letter *)
             (* let make = { let \"App" = props => make(props); \"App" } *)
+            (* let make = React.forwardRef({
+                 let \"App" = (props, ref) => make({...props, ref: @optional (Js.Nullabel.toOption(ref))})
+               })*)
             Exp.fun_ nolabel None
               (match namedTypeList with
               | [] -> Pat.var @@ Location.mknoloc "props"
@@ -896,7 +941,11 @@ let jsxMapper () =
                 Pat.constraint_
                   (Pat.var @@ Location.mknoloc "props")
                   (Typ.constr (Location.mknoloc @@ Lident "props") [Typ.any ()]))
-              innerExpression
+              (if hasForwardRef then
+               Exp.fun_ nolabel None
+                 (Pat.var @@ Location.mknoloc "ref")
+                 innerExpression
+              else innerExpression)
           in
           let fullExpression =
             match fullModuleName with
@@ -922,11 +971,13 @@ let jsxMapper () =
                   expr ) ->
               (patterns, expr)
             | Pexp_fun (arg_label, _default, {ppat_loc}, expr) ->
-              returnedExpression
-                (( {loc = ppat_loc; txt = Lident (getLabel arg_label)},
-                   Pat.var {txt = getLabel arg_label; loc = ppat_loc} )
-                :: patterns)
-                expr
+              if isLabelled arg_label || isOptional arg_label then
+                returnedExpression
+                  (( {loc = ppat_loc; txt = Lident (getLabel arg_label)},
+                     Pat.var {txt = getLabel arg_label; loc = ppat_loc} )
+                  :: patterns)
+                  expr
+              else returnedExpression patterns expr
             | _ -> (patterns, expr)
           in
           let patternsWithLid, expression = returnedExpression [] expression in
@@ -948,6 +999,7 @@ let jsxMapper () =
           let expression =
             Exp.let_ Nonrecursive [vbIgnoreUnusedRef] expression
           in
+          let expression = Exp.let_ Nonrecursive [vbRefFromOption] expression in
           let expression =
             Exp.fun_ Nolabel None
               (Pat.constraint_ pattern

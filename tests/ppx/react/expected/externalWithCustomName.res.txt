@@ -1,7 +1,7 @@
 module Foo = {
   type props<'a, 'b> = {
     @optional key: string,
-    @optional ref: React.ref<Js.Nullable.t<Dom.element>>,
+    @optional ref: ReactDOM.Ref.currentDomRef,
     a: 'a,
     b: 'b,
   }

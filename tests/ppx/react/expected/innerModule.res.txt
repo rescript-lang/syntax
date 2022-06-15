@@ -1,11 +1,12 @@
 module Bar = {
   type props<'a, 'b> = {
     @optional key: string,
-    @optional ref: React.ref<Js.Nullable.t<Dom.element>>,
+    @optional ref: ReactDOM.Ref.currentDomRef,
     a: 'a,
     b: 'b,
   }
   let make = ({a, b, ref}: props<'a, 'b>) => {
+    let ref = Js.Nullable.fromOption(ref)
     let _ = ref
 
     Js.log("This function should be named `InnerModule.react$Bar`")
@@ -17,12 +18,13 @@ module Bar = {
   }
   type props<'a, 'b> = {
     @optional key: string,
-    @optional ref: React.ref<Js.Nullable.t<Dom.element>>,
+    @optional ref: ReactDOM.Ref.currentDomRef,
     a: 'a,
     b: 'b,
   }
 
   let component = ({a, b, ref}: props<'a, 'b>) => {
+    let ref = Js.Nullable.fromOption(ref)
     let _ = ref
 
     Js.log("This function should be named `InnerModule.react$Bar$component`")

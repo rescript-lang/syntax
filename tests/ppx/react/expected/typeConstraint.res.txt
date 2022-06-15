@@ -1,10 +1,11 @@
 type props<'a, 'b> = {
   @optional key: string,
-  @optional ref: React.ref<Js.Nullable.t<Dom.element>>,
+  @optional ref: ReactDOM.Ref.currentDomRef,
   a: 'a,
   b: 'b,
 }
 let make: 'a. (~a: 'a, ~b: 'a, 'a) => React.element = ({ref}: props<'a, 'b>) => {
+  let ref = Js.Nullable.fromOption(ref)
   let _ = ref
   (type a): ((~a: a, ~b: a, a) => React.element) =>
     (~a, ~b, _) => ReactDOMRe.createDOMElementVariadic("div", [])

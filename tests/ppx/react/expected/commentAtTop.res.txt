@@ -1,10 +1,7 @@
-type props<'msg> = { // test React JSX file
-  @optional key: string,
-  @optional ref: React.ref<Js.Nullable.t<Dom.element>>,
-  msg: 'msg,
-}
+type props<'msg> = {@optional key: string, @optional ref: ReactDOM.Ref.currentDomRef, msg: 'msg} // test React JSX file
 
 let make = ({msg, ref}: props<'msg>) => {
+  let ref = Js.Nullable.fromOption(ref)
   let _ = ref
 
   {
