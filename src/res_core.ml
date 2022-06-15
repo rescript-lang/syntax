@@ -623,7 +623,7 @@ let rec parseLident p =
       None
     ) else (
       let rec loop p =
-        if not (Recover.shouldAbortListParse p)
+        if not (Recover.shouldAbortListParse p) && p.token <> Eof
         then begin
           Parser.next p;
           loop p
