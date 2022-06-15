@@ -109,7 +109,7 @@ let hasCommentBelow tbl loc =
   | [] -> false
   | exception Not_found -> false
 
-let printMultilineCommentContent txt =
+let printMultilineCommentContent ~docComment txt =
   (* Turns
    *         |* first line
    *  * second line
@@ -149,7 +149,7 @@ let printMultilineCommentContent txt =
   match lines with
   | [] -> Doc.text "/* */"
   | [line] -> Doc.concat [
-      Doc.text "/* ";
+      Doc.text (if docComment then "/*" else "/* ");
       Doc.text (Comment.trimSpaces line);
       Doc.text " */";
     ]
@@ -166,12 +166,13 @@ let printMultilineCommentContent txt =
 
 let printTrailingComment (prevLoc: Location.t) (nodeLoc : Location.t) comment =
   let singleLine = Comment.isSingleLineComment comment in
+  let docComment = Comment.isDocComment comment in
   let content =
     let txt = Comment.txt comment in
     if singleLine then
        Doc.text ("//" ^ txt)
     else
-      printMultilineCommentContent txt
+      printMultilineCommentContent ~docComment txt
   in
   let diff =
     let cmtStart = (Comment.loc comment).loc_start in
@@ -193,12 +194,13 @@ let printTrailingComment (prevLoc: Location.t) (nodeLoc : Location.t) comment =
 
 let printLeadingComment ?nextComment comment =
   let singleLine = Comment.isSingleLineComment comment in
+  let docComment = Comment.isDocComment comment in
   let content =
     let txt = Comment.txt comment in
     if singleLine then
        Doc.text ("//" ^ txt)
     else
-      printMultilineCommentContent txt
+      printMultilineCommentContent ~docComment txt
   in
   let separator = Doc.concat  [
     if singleLine then Doc.concat [

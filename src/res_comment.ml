@@ -1,10 +1,12 @@
 type style =
   | SingleLine
   | MultiLine
+  | DocComment
 
 let styleToString s = match s with
   | SingleLine -> "SingleLine"
   | MultiLine -> "MultiLine"
+  | DocComment -> "DocComment"
 
 type t = {
   txt: string;
@@ -20,9 +22,9 @@ let prevTokEndPos t = t.prevTokEndPos
 let setPrevTokEndPos t pos =
   t.prevTokEndPos <- pos
 
-let isSingleLineComment t = match t.style with
-  | SingleLine -> true
-  | MultiLine -> false
+let isSingleLineComment t = t.style = SingleLine
+
+let isDocComment t = t.style = DocComment
 
 let toString t =
   Format.sprintf
@@ -39,10 +41,10 @@ let makeSingleLineComment ~loc txt = {
   prevTokEndPos = Lexing.dummy_pos;
 }
 
-let makeMultiLineComment ~loc txt = {
+let makeMultiLineComment ~loc ~docComment txt = {
   txt;
   loc;
-  style = MultiLine;
+  style = if docComment then DocComment else MultiLine;
   prevTokEndPos = Lexing.dummy_pos;
 }
 

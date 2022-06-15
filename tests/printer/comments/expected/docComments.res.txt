@@ -1,6 +1,6 @@
-/* * This is one */
+/** This is one */
 
-/* * And this is another one */
+/** And this is another one */
 let x = 42
 
 /*  */
