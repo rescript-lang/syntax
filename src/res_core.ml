@@ -4968,19 +4968,7 @@ and parsePolymorphicVariantType ~attrs p =
     Parser.optional p Bar |> ignore;
     let rowField = parseTagSpecFull p in
     let rowFields = parseTagSpecFulls p in
-    let tagNames =
-      if p.token == GreaterThan
-      then begin
-        Parser.next p;
-        let rec loop p = match p.Parser.token with
-          | Rbracket -> []
-          | _ ->
-            let (ident, _loc) = parseHashIdent ~startPos:p.startPos p in
-            ident :: loop p
-        in
-        loop p
-      end
-      else [] in
+    let tagNames = parseTagNames p in
     let variant =
       let loc = mkLoc startPos p.prevEndPos in
       Ast_helper.Typ.variant ~attrs ~loc (rowField :: rowFields) Closed (Some tagNames) in
@@ -4994,6 +4982,20 @@ and parsePolymorphicVariantType ~attrs p =
       Ast_helper.Typ.variant ~attrs ~loc (rowFields1 @ rowFields2) Closed None in
     Parser.expect Rbracket p;
     variant
+
+and parseTagName p =
+  match p.Parser.token with
+  | Hash ->
+    let (ident, _loc) = parseHashIdent ~startPos:p.startPos p in
+    Some ident
+  | _ -> None
+
+and parseTagNames p =
+  if p.Parser.token == GreaterThan then
+    (Parser.next p;
+    parseRegion p ~grammar:Grammar.TagNames ~f:parseTagName)
+  else
+    []
 
 and parseTagSpecFulls p =
   match p.Parser.token with
