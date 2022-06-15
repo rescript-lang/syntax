@@ -1,3 +1,9 @@
+Found:
+(txt: *
+ * test
+
+style: DocComment
+lines: 20-22)
 /* first line
  * the leading stars
  * should align here.
@@ -34,6 +40,9 @@ let f = () => ()
     }
     return true
   } */
+@ocaml.doc("*
+ * test
+")
 let equals = (matrix1, matrix2) => {
   let rec loop = (i, j) =>
     if i > 3 {

@@ -1,9 +1,19 @@
+Found:
+(txt: * This is one 
+style: DocComment
+lines: 1-1)
+Found:
+(txt: * And this is another one 
+style: DocComment
+lines: 3-3)
 /** This is one */
 
 /** And this is another one */
-let x = 42
+@ocaml.doc("* This is one ") @ocaml.doc("* And this is another one ") let x = 42
 
-/*  */
-// But this is not
+/*  */ // But this is not
 
 /* **This is also not a doc comment */
+
+/** Great Type */
+@ocaml.doc("* Great Type ") type myType = int

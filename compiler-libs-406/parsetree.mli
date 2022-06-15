@@ -369,7 +369,7 @@ and value_description =
      pval_name: string loc;
      pval_type: core_type;
      pval_prim: string list;
-     pval_attributes: attributes;  (* ... [@@id1] [@@id2] *)
+     mutable pval_attributes: attributes;  (* ... [@@id1] [@@id2] *) 
      pval_loc: Location.t;
     }
 
@@ -390,7 +390,7 @@ and type_declaration =
      ptype_kind: type_kind;
      ptype_private: private_flag;   (* = private ... *)
      ptype_manifest: core_type option;  (* = T *)
-     ptype_attributes: attributes;   (* ... [@@id1] [@@id2] *)
+     mutable ptype_attributes: attributes;   (* ... [@@id1] [@@id2] *)
      ptype_loc: Location.t;
     }
 
@@ -455,7 +455,7 @@ and type_extension =
      ptyext_params: (core_type * variance) list;
      ptyext_constructors: extension_constructor list;
      ptyext_private: private_flag;
-     ptyext_attributes: attributes;   (* ... [@@id1] [@@id2] *)
+     mutable ptyext_attributes: attributes;   (* ... [@@id1] [@@id2] *)
     }
 (*
   type t += ...
@@ -655,7 +655,7 @@ and module_type =
     {
      pmty_desc: module_type_desc;
      pmty_loc: Location.t;
-     pmty_attributes: attributes; (* ... [@id1] [@id2] *)
+     mutable pmty_attributes: attributes; (* ... [@id1] [@id2] *)
     }
 
 and module_type_desc =
@@ -718,7 +718,7 @@ and module_declaration =
     {
      pmd_name: string loc;
      pmd_type: module_type;
-     pmd_attributes: attributes; (* ... [@@id1] [@@id2] *)
+     mutable pmd_attributes: attributes; (* ... [@@id1] [@@id2] *)
      pmd_loc: Location.t;
     }
 (* S : MT *)
@@ -727,7 +727,7 @@ and module_type_declaration =
     {
      pmtd_name: string loc;
      pmtd_type: module_type option;
-     pmtd_attributes: attributes; (* ... [@@id1] [@@id2] *)
+     mutable pmtd_attributes: attributes; (* ... [@@id1] [@@id2] *)
      pmtd_loc: Location.t;
     }
 (* S = MT
@@ -750,7 +750,7 @@ and 'a include_infos =
     {
      pincl_mod: 'a;
      pincl_loc: Location.t;
-     pincl_attributes: attributes;
+     mutable pincl_attributes: attributes;
     }
 
 and include_description = module_type include_infos
@@ -778,7 +778,7 @@ and module_expr =
     {
      pmod_desc: module_expr_desc;
      pmod_loc: Location.t;
-     pmod_attributes: attributes; (* ... [@id1] [@id2] *)
+     mutable pmod_attributes: attributes; (* ... [@id1] [@id2] *)
     }
 
 and module_expr_desc =
@@ -845,7 +845,7 @@ and value_binding =
   {
     pvb_pat: pattern;
     pvb_expr: expression;
-    pvb_attributes: attributes;
+    mutable pvb_attributes: attributes;
     pvb_loc: Location.t;
   }
 
@@ -853,7 +853,7 @@ and module_binding =
     {
      pmb_name: string loc;
      pmb_expr: module_expr;
-     pmb_attributes: attributes;
+     mutable pmb_attributes: attributes;
      pmb_loc: Location.t;
     }
 (* X = ME *)

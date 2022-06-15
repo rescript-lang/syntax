@@ -308,14 +308,105 @@ let isIfThenElseExpr expr =
   | Pexp_ifthenelse _ -> true
   | _ -> false
 
+
+let annotateDocComment ~docComments ~loc attrs : Parsetree.attributes =
+  let open Ast_helper in
+  docComments |>
+  List.rev |>
+  List.fold_left (fun attrs comment ->
+    ({Location.txt="ocaml.doc"; loc},
+    (Parsetree.PStr [Str.eval (Exp.constant (Const.string (Comment.txt comment)))])) :: attrs
+    ) attrs
+
+let checkDocComment print comment =
+  if Comment.isDocComment comment then (
+    if print then Printf.printf "Found:\n%s\n" (Comment.toString comment);
+    true
+  ) else (
+    false
+  )
+
+let getDocComments ?(print=false) comments =
+  comments |> List.filter (checkDocComment print)
+
+let docCommentValueBinding (vb: Parsetree.value_binding) loc comments =
+  let docComments = comments |> getDocComments ~print:true in
+  if docComments <> [] then
+    vb.pvb_attributes <- annotateDocComment ~docComments ~loc vb.pvb_attributes
+
+let docCommentTypeDeclaration (td: Parsetree.type_declaration) loc comments =
+  let docComments = comments |> getDocComments in
+  if docComments <> [] then
+    td.ptype_attributes <- annotateDocComment ~docComments ~loc td.ptype_attributes
+
+
+let docCommentStructureItem (si: Parsetree.structure_item) loc comments =
+  let docComments = comments |> getDocComments in
+  if docComments <> [] then
+    (match si.pstr_desc with
+    | Pstr_value (_, vb::_) -> docCommentValueBinding vb loc docComments
+    | Pstr_type (_, td::_) -> docCommentTypeDeclaration td loc docComments
+    | _ -> assert false (* TODO !!! *))
+
+let docCommentValueDescription (vd: Parsetree.value_description) loc comments =
+  let docComments = comments |> getDocComments in
+  if docComments <> [] then
+    vd.pval_attributes <- annotateDocComment ~docComments ~loc vd.pval_attributes
+
+let docCommentTypeExtension (te: Parsetree.type_extension) loc comments =
+  let docComments = comments |> getDocComments in
+  if docComments <> [] then
+    te.ptyext_attributes <- annotateDocComment ~docComments ~loc te.ptyext_attributes
+
+let docCommentIncludeDeclaration (id: Parsetree.include_declaration) loc comments =
+  let docComments = comments |> getDocComments in
+  if docComments <> [] then
+    id.pincl_attributes <- annotateDocComment ~docComments ~loc id.pincl_attributes
+
+let docCommentModuleTypeDeclaration (mtd: Parsetree.module_type_declaration) loc comments =
+  let docComments = comments |> getDocComments in
+  if docComments <> [] then
+    mtd.pmtd_attributes <- annotateDocComment ~docComments ~loc mtd.pmtd_attributes
+
+let docCommentModuleType (mt: Parsetree.module_type) loc comments =
+  let docComments = comments |> getDocComments in
+  if docComments <> [] then
+    mt.pmty_attributes <- annotateDocComment ~docComments ~loc mt.pmty_attributes
+
+let docCommentModuleBinding (mb: Parsetree.module_binding) loc comments =
+  let docComments = comments |> getDocComments in
+  if docComments <> [] then
+    mb.pmb_attributes <- annotateDocComment ~docComments ~loc mb.pmb_attributes 
+
+let docCommentModuleExpr (me: Parsetree.module_expr) loc comments =
+  let docComments = comments |> getDocComments in
+  if docComments <> [] then
+    me.pmod_attributes <- annotateDocComment ~docComments ~loc me.pmod_attributes 
+
+let docCommentIncludeDescription (id: Parsetree.include_description) loc comments =
+  let docComments = comments |> getDocComments in
+  if comments |> List.exists Comment.isDocComment  then
+    id.pincl_attributes <- annotateDocComment ~docComments ~loc id.pincl_attributes
+
+let docCommentModulDeclaration (md: Parsetree.module_declaration) loc comments =
+  let docComments = comments |> getDocComments in
+  if comments |> List.exists Comment.isDocComment  then
+    md.pmd_attributes <- annotateDocComment ~docComments ~loc md.pmd_attributes
+
+let addDocComment0 s node loc comments =
+  let isMyTest = loc.Location.loc_start.pos_fname |> Filename.basename = "docComments.res" in
+  if isMyTest then Printf.printf "AddDocComment0:%s\n" s
+
 let rec walkStructure s t comments =
   match s with
   | _ when comments = [] -> ()
-  | [] -> attach t.inside Location.none comments
+  | [] ->
+    attach t.inside Location.none comments
   | s ->
     walkList
       ~getLoc:(fun n -> n.Parsetree.pstr_loc)
       ~walkNode:walkStructureItem
+      ~addDocComment:docCommentStructureItem
       s
       t
       comments
@@ -339,7 +430,8 @@ let rec walkStructure s t comments =
       walkList
         ~getLoc:(fun mb -> mb.Parsetree.pmb_loc)
         ~walkNode:walkModuleBinding
-        moduleBindings
+        ~addDocComment:(addDocComment0 " 2"
+)        moduleBindings
         t
         comments
     | Pstr_modtype modTypDecl ->
@@ -360,6 +452,7 @@ let rec walkStructure s t comments =
     let (leading, trailing) =
       partitionLeadingTrailing comments vd.pval_name.loc in
     attach t.leading vd.pval_name.loc leading;
+    docCommentValueDescription vd vd.pval_name.loc leading;
     let (afterName, rest) =
       partitionAdjacentTrailing vd.pval_name.loc trailing in
     attach t.trailing vd.pval_name.loc afterName;
@@ -367,6 +460,7 @@ let rec walkStructure s t comments =
       partitionByLoc rest vd.pval_type.ptyp_loc
     in
     attach t.leading vd.pval_type.ptyp_loc before;
+    docCommentValueDescription vd vd.pval_type.ptyp_loc before;
     walkTypExpr vd.pval_type t inside;
     attach t.trailing vd.pval_type.ptyp_loc after
 
@@ -374,6 +468,7 @@ let rec walkStructure s t comments =
     let (leading, trailing) =
       partitionLeadingTrailing comments te.ptyext_path.loc in
     attach t.leading te.ptyext_path.loc leading;
+    docCommentTypeExtension te te.ptyext_path.loc leading;
     let (afterPath, rest) =
       partitionAdjacentTrailing te.ptyext_path.loc trailing in
     attach t.trailing te.ptyext_path.loc afterPath;
@@ -393,6 +488,7 @@ let rec walkStructure s t comments =
     walkList
       ~getLoc:(fun n -> n.Parsetree.pext_loc)
       ~walkNode:walkExtConstr
+      ~addDocComment:(addDocComment0 "3")
       te.ptyext_constructors
       t
       rest
@@ -401,6 +497,7 @@ let rec walkStructure s t comments =
     let (before, inside, after) =
       partitionByLoc comments inclDecl.pincl_mod.pmod_loc in
     attach t.leading inclDecl.pincl_mod.pmod_loc before;
+    docCommentIncludeDeclaration inclDecl inclDecl.pincl_mod.pmod_loc before;
     walkModExpr inclDecl.pincl_mod t inside;
     attach t.trailing inclDecl.pincl_mod.pmod_loc after
 
@@ -408,6 +505,7 @@ let rec walkStructure s t comments =
     let (leading, trailing) =
       partitionLeadingTrailing comments mtd.pmtd_name.loc in
     attach t.leading mtd.pmtd_name.loc leading;
+    docCommentModuleTypeDeclaration mtd mtd.pmtd_name.loc leading;
     begin match mtd.pmtd_type with
     | None ->
       attach t.trailing mtd.pmtd_name.loc trailing
@@ -416,6 +514,7 @@ let rec walkStructure s t comments =
       attach t.trailing mtd.pmtd_name.loc afterName;
       let (before, inside, after) = partitionByLoc rest modType.pmty_loc in
       attach t.leading modType.pmty_loc before;
+      docCommentModuleType modType modType.pmty_loc before;
       walkModType modType t inside;
       attach t.trailing modType.pmty_loc after
     end
@@ -423,6 +522,7 @@ let rec walkStructure s t comments =
   and walkModuleBinding mb t comments =
     let (leading, trailing) = partitionLeadingTrailing comments mb.pmb_name.loc in
     attach t.leading mb.pmb_name.loc leading;
+    docCommentModuleBinding mb mb.pmb_name.loc leading;
     let (afterName, rest) = partitionAdjacentTrailing mb.pmb_name.loc trailing in
     attach t.trailing mb.pmb_name.loc afterName;
     let (leading, inside, trailing) = partitionByLoc rest mb.pmb_expr.pmod_loc in
@@ -431,6 +531,7 @@ let rec walkStructure s t comments =
       walkModExpr mb.pmb_expr t (List.concat [leading; inside]);
     | _ ->
       attach t.leading mb.pmb_expr.pmod_loc leading;
+      docCommentModuleExpr mb.pmb_expr mb.pmb_expr.pmod_loc leading;
       walkModExpr mb.pmb_expr t inside;
     end;
     attach t.trailing mb.pmb_expr.pmod_loc trailing
@@ -443,6 +544,7 @@ let rec walkStructure s t comments =
       walkList
         ~getLoc:(fun n -> n.Parsetree.psig_loc)
         ~walkNode:walkSignatureItem
+        ~addDocComment:(addDocComment0 "4")
         signature
         t
         comments
@@ -464,6 +566,7 @@ let rec walkStructure s t comments =
       walkList
         ~getLoc:(fun n -> n.Parsetree.pmd_loc)
         ~walkNode:walkModuleDeclaration
+        ~addDocComment:(addDocComment0 "5")
         moduleDeclarations
         t
         comments
@@ -483,16 +586,19 @@ let rec walkStructure s t comments =
     let (before, inside, after) =
       partitionByLoc comments id.pincl_mod.pmty_loc in
     attach t.leading id.pincl_mod.pmty_loc before;
+    docCommentIncludeDescription id id.pincl_mod.pmty_loc before;
     walkModType id.pincl_mod t inside;
     attach t.trailing id.pincl_mod.pmty_loc after
 
   and walkModuleDeclaration md t comments =
     let (leading, trailing) = partitionLeadingTrailing comments md.pmd_name.loc in
     attach t.leading md.pmd_name.loc leading;
+    docCommentModulDeclaration md md.pmd_name.loc leading;
     let (afterName, rest) = partitionAdjacentTrailing md.pmd_name.loc trailing in
     attach t.trailing md.pmd_name.loc afterName;
     let (leading, inside, trailing) = partitionByLoc rest md.pmd_type.pmty_loc in
     attach t.leading md.pmd_type.pmty_loc leading;
+    docCommentModuleType md.pmd_type md.pmd_type.pmty_loc leading;
     walkModType md.pmd_type t inside;
     attach t.trailing md.pmd_type.pmty_loc trailing
 
@@ -501,8 +607,9 @@ let rec walkStructure s t comments =
     ?prevLoc:Location.t ->
     getLoc:('node -> Location.t) ->
     walkNode:('node -> t -> Comment.t list -> unit) ->
+    addDocComment:('node -> Location.t -> Comment.t list -> unit) ->
     'node list -> t -> Comment.t list -> unit
-    = fun ?prevLoc ~getLoc ~walkNode l t comments ->
+    = fun ?prevLoc ~getLoc ~walkNode ~addDocComment l t comments ->
     let open Location in
     match l with
     | _ when comments = [] -> ()
@@ -517,21 +624,25 @@ let rec walkStructure s t comments =
       let (leading, inside, trailing) = partitionByLoc comments currLoc in
       begin match prevLoc with
       | None -> (* first node, all leading comments attach here *)
-        attach t.leading currLoc leading
+        attach t.leading currLoc leading;
+        addDocComment node currLoc leading;
       | Some prevLoc ->
         (* Same line *)
-        if prevLoc.loc_end.pos_lnum == currLoc.loc_start.pos_lnum then
+        if prevLoc.loc_end.pos_lnum == currLoc.loc_start.pos_lnum then (
           let (afterPrev, beforeCurr) = partitionAdjacentTrailing prevLoc leading in
-          let () = attach t.trailing prevLoc afterPrev in
-          attach t.leading currLoc beforeCurr
-        else
+          attach t.trailing prevLoc afterPrev;
+          attach t.leading currLoc beforeCurr;
+          addDocComment node currLoc leading
+        ) else (
           let (onSameLineAsPrev, afterPrev) = partitionByOnSameLine prevLoc leading in
-          let () = attach t.trailing prevLoc onSameLineAsPrev in
+          attach t.trailing prevLoc onSameLineAsPrev;
           let (leading, _inside, _trailing) = partitionByLoc afterPrev currLoc in
-          attach t.leading currLoc leading
+          attach t.leading currLoc leading;
+          addDocComment node currLoc leading;
+        )
       end;
       walkNode node t inside;
-      walkList ~prevLoc:currLoc ~getLoc ~walkNode rest t trailing
+      walkList ~prevLoc:currLoc ~getLoc ~walkNode ~addDocComment rest t trailing
 
   (* The parsetree doesn't always contain location info about the opening or
    * closing token of a "list-of-things". This routine visits the whole list,
@@ -590,6 +701,7 @@ let rec walkStructure s t comments =
     walkList
       ~getLoc:(fun n -> n.Parsetree.pvb_loc)
       ~walkNode:walkValueBinding
+      ~addDocComment:docCommentValueBinding
       vbs
       t
       comments
@@ -604,6 +716,7 @@ let rec walkStructure s t comments =
     walkList
       ~getLoc:(fun n -> n.Parsetree.ptype_loc)
       ~walkNode:walkTypeDeclaration
+      ~addDocComment:(addDocComment0 "6")
       typeDeclarations
       t
       comments
@@ -653,6 +766,7 @@ let rec walkStructure s t comments =
       let () = walkList
         ~getLoc:(fun ld -> ld.Parsetree.pld_loc)
         ~walkNode:walkLabelDeclaration
+        ~addDocComment:(addDocComment0 "7")
         labelDeclarations
         t
         rest
@@ -731,7 +845,6 @@ let rec walkStructure s t comments =
 
   and walkValueBinding vb t comments =
     let open Location in
-
     let vb =
       let open Parsetree in
       match (vb.pvb_pat, vb.pvb_expr) with
@@ -891,6 +1004,7 @@ let rec walkStructure s t comments =
           longident.loc with loc_end = expr.pexp_loc.loc_end
         })
         ~walkNode:walkExprRecordRow
+        ~addDocComment:(addDocComment0 "8")
         rows
         t
         comments
@@ -993,6 +1107,7 @@ let rec walkStructure s t comments =
       walkList
         ~getLoc:(fun n -> n.Parsetree.pexp_loc)
         ~walkNode:walkExpr
+        ~addDocComment:(addDocComment0 "9")
         (collectListExprs [] expr)
         t
         comments
@@ -1017,6 +1132,7 @@ let rec walkStructure s t comments =
       walkList
         ~getLoc:(fun n -> n.Parsetree.pexp_loc)
         ~walkNode:walkExpr
+        ~addDocComment:(addDocComment0 "10")
         exprs
         t
         comments
@@ -1038,6 +1154,7 @@ let rec walkStructure s t comments =
           longident.loc with loc_end = expr.pexp_loc.loc_end
         })
         ~walkNode:walkExprRecordRow
+        ~addDocComment:(addDocComment0 "11")
         rows
         t
         comments
@@ -1230,6 +1347,7 @@ let rec walkStructure s t comments =
         ~getLoc:(fun n -> {n.Parsetree.pc_lhs.ppat_loc with
           loc_end = n.pc_rhs.pexp_loc.loc_end})
         ~walkNode:walkCase
+        ~addDocComment:(addDocComment0 "12")
         cases
         t
         rest
@@ -1286,6 +1404,7 @@ let rec walkStructure s t comments =
              expr.pexp_loc
           )
         ~walkNode:walkExprArgument
+        ~addDocComment:(addDocComment0 "13")
         arguments
         t
         rest
@@ -1498,6 +1617,7 @@ and walkExprArgument (_argLabel, expr) t comments =
       walkList
         ~getLoc:(fun n -> n.Parsetree.pmod_loc)
         ~walkNode:walkModExpr
+        ~addDocComment:(addDocComment0 "14")
         modExprs
         t
         comments
@@ -1630,6 +1750,7 @@ and walkExprArgument (_argLabel, expr) t comments =
       walkList
         ~getLoc:(fun n -> n.Parsetree.ppat_loc)
         ~walkNode:walkPattern
+        ~addDocComment:(addDocComment0 "15")
         patterns
         t
         comments
@@ -1637,6 +1758,7 @@ and walkExprArgument (_argLabel, expr) t comments =
       walkList
         ~getLoc:(fun n -> n.Parsetree.ppat_loc)
         ~walkNode:walkPattern
+        ~addDocComment:(addDocComment0 "16")
         patterns
         t
         comments
@@ -1644,6 +1766,7 @@ and walkExprArgument (_argLabel, expr) t comments =
       walkList
         ~getLoc:(fun n -> n.Parsetree.ppat_loc)
         ~walkNode:walkPattern
+        ~addDocComment:(addDocComment0 "17")
         (collectListPatterns [] pat)
         t
         comments
@@ -1679,6 +1802,7 @@ and walkExprArgument (_argLabel, expr) t comments =
           loc_end = pattern.Parsetree.ppat_loc.loc_end
         })
         ~walkNode:walkPatternRecordRow
+        ~addDocComment:(addDocComment0 "18")
         recordRows
         t
         comments
@@ -1686,6 +1810,7 @@ and walkExprArgument (_argLabel, expr) t comments =
       walkList
         ~getLoc: (fun pattern -> pattern.Parsetree.ppat_loc)
         ~walkNode: (fun pattern -> walkPattern pattern)
+        ~addDocComment:(addDocComment0 "19")
         (Res_parsetree_viewer.collectOrPatternChain pat)
         t
         comments
@@ -1748,6 +1873,7 @@ and walkExprArgument (_argLabel, expr) t comments =
       walkList
         ~getLoc:(fun n -> n.Parsetree.ptyp_loc)
         ~walkNode:walkTypExpr
+        ~addDocComment:(addDocComment0 "20")
         typexprs
         t
         comments
@@ -1790,6 +1916,7 @@ and walkExprArgument (_argLabel, expr) t comments =
       walkList
         ~getLoc:(fun n -> n.Parsetree.ptyp_loc)
         ~walkNode:walkTypExpr
+        ~addDocComment:(addDocComment0 "21")
         typexprs
         t
         rest
@@ -1814,6 +1941,7 @@ and walkExprArgument (_argLabel, expr) t comments =
         | _ -> Location.none
       )
       ~walkNode:walkTypObjectField
+      ~addDocComment:(addDocComment0 "22")
       fields
       t
       comments
@@ -1870,6 +1998,7 @@ and walkExprArgument (_argLabel, expr) t comments =
         loc_end = typexpr.Parsetree.ptyp_loc.loc_end
       })
       ~walkNode:walkPackageConstraint
+      ~addDocComment:(addDocComment0 "23")
       packageConstraints
       t
       comments
