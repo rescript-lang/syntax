@@ -20,6 +20,8 @@
  (depends
   (ocaml
    (>= 4.08))
+  (ocamlformat
+   (= 0.22.4))
   (reanalyze
    (= 2.23.0))
   dune))
