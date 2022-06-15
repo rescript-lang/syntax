@@ -23,7 +23,7 @@ J. Blow.
 
 Required:
 
-- OCaml 4.08 or later
+- OCaml 4.10 or later
 - Dune
 - Reanalyze
 - OS: macOS, Linux or Windows (tests will currently run on macOS only)
