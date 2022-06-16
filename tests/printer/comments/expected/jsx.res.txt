@@ -6,3 +6,10 @@ module Cite = {
     <div> foo </div>
   }
 }
+
+<A
+  value=""
+// Comment
+/>
+
+<A /* comment */ />

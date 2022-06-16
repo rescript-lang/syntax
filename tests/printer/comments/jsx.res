@@ -8,3 +8,10 @@ module Cite = {
     </div>
   }
 }
+
+<A
+  value=""
+  // Comment
+/>
+
+<A /* comment */ />

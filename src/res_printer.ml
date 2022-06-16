@@ -3922,7 +3922,11 @@ and printJsxExpression lident args cmtTbl =
         Doc.concat [
           printComments (Doc.concat [Doc.lessThan; name]) cmtTbl lident.Asttypes.loc;
           formattedProps;
-          if isSelfClosing then Doc.concat [Doc.line; Doc.text "/>"] else Doc.nil
+          match children with
+          | Some ({Parsetree.pexp_desc = Pexp_construct ({txt = Longident.Lident "[]"}, None); pexp_loc = loc}) ->
+            let doc = printComments (Doc.text "/>") cmtTbl loc in
+            Doc.concat [Doc.line; doc]
+          | _ -> Doc.nil
         ]
       );
       if isSelfClosing then Doc.nil
