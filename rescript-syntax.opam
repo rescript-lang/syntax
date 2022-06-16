@@ -8,6 +8,7 @@ homepage: "https://github.com/rescript-lang/syntax"
 bug-reports: "https://github.com/rescript-lang/syntax/issues"
 depends: [
   "ocaml" {>= "4.08"}
+  "ocamlformat" {= "0.22.4"}
   "reanalyze" {= "2.23.0"}
   "dune"
 ]

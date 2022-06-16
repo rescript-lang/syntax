@@ -20,6 +20,9 @@ roundtrip-test: reanalyze
 reanalyze: build
 	reanalyze.exe -set-exit-code -all-cmt _build/default -suppress testrunner,compiler-libs-406 -exclude-paths compiler-libs-406 
 
+format:
+	dune build @fmt --auto-promote
+
 clean:
 	dune clean
 
