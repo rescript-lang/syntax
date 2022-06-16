@@ -597,10 +597,8 @@ and printStructureItem (si: Parsetree.structure_item) cmtTbl =
       printAttributes attrs cmtTbl;
       exprDoc;
     ]
-  | Pstr_attribute attr -> Doc.concat [
-      Doc.text "@";
-      printAttribute attr cmtTbl
-    ]
+  | Pstr_attribute attr ->
+      printAttribute ~standalone:true attr cmtTbl
   | Pstr_extension (extension, attrs) -> Doc.concat [
       printAttributes attrs cmtTbl;
       Doc.concat [printExtension ~atModuleLvl:true extension cmtTbl];
@@ -972,10 +970,8 @@ and printSignatureItem (si : Parsetree.signature_item) cmtTbl =
     printOpenDescription openDescription cmtTbl
   | Psig_include includeDescription ->
     printIncludeDescription includeDescription cmtTbl
-  | Psig_attribute attr -> Doc.concat [
-      Doc.text "@";
-      printAttribute attr cmtTbl
-    ]
+  | Psig_attribute attr ->
+      printAttribute ~standalone:true attr cmtTbl
   | Psig_extension (extension, attrs) -> Doc.concat [
       printAttributes attrs cmtTbl;
       Doc.concat [printExtension ~atModuleLvl:true extension cmtTbl];
@@ -4984,10 +4980,10 @@ and printPayload (payload : Parsetree.payload) cmtTbl =
       Doc.rparen;
     ]
 
-and printAttribute ((id, payload) : Parsetree.attribute) cmtTbl =
+and printAttribute ?(standalone=false) ((id, payload) : Parsetree.attribute) cmtTbl =
   Doc.group (
     Doc.concat [
-      Doc.text "@";
+      Doc.text (if standalone then "@@" else "@");
       Doc.text (convertBsExternalAttribute id.txt);
       printPayload payload cmtTbl
     ]
