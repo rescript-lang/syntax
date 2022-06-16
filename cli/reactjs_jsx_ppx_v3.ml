@@ -375,7 +375,7 @@ let jsxMapper () =
       | _ -> false
     in
     (* check if record which goes to Foo.make({ ... } as record) empty or not
-       if empty then change it to {key: None} only for upper case jsx
+       if empty then change it to {key: @optional None} only for upper case jsx
        This would be redundant regarding PR progress https://github.com/rescript-lang/syntax/pull/299
     *)
     let props =
