@@ -309,73 +309,79 @@ let isIfThenElseExpr expr =
   | _ -> false
 
 
-let annotateDocComments ~docComments ~loc attrs : Parsetree.attributes =
+let annotateDocComments ~docComments attrs : Parsetree.attributes =
   let open Ast_helper in
   docComments |>
   List.rev |>
   List.fold_left (fun attrs comment ->
-    ({Location.txt="ocaml.doc"; loc},
-    (Parsetree.PStr [Str.eval (Exp.constant (Const.string (Comment.txt comment)))])) :: attrs
+    let loc = Comment.loc comment in
+    ({Location.txt="ocaml.doc"; loc },
+    (Parsetree.PStr [Str.eval ~loc (Exp.constant ~loc (Const.string (Comment.txt comment)))])) :: attrs
     ) attrs
 
-let getDocComments comments =
-  comments |> List.filter Comment.isDocComment
-
-let docCommentsValueBinding (vb: Parsetree.value_binding) loc comments =
-  let docComments = comments |> getDocComments in
+let docCommentsValueBinding (vb: Parsetree.value_binding) ~docComments =
   if docComments <> [] then
-    vb.pvb_attributes <- annotateDocComments ~docComments ~loc vb.pvb_attributes
+    vb.pvb_attributes <- annotateDocComments ~docComments vb.pvb_attributes
 
-let docCommentsTypeDeclaration (td: Parsetree.type_declaration) loc comments =
-  let docComments = comments |> getDocComments in
+let docCommentsTypeDeclaration (td: Parsetree.type_declaration) ~docComments =
   if docComments <> [] then
-    td.ptype_attributes <- annotateDocComments ~docComments ~loc td.ptype_attributes
+    td.ptype_attributes <- annotateDocComments ~docComments td.ptype_attributes
 
-let docCommentsValueDescription (vd: Parsetree.value_description) loc comments =
-  let docComments = comments |> getDocComments in
+let docCommentsValueDescription (vd: Parsetree.value_description) ~docComments =
   if docComments <> [] then
-    vd.pval_attributes <- annotateDocComments ~docComments ~loc vd.pval_attributes
+    vd.pval_attributes <- annotateDocComments ~docComments vd.pval_attributes
 
-let docCommentsTypeExtension (te: Parsetree.type_extension) loc comments =
-  let docComments = comments |> getDocComments in
+let docCommentsTypeExtension (te: Parsetree.type_extension) ~docComments =
   if docComments <> [] then
-    te.ptyext_attributes <- annotateDocComments ~docComments ~loc te.ptyext_attributes
+    te.ptyext_attributes <- annotateDocComments ~docComments te.ptyext_attributes
 
-let docCommentsIncludeDeclaration (id: Parsetree.include_declaration) loc comments =
-  let docComments = comments |> getDocComments in
+let docCommentsIncludeDeclaration (id: Parsetree.include_declaration) ~docComments =
   if docComments <> [] then
-    id.pincl_attributes <- annotateDocComments ~docComments ~loc id.pincl_attributes
+    id.pincl_attributes <- annotateDocComments ~docComments id.pincl_attributes
 
-let docCommentsModuleTypeDeclaration (mtd: Parsetree.module_type_declaration) loc comments =
-  let docComments = comments |> getDocComments in
+let docCommentsModuleTypeDeclaration (mtd: Parsetree.module_type_declaration) ~docComments =
   if docComments <> [] then
-    mtd.pmtd_attributes <- annotateDocComments ~docComments ~loc mtd.pmtd_attributes
+    mtd.pmtd_attributes <- annotateDocComments ~docComments mtd.pmtd_attributes
 
-let docCommentsModuleType (mt: Parsetree.module_type) loc comments =
-  let docComments = comments |> getDocComments in
+let docCommentsModuleType (mt: Parsetree.module_type) ~docComments =
   if docComments <> [] then
-    mt.pmty_attributes <- annotateDocComments ~docComments ~loc mt.pmty_attributes
+    mt.pmty_attributes <- annotateDocComments ~docComments mt.pmty_attributes
 
-let docCommentsModuleBinding (mb: Parsetree.module_binding) loc comments =
-  let docComments = comments |> getDocComments in
+let docCommentsModuleBinding (mb: Parsetree.module_binding) ~docComments =
   if docComments <> [] then
-    mb.pmb_attributes <- annotateDocComments ~docComments ~loc mb.pmb_attributes 
+    mb.pmb_attributes <- annotateDocComments ~docComments mb.pmb_attributes 
 
-let docCommentsModuleExpr (me: Parsetree.module_expr) loc comments =
-  let docComments = comments |> getDocComments in
+let docCommentsModuleExpr (me: Parsetree.module_expr) ~docComments =
   if docComments <> [] then
-    me.pmod_attributes <- annotateDocComments ~docComments ~loc me.pmod_attributes 
+    me.pmod_attributes <- annotateDocComments ~docComments me.pmod_attributes 
 
-let docCommentsIncludeDescription (id: Parsetree.include_description) loc comments =
-  let docComments = comments |> getDocComments in
-  if comments |> List.exists Comment.isDocComment  then
-    id.pincl_attributes <- annotateDocComments ~docComments ~loc id.pincl_attributes
+let docCommentsIncludeDescription (id: Parsetree.include_description) ~docComments =
+  id.pincl_attributes <- annotateDocComments ~docComments id.pincl_attributes
 
-let docCommentsModulDeclaration (md: Parsetree.module_declaration) loc comments =
-  let docComments = comments |> getDocComments in
-  if comments |> List.exists Comment.isDocComment  then
-    md.pmd_attributes <- annotateDocComments ~docComments ~loc md.pmd_attributes
+let docCommentsModulDeclaration (md: Parsetree.module_declaration) ~docComments =
+  md.pmd_attributes <- annotateDocComments ~docComments md.pmd_attributes
 
+let docCommentsLabelDeclaration (ld: Parsetree.label_declaration) ~docComments =
+  ld.pld_attributes <- annotateDocComments ~docComments ld.pld_attributes
+
+let docCommentsExpression (e: Parsetree.expression) ~docComments =
+  e.pexp_attributes <- annotateDocComments ~docComments e.pexp_attributes
+
+let docCommentsCoreType (ct: Parsetree.core_type) ~docComments =
+  ct.ptyp_attributes <- annotateDocComments ~docComments ct.ptyp_attributes
+
+let docCommentsExtensionConstructor (ec: Parsetree.extension_constructor) ~docComments =
+  ec.pext_attributes <- annotateDocComments ~docComments ec.pext_attributes
+
+let docCommentsPattern (p: Parsetree.pattern) ~docComments =
+  p.ppat_attributes <- annotateDocComments ~docComments p.ppat_attributes
+
+let docCommentsObjectField (f: Parsetree.object_field) ~docComments =
+  match f with
+  | Otag (_, _, ct)
+  | Oinherit ct ->
+    docCommentsCoreType ct ~docComments
+    
 type node =
   | Case of Parsetree.case
   | CoreType of Parsetree.core_type
@@ -395,6 +401,7 @@ type node =
   | StructureItem of Parsetree.structure_item
   | TypeDeclaration of Parsetree.type_declaration
   | ValueBinding of Parsetree.value_binding
+  | ValueDescription of Parsetree.value_description
 
 let getLoc node =
   let open Parsetree in
@@ -428,27 +435,47 @@ let getLoc node =
   | StructureItem si -> si.pstr_loc
   | TypeDeclaration td -> td.ptype_loc
   | ValueBinding vb -> vb.pvb_loc
+  | ValueDescription vd -> vd.pval_loc
 
-let addDocComments node loc comments = match node with
-  | ValueBinding vb -> docCommentsValueBinding vb loc comments
-  | TypeDeclaration td -> docCommentsTypeDeclaration td loc comments
-  | ModuleBinding md -> docCommentsModuleBinding md loc comments
-  | ModuleExpr me -> docCommentsModuleExpr me loc comments
+let splitDocComments comments = comments |> List.partition (Comment.isDocComment)
+
+let addDocComments node ~docComments = match node with
   | StructureItem _
-  | CoreType _
-  | Pattern _
-  | Expression _
-  | LabelDeclaration _
-  | ExtensionConstructor _
   | SignatureItem _
-  | ModuleDeclaration _
-  | ExprRecordRow _
   | Case _
-  | ExprArgument _
-  | PatternRecordRow _
-  | ObjectField _
-  | PackageConstraint _
-      -> ()
+  | ExprRecordRow _ ->
+    (* Can't attach a doc comment directly as it does not have attributes *)
+    assert (docComments = [])
+  | ValueBinding vb ->
+    docCommentsValueBinding vb ~docComments
+  | ValueDescription vd ->
+    docCommentsValueDescription vd ~docComments
+  | TypeDeclaration td ->
+    docCommentsTypeDeclaration td ~docComments
+  | ModuleBinding md -> 
+    docCommentsModuleBinding md ~docComments
+  | ModuleExpr me ->
+    docCommentsModuleExpr me ~docComments
+  | LabelDeclaration ld ->
+    docCommentsLabelDeclaration ld ~docComments
+  | CoreType ct ->
+    docCommentsCoreType ct ~docComments
+  | PackageConstraint (_, ct) ->
+    docCommentsCoreType ct ~docComments
+  | ExprArgument e ->
+    docCommentsExpression e ~docComments
+  | Expression e ->
+    docCommentsExpression e ~docComments
+  | ExtensionConstructor ec ->
+    docCommentsExtensionConstructor ec ~docComments
+  | Pattern p ->
+    docCommentsPattern p ~docComments
+  | ObjectField o ->
+    docCommentsObjectField o ~docComments
+  | ModuleDeclaration md ->
+    docCommentsModulDeclaration md ~docComments
+  | PatternRecordRow (_, p) ->
+    docCommentsPattern p ~docComments
 
 let rec walkStructure s t comments =
   match s with
@@ -498,24 +525,27 @@ let rec walkStructure s t comments =
   and walkValueDescription vd t comments =
     let (leading, trailing) =
       partitionLeadingTrailing comments vd.pval_name.loc in
+    let (docComments, leading) = splitDocComments leading in
     attach t.leading vd.pval_name.loc leading;
-    docCommentsValueDescription vd vd.pval_name.loc leading;
+    docCommentsValueDescription vd ~docComments;
     let (afterName, rest) =
       partitionAdjacentTrailing vd.pval_name.loc trailing in
     attach t.trailing vd.pval_name.loc afterName;
     let (before, inside, after) =
       partitionByLoc rest vd.pval_type.ptyp_loc
     in
+    let (docComments, before) = splitDocComments before in
     attach t.leading vd.pval_type.ptyp_loc before;
-    docCommentsValueDescription vd vd.pval_type.ptyp_loc before;
+    docCommentsValueDescription vd ~docComments;
     walkCoreType vd.pval_type t inside;
     attach t.trailing vd.pval_type.ptyp_loc after
 
   and walkTypeExtension te t comments =
     let (leading, trailing) =
       partitionLeadingTrailing comments te.ptyext_path.loc in
+    let (docComments, leading) = splitDocComments leading in
     attach t.leading te.ptyext_path.loc leading;
-    docCommentsTypeExtension te te.ptyext_path.loc leading;
+    docCommentsTypeExtension te ~docComments;
     let (afterPath, rest) =
       partitionAdjacentTrailing te.ptyext_path.loc trailing in
     attach t.trailing te.ptyext_path.loc afterPath;
@@ -540,16 +570,18 @@ let rec walkStructure s t comments =
   and walkIncludeDeclaration inclDecl t comments =
     let (before, inside, after) =
       partitionByLoc comments inclDecl.pincl_mod.pmod_loc in
+    let (docComments, before) = splitDocComments before in
     attach t.leading inclDecl.pincl_mod.pmod_loc before;
-    docCommentsIncludeDeclaration inclDecl inclDecl.pincl_mod.pmod_loc before;
+    docCommentsIncludeDeclaration inclDecl ~docComments;
     walkModuleExpr inclDecl.pincl_mod t inside;
     attach t.trailing inclDecl.pincl_mod.pmod_loc after
 
   and walkModuleTypeDeclaration mtd t comments =
     let (leading, trailing) =
       partitionLeadingTrailing comments mtd.pmtd_name.loc in
+    let (docComments, leading) = splitDocComments leading in
     attach t.leading mtd.pmtd_name.loc leading;
-    docCommentsModuleTypeDeclaration mtd mtd.pmtd_name.loc leading;
+    docCommentsModuleTypeDeclaration mtd ~docComments;
     begin match mtd.pmtd_type with
     | None ->
       attach t.trailing mtd.pmtd_name.loc trailing
@@ -557,16 +589,18 @@ let rec walkStructure s t comments =
       let (afterName, rest) = partitionAdjacentTrailing mtd.pmtd_name.loc trailing in
       attach t.trailing mtd.pmtd_name.loc afterName;
       let (before, inside, after) = partitionByLoc rest modType.pmty_loc in
+      let (docComments, before) = splitDocComments before in
       attach t.leading modType.pmty_loc before;
-      docCommentsModuleType modType modType.pmty_loc before;
+      docCommentsModuleType modType ~docComments;
       walkModType modType t inside;
       attach t.trailing modType.pmty_loc after
     end
 
   and walkModuleBinding mb t comments =
     let (leading, trailing) = partitionLeadingTrailing comments mb.pmb_name.loc in
+    let (docComments, leading) = splitDocComments leading in
     attach t.leading mb.pmb_name.loc leading;
-    docCommentsModuleBinding mb mb.pmb_name.loc leading;
+    docCommentsModuleBinding mb ~docComments;
     let (afterName, rest) = partitionAdjacentTrailing mb.pmb_name.loc trailing in
     attach t.trailing mb.pmb_name.loc afterName;
     let (leading, inside, trailing) = partitionByLoc rest mb.pmb_expr.pmod_loc in
@@ -574,8 +608,9 @@ let rec walkStructure s t comments =
     | Pmod_constraint _ ->
       walkModuleExpr mb.pmb_expr t (List.concat [leading; inside]);
     | _ ->
+      let (docComments, leading) = splitDocComments leading in
       attach t.leading mb.pmb_expr.pmod_loc leading;
-      docCommentsModuleExpr mb.pmb_expr mb.pmb_expr.pmod_loc leading;
+      docCommentsModuleExpr mb.pmb_expr ~docComments;
       walkModuleExpr mb.pmb_expr t inside;
     end;
     attach t.trailing mb.pmb_expr.pmod_loc trailing
@@ -623,42 +658,46 @@ let rec walkStructure s t comments =
   and walkIncludeDescription id t comments =
     let (before, inside, after) =
       partitionByLoc comments id.pincl_mod.pmty_loc in
+    let (docComments, before) = splitDocComments before in
     attach t.leading id.pincl_mod.pmty_loc before;
-    docCommentsIncludeDescription id id.pincl_mod.pmty_loc before;
+    docCommentsIncludeDescription id ~docComments;
     walkModType id.pincl_mod t inside;
     attach t.trailing id.pincl_mod.pmty_loc after
 
   and walkModuleDeclaration md t comments =
     let (leading, trailing) = partitionLeadingTrailing comments md.pmd_name.loc in
+    let (docComments, leading) = splitDocComments leading in
     attach t.leading md.pmd_name.loc leading;
-    docCommentsModulDeclaration md md.pmd_name.loc leading;
+    docCommentsModulDeclaration md ~docComments;
     let (afterName, rest) = partitionAdjacentTrailing md.pmd_name.loc trailing in
     attach t.trailing md.pmd_name.loc afterName;
     let (leading, inside, trailing) = partitionByLoc rest md.pmd_type.pmty_loc in
+    let (docComments, leading) = splitDocComments leading in
     attach t.leading md.pmd_type.pmty_loc leading;
-    docCommentsModuleType md.pmd_type md.pmd_type.pmty_loc leading;
+    docCommentsModuleType md.pmd_type ~docComments;
     walkModType md.pmd_type t inside;
     attach t.trailing md.pmd_type.pmty_loc trailing
 
   and walkNode node tbl comments = match node with
-    | StructureItem si -> walkStructureItem si tbl comments
-    | ModuleBinding mb -> walkModuleBinding mb tbl comments
-    | ExtensionConstructor ec -> walkExtensionConstructor ec tbl comments
-    | SignatureItem si -> walkSignatureItem si tbl comments
-    | ModuleDeclaration md -> walkModuleDeclaration md tbl comments
-    | ValueBinding vb -> walkValueBinding vb tbl comments
-    | TypeDeclaration td -> walkTypeDeclaration td tbl comments
-    | LabelDeclaration ld -> walkLabelDeclaration ld tbl comments
-    | ExprRecordRow (ri, e) -> walkExprRecordRow (ri, e) tbl comments
-    | Expression e -> walkExpression e tbl comments
-    | Case c -> walkCase c tbl comments
-    | ExprArgument ea -> walkExprArgument ea tbl comments
-    | ModuleExpr me -> walkModuleExpr me tbl comments
-    | Pattern p -> walkPattern p tbl comments
-    | PatternRecordRow (li, p) -> walkPatternRecordRow (li, p) tbl comments
-    | CoreType ct -> walkCoreType ct tbl comments
-    | ObjectField f -> walkObjectField f tbl comments
-    | PackageConstraint (li, te) -> walkPackageConstraint (li, te) tbl comments
+  | Case c -> walkCase c tbl comments
+  | CoreType ct -> walkCoreType ct tbl comments
+  | ExprArgument ea -> walkExprArgument ea tbl comments
+  | Expression e -> walkExpression e tbl comments
+  | ExprRecordRow (ri, e) -> walkExprRecordRow (ri, e) tbl comments
+  | ExtensionConstructor ec -> walkExtensionConstructor ec tbl comments
+  | LabelDeclaration ld -> walkLabelDeclaration ld tbl comments
+  | ModuleBinding mb -> walkModuleBinding mb tbl comments
+  | ModuleDeclaration md -> walkModuleDeclaration md tbl comments
+  | ModuleExpr me -> walkModuleExpr me tbl comments
+  | ObjectField f -> walkObjectField f tbl comments
+  | PackageConstraint (li, te) -> walkPackageConstraint (li, te) tbl comments
+  | Pattern p -> walkPattern p tbl comments
+  | PatternRecordRow (li, p) -> walkPatternRecordRow (li, p) tbl comments
+  | SignatureItem si -> walkSignatureItem si tbl comments
+  | StructureItem si -> walkStructureItem si tbl comments
+  | TypeDeclaration td -> walkTypeDeclaration td tbl comments
+  | ValueBinding vb -> walkValueBinding vb tbl comments
+  | ValueDescription vd -> walkValueDescription vd tbl comments
 
   and walkList:
     ?prevLoc:Location.t ->
@@ -682,25 +721,41 @@ let rec walkStructure s t comments =
         | StructureItem {pstr_desc = Pstr_type (_, tds)} ->
           walkList ?prevLoc (tds |> List.map (fun td -> TypeDeclaration td)) t (leading @ inside);
           walkList ~prevLoc:currLoc rest t trailing
+        | SignatureItem {psig_desc = Psig_value vd} ->
+          walkList ?prevLoc [ ValueDescription vd] t (leading @ inside);
+          walkList ~prevLoc:currLoc rest t trailing
+        | SignatureItem {psig_desc = Psig_type (_, tds)} ->
+          walkList ?prevLoc (tds |> List.map (fun td -> TypeDeclaration td)) t (leading @ inside);
+          walkList ~prevLoc:currLoc rest t trailing
         | _ ->
           (
+          let split comments = match node with
+            | StructureItem _
+            | SignatureItem _
+            | Case _ ->
+              (* Don't attach doc comments as these have no attributes *)
+              ([], comments)
+            | _ -> splitDocComments comments in
           begin match prevLoc with
           | None -> (* first node, all leading comments attach here *)
+            let (docComments, leading) = split leading in
             attach t.leading currLoc leading;
-            addDocComments node currLoc leading;
+            addDocComments node ~docComments
           | Some prevLoc ->
             (* Same line *)
             if prevLoc.loc_end.pos_lnum == currLoc.loc_start.pos_lnum then (
               let (afterPrev, beforeCurr) = partitionAdjacentTrailing prevLoc leading in
               attach t.trailing prevLoc afterPrev;
+              let (docComments, beforeCurr) = split beforeCurr in
               attach t.leading currLoc beforeCurr;
-              addDocComments node currLoc leading
+              addDocComments node ~docComments
             ) else (
               let (onSameLineAsPrev, afterPrev) = partitionByOnSameLine prevLoc leading in
               attach t.trailing prevLoc onSameLineAsPrev;
               let (leading, _inside, _trailing) = partitionByLoc afterPrev currLoc in
+              let (docComments, leading) = split leading in
               attach t.leading currLoc leading;
-              addDocComments node currLoc leading;
+              addDocComments node ~docComments
             )
           end;
           walkNode node t inside;

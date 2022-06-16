@@ -70,7 +70,7 @@ and core_type =
     {
      ptyp_desc: core_type_desc;
      ptyp_loc: Location.t;
-     ptyp_attributes: attributes; (* ... [@id1] [@id2] *)
+     mutable ptyp_attributes: attributes; (* ... [@id1] [@id2] *)
     }
 
 and core_type_desc =
@@ -168,7 +168,7 @@ and pattern =
     {
      ppat_desc: pattern_desc;
      ppat_loc: Location.t;
-     ppat_attributes: attributes; (* ... [@id1] [@id2] *)
+     mutable ppat_attributes: attributes; (* ... [@id1] [@id2] *)
     }
 
 and pattern_desc =
@@ -233,7 +233,7 @@ and expression =
     {
      pexp_desc: expression_desc;
      pexp_loc: Location.t;
-     pexp_attributes: attributes; (* ... [@id1] [@id2] *)
+     mutable pexp_attributes: attributes; (* ... [@id1] [@id2] *)
     }
 
 and expression_desc =
@@ -418,7 +418,7 @@ and label_declaration =
      pld_mutable: mutable_flag;
      pld_type: core_type;
      pld_loc: Location.t;
-     pld_attributes: attributes; (* l : T [@id1] [@id2] *)
+     mutable pld_attributes: attributes; (* l : T [@id1] [@id2] *)
     }
 
 (*  { ...; l: T; ... }            (mutable=Immutable)
@@ -466,7 +466,7 @@ and extension_constructor =
      pext_name: string loc;
      pext_kind : extension_constructor_kind;
      pext_loc : Location.t;
-     pext_attributes: attributes; (* C of ... [@id1] [@id2] *)
+     mutable pext_attributes: attributes; (* C of ... [@id1] [@id2] *)
     }
 
 and extension_constructor_kind =
