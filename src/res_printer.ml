@@ -3925,8 +3925,8 @@ and printJsxExpression lident args cmtTbl =
           formattedProps;
           match children with
           | Some ({Parsetree.pexp_desc = Pexp_construct ({txt = Longident.Lident "[]"}, None); pexp_loc = loc}) ->
-            let doc = printComments (Doc.text "/>") cmtTbl loc in
-            Doc.concat [Doc.line; doc]
+            let doc = Doc.concat [printCommentsInside cmtTbl loc; Doc.text "/>"] in
+            Doc.concat [Doc.line; printComments doc cmtTbl loc]
           | _ -> Doc.nil
         ]
       );
