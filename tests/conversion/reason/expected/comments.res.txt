@@ -147,21 +147,21 @@ let store_attributes = arg => {
 3 /* - */
 // **** comment
 /* ** comment */
-/** docstring */
-/** docstring */
-/** */
-/** */
-/** (** comment *) */
-/** (*** comment *) */
-/**
+@ocaml.doc(" docstring ")
+@ocaml.doc(" docstring ")
+@ocaml.doc(" ")
+@ocaml.doc("")
+@ocaml.doc(" (** comment *) ")
+@ocaml.doc(" (*** comment *) ")
+@ocaml.doc("
  * Multiline
- */
-/* * Multiline
+ ")
+@ocaml.doc(" Multiline
  *
- */
-/**
+ ")
+@ocaml.doc("
  **
- */
+ ")
 module // comment
 
 /* ** comment */
@@ -412,7 +412,7 @@ type intPair2 = (
   int,
 )
 
-let result = /** */ (2 + 3)
+let result = @ocaml.doc("") (2 + 3)
 
 // This is not yet idempotent
 // {

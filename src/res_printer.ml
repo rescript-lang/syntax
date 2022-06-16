@@ -4982,7 +4982,7 @@ and printPayload (payload : Parsetree.payload) cmtTbl =
 
 and printAttribute ?(standalone=false) ((id, payload) : Parsetree.attribute) cmtTbl =
   match id, payload with
-  | ( {txt = "ocaml.doc"},
+  | ( {txt = "ns.doc"},
       PStr [{pstr_desc = Pstr_eval ({pexp_desc = Pexp_constant (Pconst_string (s, _))}, _)}] ) ->
     let comment = Comment.makeMultiLineComment ~loc:id.loc ~docComment:true ("*" ^ s) in
     printLeadingComment comment
