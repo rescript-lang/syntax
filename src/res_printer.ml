@@ -1679,13 +1679,14 @@ and printTypExpr (typExpr : Parsetree.core_type) cmtTbl =
   | Ptyp_variant (rowFields, closedFlag, labelsOpt) ->
     let forceBreak = typExpr.ptyp_loc.Location.loc_start.pos_lnum < typExpr.ptyp_loc.loc_end.pos_lnum in
     let printRowField = function
-    | Parsetree.Rtag ({txt}, attrs, true, []) ->
-      Doc.group (
+    | Parsetree.Rtag ({txt; loc}, attrs, true, []) ->
+      let doc = Doc.group (
         Doc.concat [
           printAttributes attrs cmtTbl;
           Doc.concat [Doc.text "#"; printPolyVarIdent txt]
         ]
-      )
+      ) in
+      printComments doc cmtTbl loc
     | Rtag ({txt}, attrs, truth, types) ->
       let doType t = match t.Parsetree.ptyp_desc with
       | Ptyp_tuple _ -> printTypExpr t cmtTbl

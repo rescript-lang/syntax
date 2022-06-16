@@ -1741,6 +1741,14 @@ and walkExprArgument (_argLabel, expr) t comments =
       walkPattern pattern t inside;
       attach t.trailing pattern.ppat_loc trailing
 
+  and walkRowField (rowField: Parsetree.row_field) t comments =
+    match rowField with
+    | Parsetree.Rtag ({loc}, _, _, _) -> 
+      let (before, after) = partitionLeadingTrailing comments loc in
+      attach t.leading loc before;
+      attach t.trailing loc after
+    | Rinherit(_) -> ()
+
   and walkTypExpr typ t comments =
     match typ.Parsetree.ptyp_desc with
     | _ when comments = [] -> ()
@@ -1780,6 +1788,16 @@ and walkExprArgument (_argLabel, expr) t comments =
       attach t.leading typexpr.ptyp_loc beforeTyp;
       walkTypExpr typexpr t insideTyp;
       attach t.trailing typexpr.ptyp_loc afterTyp
+    | Ptyp_variant(rowFields, _, _) ->
+      walkList
+        ~getLoc:(function 
+         | Parsetree.Rtag ({loc}, _, _, _) -> loc
+         | Rinherit({ptyp_loc}) -> ptyp_loc)
+        ~walkNode:walkRowField
+        rowFields
+        t
+        comments
+    
     | Ptyp_constr (longident, typexprs) ->
       let (beforeLongident, _afterLongident) =
         partitionLeadingTrailing comments longident.loc in

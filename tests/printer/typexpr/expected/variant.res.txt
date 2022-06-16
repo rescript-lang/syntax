@@ -115,3 +115,11 @@ type t = [
 
 // don't pick int with suffix as numeric polyvar
 type t = [#"10s" | #"20t"]
+
+// comments
+type foo = [
+  | // before bar
+  #Bar // after bar
+  | // before baz
+  #Baz
+] // after baz
