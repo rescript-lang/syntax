@@ -315,8 +315,13 @@ let annotateDocComments ~docComments attrs : Parsetree.attributes =
   List.rev |>
   List.fold_left (fun attrs comment ->
     let loc = Comment.loc comment in
+    let txt = Comment.txt comment in
+    let txt =
+      if txt <> "" && txt.[0] = '*' then
+        String.sub txt 1 (String.length txt - 1)
+      else txt in
     ({Location.txt="ocaml.doc"; loc },
-    (Parsetree.PStr [Str.eval ~loc (Exp.constant ~loc (Const.string (Comment.txt comment)))])) :: attrs
+    (Parsetree.PStr [Str.eval ~loc (Exp.constant ~loc (Const.string txt))])) :: attrs
     ) attrs
 
 let docCommentsValueBinding (vb: Parsetree.value_binding) ~docComments =

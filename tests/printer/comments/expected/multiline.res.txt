@@ -30,7 +30,7 @@ let f = () => ()
     }
     return true
   } */
-@ocaml.doc("*
+@ocaml.doc("
  * test
 ")
 let equals = (matrix1, matrix2) => {
