@@ -1,11 +1,3 @@
-Found:
-(txt: * This is one 
-style: DocComment
-lines: 1-1)
-Found:
-(txt: * And this is another one 
-style: DocComment
-lines: 3-3)
 /** This is one */
 
 /** And this is another one */

@@ -318,19 +318,11 @@ let annotateDocComment ~docComments ~loc attrs : Parsetree.attributes =
     (Parsetree.PStr [Str.eval (Exp.constant (Const.string (Comment.txt comment)))])) :: attrs
     ) attrs
 
-let checkDocComment print comment =
-  if Comment.isDocComment comment then (
-    if print then Printf.printf "Found:\n%s\n" (Comment.toString comment);
-    true
-  ) else (
-    false
-  )
-
-let getDocComments ?(print=false) comments =
-  comments |> List.filter (checkDocComment print)
+let getDocComments comments =
+  comments |> List.filter Comment.isDocComment
 
 let docCommentValueBinding (vb: Parsetree.value_binding) loc comments =
-  let docComments = comments |> getDocComments ~print:true in
+  let docComments = comments |> getDocComments in
   if docComments <> [] then
     vb.pvb_attributes <- annotateDocComment ~docComments ~loc vb.pvb_attributes
 
