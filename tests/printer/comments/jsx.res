@@ -15,3 +15,7 @@ module Cite = {
 />
 
 <A /* comment */ />
+
+<A>
+  // Comment
+</A>
