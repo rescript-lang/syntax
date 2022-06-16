@@ -34,17 +34,16 @@ let locb = 0b1000_0000
 let hicb = 0b1011_1111
 
 let categoryTable = [|
-(* 0 *) {low = -1; high= -1; size= 1}; (* invalid *)
-(* 1 *) {low = 1; high= -1; size= 1}; (* ascii *)
-(* 2 *) {low = locb; high= hicb; size= 2};
-(* 3 *) {low = 0xA0; high= hicb; size= 3};
-(* 4 *) {low = locb; high= hicb; size= 3};
-(* 5 *) {low = locb; high= 0x9F; size= 3};
-(* 6 *) {low = 0x90; high= hicb;  size= 4};
-(* 7 *) {low = locb; high= hicb; size= 4};
-(* 8 *) {low = locb; high= 0x8F; size= 4};
-
-|]
+  (* 0 *) {low = -1; high= -1; size= 1}; (* invalid *)
+  (* 1 *) {low = 1; high= -1; size= 1}; (* ascii *)
+  (* 2 *) {low = locb; high= hicb; size= 2};
+  (* 3 *) {low = 0xA0; high= hicb; size= 3};
+  (* 4 *) {low = locb; high= hicb; size= 3};
+  (* 5 *) {low = locb; high= 0x9F; size= 3};
+  (* 6 *) {low = 0x90; high= hicb;  size= 4};
+  (* 7 *) {low = locb; high= hicb; size= 4};
+  (* 8 *) {low = locb; high= 0x8F; size= 4};
+|] [@@ocamlformat "disable"]
 
 let categories = [|
   1; 1; 1; 1; 1; 1 ;1 ;1 ;1 ;1 ;1 ;1 ;1 ;1 ;1 ;1;
@@ -65,7 +64,7 @@ let categories = [|
    2; 2; 2; 2; 2; 2; 2; 2; 2; 2; 2; 2; 2; 2; 2; 2;
    3; 4; 4; 4; 4; 4; 4; 4; 4; 4; 4; 4; 4; 5; 4; 4;
   6; 7; 7 ;7; 8; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0;
-|]
+|] [@@ocamlformat "disable"]
 
 let decodeCodePoint i s len =
   if len < 1 then (repl, 1) else
