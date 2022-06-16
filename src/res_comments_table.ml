@@ -339,15 +339,6 @@ let docCommentTypeDeclaration (td: Parsetree.type_declaration) loc comments =
   if docComments <> [] then
     td.ptype_attributes <- annotateDocComment ~docComments ~loc td.ptype_attributes
 
-
-let docCommentStructureItem (si: Parsetree.structure_item) loc comments =
-  let docComments = comments |> getDocComments in
-  if docComments <> [] then
-    (match si.pstr_desc with
-    | Pstr_value (_, vb::_) -> docCommentValueBinding vb loc docComments
-    | Pstr_type (_, td::_) -> docCommentTypeDeclaration td loc docComments
-    | _ -> assert false (* TODO !!! *))
-
 let docCommentValueDescription (vd: Parsetree.value_description) loc comments =
   let docComments = comments |> getDocComments in
   if docComments <> [] then
@@ -447,11 +438,11 @@ let getLoc node =
   | ValueBinding vb -> vb.pvb_loc
 
 let addDocComment node loc comments = match node with
-  | StructureItem si -> docCommentStructureItem si loc comments
   | ValueBinding vb -> docCommentValueBinding vb loc comments
   | TypeDeclaration td -> docCommentTypeDeclaration td loc comments
   | ModuleBinding md -> docCommentModuleBinding md loc comments
   | ModuleExpr me -> docCommentModuleExpr me loc comments
+  | StructureItem _
   | CoreType _
   | Pattern _
   | Expression _
@@ -681,38 +672,48 @@ let rec walkStructure s t comments =
     ?prevLoc:Location.t ->
     node list -> t -> Comment.t list -> unit 
     = fun ?prevLoc l t comments ->
-    match l with
-    | _ when comments = [] -> ()
-    | [] ->
-      begin match prevLoc with
-      | Some loc ->
-        attach t.trailing loc comments
-      | None -> ()
-      end
-    | node::rest ->
-      let currLoc = getLoc node in
-      let (leading, inside, trailing) = partitionByLoc comments currLoc in
-      begin match prevLoc with
-      | None -> (* first node, all leading comments attach here *)
-        attach t.leading currLoc leading;
-        addDocComment node currLoc leading;
-      | Some prevLoc ->
-        (* Same line *)
-        if prevLoc.loc_end.pos_lnum == currLoc.loc_start.pos_lnum then (
-          let (afterPrev, beforeCurr) = partitionAdjacentTrailing prevLoc leading in
-          attach t.trailing prevLoc afterPrev;
-          attach t.leading currLoc beforeCurr;
-          addDocComment node currLoc leading
-        ) else (
-          let (onSameLineAsPrev, afterPrev) = partitionByOnSameLine prevLoc leading in
-          attach t.trailing prevLoc onSameLineAsPrev;
-          let (leading, _inside, _trailing) = partitionByLoc afterPrev currLoc in
-          attach t.leading currLoc leading;
-          addDocComment node currLoc leading;
+      match l with
+      | _ when comments = [] -> ()
+      | [] ->
+        begin match prevLoc with
+        | Some loc ->
+          attach t.trailing loc comments
+        | None -> ()
+        end
+      | node::rest ->
+        let currLoc = getLoc node in
+        let (leading, inside, trailing) = partitionByLoc comments currLoc in
+        (match node with
+        | StructureItem {pstr_desc = Pstr_value (_, vbs)} ->
+          walkList ?prevLoc (vbs |> List.map (fun vb -> ValueBinding vb)) t (leading @ inside);
+          walkList ~prevLoc:currLoc rest t trailing
+        | StructureItem {pstr_desc = Pstr_type (_, tds)} ->
+          walkList ?prevLoc (tds |> List.map (fun td -> TypeDeclaration td)) t (leading @ inside);
+          walkList ~prevLoc:currLoc rest t trailing
+        | _ ->
+          (
+          begin match prevLoc with
+          | None -> (* first node, all leading comments attach here *)
+            attach t.leading currLoc leading;
+            addDocComment node currLoc leading;
+          | Some prevLoc ->
+            (* Same line *)
+            if prevLoc.loc_end.pos_lnum == currLoc.loc_start.pos_lnum then (
+              let (afterPrev, beforeCurr) = partitionAdjacentTrailing prevLoc leading in
+              attach t.trailing prevLoc afterPrev;
+              attach t.leading currLoc beforeCurr;
+              addDocComment node currLoc leading
+            ) else (
+              let (onSameLineAsPrev, afterPrev) = partitionByOnSameLine prevLoc leading in
+              attach t.trailing prevLoc onSameLineAsPrev;
+              let (leading, _inside, _trailing) = partitionByLoc afterPrev currLoc in
+              attach t.leading currLoc leading;
+              addDocComment node currLoc leading;
+            )
+          end;
+          walkNode node t inside;
+          walkList ~prevLoc:currLoc rest t trailing)
         )
-      end;
-      walkNode node t inside;
-      walkList ~prevLoc:currLoc rest t trailing
 
   (* The parsetree doesn't always contain location info about the opening or
    * closing token of a "list-of-things". This routine visits the whole list,
