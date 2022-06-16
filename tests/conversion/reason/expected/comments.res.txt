@@ -68,7 +68,6 @@ type variant =
   | X(int) /* End of line on X */
   /* Comment above Y */
   | Y(int) /* End of line on Y */
-
 /* Comment on entire type def for variant */
 
 type rec x = {
