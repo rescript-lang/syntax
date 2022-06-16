@@ -4839,8 +4839,7 @@ and printRecordRow (lbl, expr) cmtTbl punningAllowed =
     match expr.pexp_desc with
     | Pexp_ident({txt = Lident key; loc = keyLoc}) when (
       punningAllowed &&
-      Longident.last lbl.txt = key &&
-      lbl.loc.loc_start.pos_cnum == keyLoc.loc_start.pos_cnum
+      Longident.last lbl.txt = key
     ) ->
       (* print punned field *)
       printLidentPath lbl cmtTbl;
