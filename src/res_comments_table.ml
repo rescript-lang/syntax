@@ -21,36 +21,9 @@ let copy tbl = {
 
 let empty = make ()
 
-let log t =
+let printEntries tbl = 
   let open Location in
-  let leadingStuff = Hashtbl.fold (fun (k : Location.t) (v : Comment.t list) acc ->
-    let loc = Doc.concat [
-      Doc.lbracket;
-      Doc.text (string_of_int k.loc_start.pos_lnum);
-      Doc.text ":";
-      Doc.text (string_of_int (k.loc_start.pos_cnum  - k.loc_start.pos_bol));
-      Doc.text "-";
-      Doc.text (string_of_int k.loc_end.pos_lnum);
-      Doc.text ":";
-      Doc.text (string_of_int (k.loc_end.pos_cnum  - k.loc_end.pos_bol));
-      Doc.rbracket;
-    ] in
-    let doc = Doc.breakableGroup ~forceBreak:true (
-      Doc.concat [
-        loc;
-        Doc.indent (
-          Doc.concat [
-            Doc.line;
-            Doc.join ~sep:Doc.comma (List.map (fun c -> Doc.text (Comment.txt c)) v)
-          ]
-        );
-        Doc.line;
-      ]
-    ) in
-    doc::acc
-  ) t.leading []
-  in
-  let trailingStuff = Hashtbl.fold (fun (k : Location.t) (v : Comment.t list) acc ->
+  Hashtbl.fold (fun (k : Location.t) (v : Comment.t list) acc ->
     let loc = Doc.concat [
       Doc.lbracket;
       Doc.text (string_of_int k.loc_start.pos_lnum);
@@ -75,18 +48,23 @@ let log t =
       ]
     ) in
     doc::acc
-  ) t.trailing []
-  in
+  ) tbl []
+
+let log t =
+  let open Location in
+  let leadingStuff = printEntries t.leading in
+  let trailingStuff = printEntries t.trailing in
+  let stuffInside = printEntries t.inside in
   Doc.breakableGroup ~forceBreak:true (
     Doc.concat [
       Doc.text "leading comments:";
+      Doc.indent (Doc.concat [Doc.line; Doc.concat leadingStuff]);
       Doc.line;
-      Doc.indent (Doc.concat leadingStuff);
-      Doc.line;
+      Doc.text "comments inside:";
+      Doc.indent (Doc.concat [Doc.line; Doc.concat stuffInside]);
       Doc.line;
       Doc.text "trailing comments:";
-      Doc.indent (Doc.concat trailingStuff);
-      Doc.line;
+      Doc.indent (Doc.concat [Doc.line; Doc.concat trailingStuff]);
       Doc.line;
     ]
   ) |> Doc.toString ~width:80 |> print_endline
