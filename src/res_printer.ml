@@ -4981,13 +4981,19 @@ and printPayload (payload : Parsetree.payload) cmtTbl =
     ]
 
 and printAttribute ?(standalone=false) ((id, payload) : Parsetree.attribute) cmtTbl =
-  Doc.group (
-    Doc.concat [
-      Doc.text (if standalone then "@@" else "@");
-      Doc.text (convertBsExternalAttribute id.txt);
-      printPayload payload cmtTbl
-    ]
-  )
+  match id, payload with
+  | ( {txt = "ocaml.doc"},
+      PStr [{pstr_desc = Pstr_eval ({pexp_desc = Pexp_constant (Pconst_string (s, _))}, _)}] ) ->
+    let comment = Comment.makeMultiLineComment ~loc:id.loc ~docComment:true ("*" ^ s) in
+    printLeadingComment comment
+  | _ ->
+    Doc.group (
+      Doc.concat [
+        Doc.text (if standalone then "@@" else "@");
+        Doc.text (convertBsExternalAttribute id.txt);
+        printPayload payload cmtTbl
+      ]
+    )
 
 and printModExpr modExpr cmtTbl =
   let doc = match modExpr.pmod_desc with

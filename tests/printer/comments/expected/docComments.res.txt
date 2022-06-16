@@ -1,9 +1,9 @@
-@ocaml.doc(" This is one ") @ocaml.doc(" And this is another one ")
+/** This is one */ /** And this is another one */
 let x = 42
 
 /*  */ // But this is not
 
 /* **This is also not a doc comment */
 
-@ocaml.doc(" Great Type ")
+/** Great Type */
 type myType = int

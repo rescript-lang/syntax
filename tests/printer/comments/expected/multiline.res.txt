@@ -30,9 +30,9 @@ let f = () => ()
     }
     return true
   } */
-@ocaml.doc("
+/**
  * test
-")
+ */
 let equals = (matrix1, matrix2) => {
   let rec loop = (i, j) =>
     if i > 3 {
