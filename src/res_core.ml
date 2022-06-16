@@ -710,21 +710,25 @@ let parseValuePath p =
       Longident.Ldot (path, "_")
   in
   let ident = match p.Parser.token with
-  | Lident ident -> Longident.Lident ident
+  | Lident ident ->
+    Parser.next p;
+    Longident.Lident ident
   | Uident ident ->
     Parser.next p;
-    if p.Parser.token = Dot then (
+    let res = if p.Parser.token = Dot then (
       Parser.expect Dot p;
       aux p (Lident ident)  
     ) else (
       Parser.err p (Diagnostics.unexpected p.Parser.token p.breadcrumbs);
       Longident.Lident ident
-    )
+    ) in
+    if p.token <> Eof then Parser.next p;
+    res
   | token ->
     Parser.err p (Diagnostics.unexpected token p.breadcrumbs);
+    Parser.next p;
     Longident.Lident "_"
   in
-  Parser.next p;
   Location.mkloc ident (mkLoc startPos p.prevEndPos)
 
 let parseValuePathAfterDot p =
