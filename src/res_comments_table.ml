@@ -681,7 +681,6 @@ let rec walkStructure s t comments =
     ?prevLoc:Location.t ->
     node list -> t -> Comment.t list -> unit 
     = fun ?prevLoc l t comments ->
-    let open Location in
     match l with
     | _ when comments = [] -> ()
     | [] ->
