@@ -9,13 +9,17 @@ bootstrap: build
 bench: build
 	dune exec -- bench
 
-test: reanalyze
+test:
 	dune exec -- testrunner
 	dune exec -- bash ./scripts/test.sh
+	make reanalyze
+	bash ./scripts/testok.sh
 
-roundtrip-test: reanalyze
+roundtrip-test:
 	dune exec -- testrunner
 	ROUNDTRIP_TEST=1 dune exec -- bash ./scripts/test.sh
+	make reanalyze
+	bash ./scripts/testok.sh
 
 reanalyze: build
 	reanalyze.exe -set-exit-code -all-cmt _build/default -suppress testrunner,compiler-libs-406 -exclude-paths compiler-libs-406 
