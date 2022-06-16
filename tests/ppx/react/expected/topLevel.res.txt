@@ -1,13 +1,5 @@
-type props<'a, 'b> = {
-  @optional key: string,
-  @optional ref: ReactDOM.Ref.currentDomRef,
-  a: 'a,
-  b: 'b,
-}
-let make = ({a, b, ref}: props<'a, 'b>) => {
-  let ref = Js.Nullable.fromOption(ref)
-  let _ = ref
-
+type props<'a, 'b> = {@optional key: string, a: 'a, b: 'b}
+let make = ({a, b}: props<'a, 'b>) => {
   Js.log("This function should be named 'TopLevel.react'")
   ReactDOMRe.createDOMElementVariadic("div", [])
 }

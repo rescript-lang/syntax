@@ -1,14 +1,6 @@
 module Bar = {
-  type props<'a, 'b> = {
-    @optional key: string,
-    @optional ref: ReactDOM.Ref.currentDomRef,
-    a: 'a,
-    b: 'b,
-  }
-  let make = ({a, b, ref}: props<'a, 'b>) => {
-    let ref = Js.Nullable.fromOption(ref)
-    let _ = ref
-
+  type props<'a, 'b> = {@optional key: string, a: 'a, b: 'b}
+  let make = ({a, b}: props<'a, 'b>) => {
     Js.log("This function should be named `InnerModule.react$Bar`")
     ReactDOMRe.createDOMElementVariadic("div", [])
   }
@@ -16,17 +8,9 @@ module Bar = {
     let \"InnerModule$Bar" = (props: props<_>) => make(props)
     \"InnerModule$Bar"
   }
-  type props<'a, 'b> = {
-    @optional key: string,
-    @optional ref: ReactDOM.Ref.currentDomRef,
-    a: 'a,
-    b: 'b,
-  }
+  type props<'a, 'b> = {@optional key: string, a: 'a, b: 'b}
 
-  let component = ({a, b, ref}: props<'a, 'b>) => {
-    let ref = Js.Nullable.fromOption(ref)
-    let _ = ref
-
+  let component = ({a, b}: props<'a, 'b>) => {
     Js.log("This function should be named `InnerModule.react$Bar$component`")
     ReactDOMRe.createDOMElementVariadic("div", [])
   }

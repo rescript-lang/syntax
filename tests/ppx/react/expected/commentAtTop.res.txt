@@ -1,12 +1,7 @@
-type props<'msg> = {@optional key: string, @optional ref: ReactDOM.Ref.currentDomRef, msg: 'msg} // test React JSX file
+type props<'msg> = {@optional key: string, msg: 'msg} // test React JSX file
 
-let make = ({msg, ref}: props<'msg>) => {
-  let ref = Js.Nullable.fromOption(ref)
-  let _ = ref
-
-  {
-    ReactDOMRe.createDOMElementVariadic("div", [{msg->React.string}])
-  }
+let make = ({msg}: props<'msg>) => {
+  ReactDOMRe.createDOMElementVariadic("div", [{msg->React.string}])
 }
 let make = {
   let \"CommentAtTop" = (props: props<_>) => make(props)

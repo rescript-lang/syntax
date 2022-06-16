@@ -288,8 +288,9 @@ let makePropsRecordType propsName loc namedTypeList =
              Type.field ~loc ~attrs:optionalAttr {txt = label; loc}
                (keyType Location.none)
            else if label = "ref" then
-             Type.field ~loc ~attrs:optionalAttr {txt = label; loc}
-               (refType Location.none)
+             Type.field ~loc
+               ~attrs:(if isOptional then optionalAttr else [])
+               {txt = label; loc} (refType Location.none)
            else if isOptional then
              Type.field ~loc ~attrs:optionalAttr {txt = label; loc}
                (Typ.var label)
@@ -645,9 +646,7 @@ let jsxMapper () =
         (* type props<'id, 'name> = { @optional key: string, @optional id: 'id, ... } *)
         let propsRecordType =
           makePropsRecordType "props" Location.none
-            ((true, "key", [], keyType pstr_loc)
-            :: (true, "ref", [], refType pstr_loc)
-            :: namedTypeList)
+            ((true, "key", [], keyType pstr_loc) :: namedTypeList)
         in
         (* can't be an arrow because it will defensively uncurry *)
         let newExternalType =
@@ -898,9 +897,10 @@ let jsxMapper () =
           (* type props = { ... } *)
           let propsRecordType =
             makePropsRecordType "props" emptyLoc
-              ((true, "key", [], keyType emptyLoc)
-              :: (true, "ref", [], refType pstr_loc)
-              :: namedTypeList)
+              (((true, "key", [], keyType emptyLoc) :: namedTypeList)
+              @
+              if hasForwardRef then [(true, "ref", [], refType pstr_loc)]
+              else [])
           in
           let innerExpression =
             if hasForwardRef then
@@ -981,14 +981,20 @@ let jsxMapper () =
             | _ -> (patterns, expr)
           in
           let patternsWithLid, expression = returnedExpression [] expression in
+          let patternsWithLid =
+            List.rev patternsWithLid
+            @
+            if hasForwardRef then
+              [
+                ( Location.mknoloc (Lident "ref"),
+                  Pat.var (Location.mknoloc "ref") );
+              ]
+            else []
+          in
           let pattern =
-            Pat.record
-              (List.rev patternsWithLid
-              @ [
-                  ( Location.mknoloc (Lident "ref"),
-                    Pat.var (Location.mknoloc "ref") );
-                ])
-              Closed
+            match patternsWithLid with
+            | [] -> Pat.any ()
+            | _ -> Pat.record patternsWithLid Closed
           in
           (* add patttern matching for optional prop value *)
           let expression =
@@ -997,9 +1003,14 @@ let jsxMapper () =
           in
           (* add let _ = ref to ignore unused warning *)
           let expression =
-            Exp.let_ Nonrecursive [vbIgnoreUnusedRef] expression
+            match hasForwardRef with
+            | true ->
+              let expression =
+                Exp.let_ Nonrecursive [vbIgnoreUnusedRef] expression
+              in
+              Exp.let_ Nonrecursive [vbRefFromOption] expression
+            | false -> expression
           in
-          let expression = Exp.let_ Nonrecursive [vbRefFromOption] expression in
           let expression =
             Exp.fun_ Nolabel None
               (Pat.constraint_ pattern
@@ -1096,9 +1107,7 @@ let jsxMapper () =
         in
         let propsRecordType =
           makePropsRecordTypeSig "props" Location.none
-            ((true, "key", [], keyType Location.none)
-            :: (true, "ref", [], refType Location.none)
-            :: namedTypeList)
+            ((true, "key", [], keyType Location.none) :: namedTypeList)
         in
         (* can't be an arrow because it will defensively uncurry *)
         let newExternalType =

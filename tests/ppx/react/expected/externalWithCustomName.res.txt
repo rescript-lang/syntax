@@ -1,10 +1,5 @@
 module Foo = {
-  type props<'a, 'b> = {
-    @optional key: string,
-    @optional ref: ReactDOM.Ref.currentDomRef,
-    a: 'a,
-    b: 'b,
-  }
+  type props<'a, 'b> = {@optional key: string, a: 'a, b: 'b}
   @module("Foo")
   external component: React.componentLike<props<'a, 'b>, React.element> = "component"
 }

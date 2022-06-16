@@ -1,15 +1,7 @@
-type props<'a, 'b> = {
-  @optional key: string,
-  @optional ref: ReactDOM.Ref.currentDomRef,
-  a: 'a,
-  b: 'b,
-}
-let make: 'a. (~a: 'a, ~b: 'a, 'a) => React.element = ({ref}: props<'a, 'b>) => {
-  let ref = Js.Nullable.fromOption(ref)
-  let _ = ref
-  (type a): ((~a: a, ~b: a, a) => React.element) =>
-    (~a, ~b, _) => ReactDOMRe.createDOMElementVariadic("div", [])
-}
+type props<'a, 'b> = {@optional key: string, a: 'a, b: 'b}
+let make: 'a. (~a: 'a, ~b: 'a, 'a) => React.element = (_: props<'a, 'b>, type a): (
+  (~a: a, ~b: a, a) => React.element
+) => (~a, ~b, _) => ReactDOMRe.createDOMElementVariadic("div", [])
 let make = {
   let \"TypeConstraint" = (props: props<_>) => make(props)
   \"TypeConstraint"
