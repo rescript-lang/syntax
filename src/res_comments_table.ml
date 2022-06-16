@@ -317,8 +317,8 @@ let annotateDocComments ~docComments attrs : Parsetree.attributes =
     let loc = Comment.loc comment in
     let txt = Comment.txt comment in
     let txt =
-      if txt <> "" && txt.[0] = '*' then
-        String.sub txt 1 (String.length txt - 1)
+      if txt <> "" && (txt.[0] [@doesNotRaise]) = '*' then
+        (String.sub txt 1 (String.length txt - 1) [@doesNotRaise])
       else txt in
     ({Location.txt="ocaml.doc"; loc },
     (Parsetree.PStr [Str.eval ~loc (Exp.constant ~loc (Const.string txt))])) :: attrs
