@@ -6389,6 +6389,10 @@ and parseAttribute p =
     let attrId = parseAttributeId ~startPos p in
     let payload = parsePayload p in
     Some(attrId, payload)
+  | DocComment (loc, s) -> 
+    Parser.next p;
+    Some ({txt="ns.doc"; loc},
+    PStr [Ast_helper.Str.eval ~loc (Ast_helper.Exp.constant ~loc (Pconst_string(s, None)) )])
   | _ -> None
 
 and parseAttributes p =
