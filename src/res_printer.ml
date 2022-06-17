@@ -1677,13 +1677,14 @@ and printTypExpr (typExpr : Parsetree.core_type) cmtTbl =
   | Ptyp_variant (rowFields, closedFlag, labelsOpt) ->
     let forceBreak = typExpr.ptyp_loc.Location.loc_start.pos_lnum < typExpr.ptyp_loc.loc_end.pos_lnum in
     let printRowField = function
-    | Parsetree.Rtag ({txt}, attrs, true, []) ->
-      Doc.group (
+    | Parsetree.Rtag ({txt; loc}, attrs, true, []) ->
+      let doc = Doc.group (
         Doc.concat [
           printAttributes attrs cmtTbl;
           Doc.concat [Doc.text "#"; printPolyVarIdent txt]
         ]
-      )
+      ) in
+      printComments doc cmtTbl loc
     | Rtag ({txt}, attrs, truth, types) ->
       let doType t = match t.Parsetree.ptyp_desc with
       | Ptyp_tuple _ -> printTypExpr t cmtTbl
@@ -3920,7 +3921,11 @@ and printJsxExpression lident args cmtTbl =
         Doc.concat [
           printComments (Doc.concat [Doc.lessThan; name]) cmtTbl lident.Asttypes.loc;
           formattedProps;
-          if isSelfClosing then Doc.concat [Doc.line; Doc.text "/>"] else Doc.nil
+          match children with
+          | Some ({Parsetree.pexp_desc = Pexp_construct ({txt = Longident.Lident "[]"}, None); pexp_loc = loc}) ->
+            let doc = Doc.concat [printCommentsInside cmtTbl loc; Doc.text "/>"] in
+            Doc.concat [Doc.line; printComments doc cmtTbl loc]
+          | _ -> Doc.nil
         ]
       );
       if isSelfClosing then Doc.nil
@@ -4837,8 +4842,7 @@ and printRecordRow (lbl, expr) cmtTbl punningAllowed =
     match expr.pexp_desc with
     | Pexp_ident({txt = Lident key; loc = keyLoc}) when (
       punningAllowed &&
-      Longident.last lbl.txt = key &&
-      lbl.loc.loc_start.pos_cnum == keyLoc.loc_start.pos_cnum
+      Longident.last lbl.txt = key
     ) ->
       (* print punned field *)
       printLidentPath lbl cmtTbl;

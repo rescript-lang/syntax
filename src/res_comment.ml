@@ -27,12 +27,15 @@ let isSingleLineComment t = t.style = SingleLine
 let isDocComment t = t.style = DocComment
 
 let toString t =
+  let {Location.loc_start; loc_end} = t.loc in
   Format.sprintf
-    "(txt: %s\nstyle: %s\nlines: %d-%d)"
+    "(txt: %s\nstyle: %s\nlocation: %d,%d-%d,%d)"
     t.txt
     (styleToString t.style)
-    t.loc.loc_start.pos_lnum
-    t.loc.loc_end.pos_lnum
+    loc_start.pos_lnum
+    (loc_start.pos_cnum - loc_start.pos_bol)
+    loc_end.pos_lnum
+    (loc_end.pos_cnum - loc_end.pos_bol)
 
 let makeSingleLineComment ~loc txt = {
   txt;

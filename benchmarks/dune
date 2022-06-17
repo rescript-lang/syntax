@@ -9,3 +9,5 @@
   (language c)
   (names mac_osx_time))
  (libraries syntax compilerlibs406))
+
+(data_only_dirs data)

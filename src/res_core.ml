@@ -259,7 +259,7 @@ let isEs6ArrowExpression ~inTernary p =
            * *)
           false
         | _ ->
-          Parser.next state;
+          Parser.nextUnsafe state;
           (* error recovery, peek at the next token,
            * (elements, providerId] => {
            *  in the example above, we have an unbalanced ] here
@@ -623,7 +623,7 @@ let rec parseLident p =
       None
     ) else (
       let rec loop p =
-        if not (Recover.shouldAbortListParse p)
+        if not (Recover.shouldAbortListParse p) && p.token <> Eof
         then begin
           Parser.next p;
           loop p
@@ -710,21 +710,25 @@ let parseValuePath p =
       Longident.Ldot (path, "_")
   in
   let ident = match p.Parser.token with
-  | Lident ident -> Longident.Lident ident
+  | Lident ident ->
+    Parser.next p;
+    Longident.Lident ident
   | Uident ident ->
     Parser.next p;
-    if p.Parser.token = Dot then (
+    let res = if p.Parser.token = Dot then (
       Parser.expect Dot p;
       aux p (Lident ident)  
     ) else (
       Parser.err p (Diagnostics.unexpected p.Parser.token p.breadcrumbs);
       Longident.Lident ident
-    )
+    ) in
+    if p.token <> Eof then Parser.next p;
+    res
   | token ->
     Parser.err p (Diagnostics.unexpected token p.breadcrumbs);
+    Parser.next p;
     Longident.Lident "_"
   in
-  Parser.next p;
   Location.mkloc ident (mkLoc startPos p.prevEndPos)
 
 let parseValuePathAfterDot p =
@@ -5433,7 +5437,7 @@ and parseStructureItemRegion p =
     | _ ->
       None
     end
-  [@@progress (Parser.next, Parser.expect, Parser.checkProgress)]
+  [@@progress (Parser.next, Parser.expect)]
 
 and parseJsImport ~startPos ~attrs p =
   Parser.expect Token.Import p;
@@ -6188,7 +6192,7 @@ and parseSignatureItemRegion p =
     | _ ->
      None
     end
-  [@@progress (Parser.next, Parser.expect, Parser.checkProgress)]
+  [@@progress (Parser.next, Parser.expect)]
 
 (* module rec module-name :  module-type  { and module-name:  module-type } *)
 and parseRecModuleSpec ~attrs ~startPos p =

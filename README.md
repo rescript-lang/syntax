@@ -23,10 +23,10 @@ J. Blow.
 
 Required:
 
-- OCaml 4.08 or later
+- OCaml 4.10 or later
 - Dune
 - Reanalyze
-- OS: macOS, Linux or Windows (tests will currently run on macOS only)
+- OS: macOS, Linux or Windows
 
 ```sh
 opam install dune reanalyze
@@ -51,7 +51,7 @@ Run the core tests:
 make test
 ```
 
-Run the extended tests:
+Run the extended tests (not fully working on Windows yet):
 
 ```sh
 make roundtrip-test
