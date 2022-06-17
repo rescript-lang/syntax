@@ -407,8 +407,8 @@ and type_declaration i ppf x =
 and attributes i ppf l =
   let i = i + 1 in
   List.iter
-    (fun (s, arg) ->
-      line i ppf "attribute \"%s\"\n" s.txt;
+    (fun ({Location.loc; txt}, arg) ->
+      line i ppf "attribute \"%s\" %a\n" txt fmt_location loc;
       payload (i + 1) ppf arg;
     )
     l
