@@ -148,12 +148,12 @@ let printMultilineCommentContent ~docComment txt =
     let firstLine = Comment.trimSpaces first in
     Doc.concat
       [
-        Doc.text "/*";
+        Doc.text (if docComment then "/**" else "/*");
         (match firstLine with
         | "" | "*" -> Doc.nil
         | _ -> Doc.space);
         indentStars rest [Doc.hardLine; Doc.text firstLine];
-        Doc.text "*/";
+        Doc.text (if docComment then  " */" else "*/");
       ]
 
 let printTrailingComment (prevLoc : Location.t) (nodeLoc : Location.t) comment =
