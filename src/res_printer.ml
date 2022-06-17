@@ -136,13 +136,13 @@ let printMultilineCommentContent ~docComment txt =
   in
   let lines = String.split_on_char '\n' txt in
   match lines with
-  | [] -> Doc.text "/* */"
+  | [] -> Doc.text (if docComment then "/** */" else "/* */")
   | [line] ->
     Doc.concat
       [
-        Doc.text (if docComment then "/*" else "/* ");
+        Doc.text (if docComment then "/**" else "/* ");
         Doc.text (Comment.trimSpaces line);
-        Doc.text " */";
+        Doc.text (if docComment then "*/" else " */");
       ]
   | first :: rest ->
     let firstLine = Comment.trimSpaces first in
@@ -4773,7 +4773,7 @@ and printAttribute ?(standalone = false) ((id, payload) : Parsetree.attribute)
           };
         ] ) ->
     let comment =
-      Comment.makeMultiLineComment ~loc:id.loc ~docComment:true ("*" ^ s)
+      Comment.makeMultiLineComment ~loc:id.loc ~docComment:true s
     in
     printLeadingComment comment
   | _ ->
