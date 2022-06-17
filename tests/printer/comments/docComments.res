@@ -1,11 +1,11 @@
-/** This is one */
+@ns.doc("This is one")
 
-/** And this is another one */
+@ns.doc("And this is another one")
 let x = 42
 
 /**/ // But this is not
 
 /***This is also not a doc comment */
 
-/** Great Type */
+@ns.doc("Great Type")
 type myType = int
