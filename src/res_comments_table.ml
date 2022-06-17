@@ -80,7 +80,6 @@ let log t =
          Doc.line;
        ])
   |> Doc.toString ~width:80 |> print_endline
-  [@@live]
 
 let attach tbl loc comments =
   match comments with
