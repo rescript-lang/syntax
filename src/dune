@@ -1,5 +1,5 @@
 (library
  (name syntax)
  (flags
-  (-open Compilerlibs406))
+  (-open Compilerlibs406 -w +33))
  (libraries compilerlibs406))
