@@ -11,7 +11,6 @@ type elem<'t> =
    * Not an ordered map yet, but should be.
    */
   | ElementMap(list<elem<'t>>): elem<list<'t>>
-
 /**
  * Instance subtree. Mirrors the shape of JSX, instead of just being a List.
  */
@@ -51,7 +50,6 @@ and self<'t> = {
    */
   send: 'a => unit,
 } constraint 't = ('s, 'a) => 'sub
-
 /**
  * The result of applying props. Now the result is a function that just waits
  * for React to supply the state, and in turn returns the componentSpec.

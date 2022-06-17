@@ -70,7 +70,7 @@ and core_type =
     {
      ptyp_desc: core_type_desc;
      ptyp_loc: Location.t;
-     mutable ptyp_attributes: attributes; (* ... [@id1] [@id2] *)
+     ptyp_attributes: attributes; (* ... [@id1] [@id2] *)
     }
 
 and core_type_desc =
@@ -168,7 +168,7 @@ and pattern =
     {
      ppat_desc: pattern_desc;
      ppat_loc: Location.t;
-     mutable ppat_attributes: attributes; (* ... [@id1] [@id2] *)
+     ppat_attributes: attributes; (* ... [@id1] [@id2] *)
     }
 
 and pattern_desc =
@@ -233,7 +233,7 @@ and expression =
     {
      pexp_desc: expression_desc;
      pexp_loc: Location.t;
-     mutable pexp_attributes: attributes; (* ... [@id1] [@id2] *)
+     pexp_attributes: attributes; (* ... [@id1] [@id2] *)
     }
 
 and expression_desc =
@@ -369,7 +369,7 @@ and value_description =
      pval_name: string loc;
      pval_type: core_type;
      pval_prim: string list;
-     mutable pval_attributes: attributes;  (* ... [@@id1] [@@id2] *) 
+     pval_attributes: attributes;  (* ... [@@id1] [@@id2] *) 
      pval_loc: Location.t;
     }
 
@@ -390,7 +390,7 @@ and type_declaration =
      ptype_kind: type_kind;
      ptype_private: private_flag;   (* = private ... *)
      ptype_manifest: core_type option;  (* = T *)
-     mutable ptype_attributes: attributes;   (* ... [@@id1] [@@id2] *)
+     ptype_attributes: attributes;   (* ... [@@id1] [@@id2] *)
      ptype_loc: Location.t;
     }
 
@@ -418,7 +418,7 @@ and label_declaration =
      pld_mutable: mutable_flag;
      pld_type: core_type;
      pld_loc: Location.t;
-     mutable pld_attributes: attributes; (* l : T [@id1] [@id2] *)
+     pld_attributes: attributes; (* l : T [@id1] [@id2] *)
     }
 
 (*  { ...; l: T; ... }            (mutable=Immutable)
@@ -455,7 +455,7 @@ and type_extension =
      ptyext_params: (core_type * variance) list;
      ptyext_constructors: extension_constructor list;
      ptyext_private: private_flag;
-     mutable ptyext_attributes: attributes;   (* ... [@@id1] [@@id2] *)
+     ptyext_attributes: attributes;   (* ... [@@id1] [@@id2] *)
     }
 (*
   type t += ...
@@ -466,7 +466,7 @@ and extension_constructor =
      pext_name: string loc;
      pext_kind : extension_constructor_kind;
      pext_loc : Location.t;
-     mutable pext_attributes: attributes; (* C of ... [@id1] [@id2] *)
+     pext_attributes: attributes; (* C of ... [@id1] [@id2] *)
     }
 
 and extension_constructor_kind =
@@ -655,7 +655,7 @@ and module_type =
     {
      pmty_desc: module_type_desc;
      pmty_loc: Location.t;
-     mutable pmty_attributes: attributes; (* ... [@id1] [@id2] *)
+     pmty_attributes: attributes; (* ... [@id1] [@id2] *)
     }
 
 and module_type_desc =
@@ -718,7 +718,7 @@ and module_declaration =
     {
      pmd_name: string loc;
      pmd_type: module_type;
-     mutable pmd_attributes: attributes; (* ... [@@id1] [@@id2] *)
+     pmd_attributes: attributes; (* ... [@@id1] [@@id2] *)
      pmd_loc: Location.t;
     }
 (* S : MT *)
@@ -727,7 +727,7 @@ and module_type_declaration =
     {
      pmtd_name: string loc;
      pmtd_type: module_type option;
-     mutable pmtd_attributes: attributes; (* ... [@@id1] [@@id2] *)
+     pmtd_attributes: attributes; (* ... [@@id1] [@@id2] *)
      pmtd_loc: Location.t;
     }
 (* S = MT
@@ -750,7 +750,7 @@ and 'a include_infos =
     {
      pincl_mod: 'a;
      pincl_loc: Location.t;
-     mutable pincl_attributes: attributes;
+     pincl_attributes: attributes;
     }
 
 and include_description = module_type include_infos
@@ -778,7 +778,7 @@ and module_expr =
     {
      pmod_desc: module_expr_desc;
      pmod_loc: Location.t;
-     mutable pmod_attributes: attributes; (* ... [@id1] [@id2] *)
+     pmod_attributes: attributes; (* ... [@id1] [@id2] *)
     }
 
 and module_expr_desc =
@@ -845,7 +845,7 @@ and value_binding =
   {
     pvb_pat: pattern;
     pvb_expr: expression;
-    mutable pvb_attributes: attributes;
+    pvb_attributes: attributes;
     pvb_loc: Location.t;
   }
 
@@ -853,7 +853,7 @@ and module_binding =
     {
      pmb_name: string loc;
      pmb_expr: module_expr;
-     mutable pmb_attributes: attributes;
+     pmb_attributes: attributes;
      pmb_loc: Location.t;
     }
 (* X = ME *)
