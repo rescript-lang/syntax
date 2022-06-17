@@ -141,7 +141,7 @@ let printMultilineCommentContent ~docComment txt =
     Doc.concat
       [
         Doc.text (if docComment then "/**" else "/* ");
-        Doc.text (Comment.trimSpaces line);
+        Doc.text (if docComment then line else Comment.trimSpaces line);
         Doc.text (if docComment then "*/" else " */");
       ]
   | first :: rest ->
