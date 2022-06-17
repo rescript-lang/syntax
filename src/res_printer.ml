@@ -99,7 +99,7 @@ let hasCommentBelow tbl loc =
   | [] -> false
   | exception Not_found -> false
 
-let printMultilineCommentContent ~docComment txt =
+let printMultilineCommentContent txt =
   (* Turns
    *         |* first line
    *  * second line
@@ -136,33 +136,28 @@ let printMultilineCommentContent ~docComment txt =
   in
   let lines = String.split_on_char '\n' txt in
   match lines with
-  | [] -> Doc.text (if docComment then "/** */" else "/* */")
+  | [] -> Doc.text "/* */"
   | [line] ->
     Doc.concat
-      [
-        Doc.text (if docComment then "/**" else "/* ");
-        Doc.text (if docComment then line else Comment.trimSpaces line);
-        Doc.text (if docComment then "*/" else " */");
-      ]
+      [Doc.text "/* "; Doc.text (Comment.trimSpaces line); Doc.text " */"]
   | first :: rest ->
     let firstLine = Comment.trimSpaces first in
     Doc.concat
       [
-        Doc.text (if docComment then "/**" else "/*");
+        Doc.text "/*";
         (match firstLine with
         | "" | "*" -> Doc.nil
         | _ -> Doc.space);
         indentStars rest [Doc.hardLine; Doc.text firstLine];
-        Doc.text (if docComment then  " */" else "*/");
+        Doc.text "*/";
       ]
 
 let printTrailingComment (prevLoc : Location.t) (nodeLoc : Location.t) comment =
   let singleLine = Comment.isSingleLineComment comment in
-  let docComment = Comment.isDocComment comment in
   let content =
     let txt = Comment.txt comment in
     if singleLine then Doc.text ("//" ^ txt)
-    else printMultilineCommentContent ~docComment txt
+    else printMultilineCommentContent txt
   in
   let diff =
     let cmtStart = (Comment.loc comment).loc_start in
@@ -188,11 +183,10 @@ let printTrailingComment (prevLoc : Location.t) (nodeLoc : Location.t) comment =
 
 let printLeadingComment ?nextComment comment =
   let singleLine = Comment.isSingleLineComment comment in
-  let docComment = Comment.isDocComment comment in
   let content =
     let txt = Comment.txt comment in
     if singleLine then Doc.text ("//" ^ txt)
-    else printMultilineCommentContent ~docComment txt
+    else printMultilineCommentContent txt
   in
   let separator =
     Doc.concat
@@ -4769,13 +4763,10 @@ and printAttribute ?(standalone = false) ((id, payload) : Parsetree.attribute)
         [
           {
             pstr_desc =
-              Pstr_eval ({pexp_desc = Pexp_constant (Pconst_string (s, _))}, _);
+              Pstr_eval ({pexp_desc = Pexp_constant (Pconst_string (txt, _))}, _);
           };
         ] ) ->
-    let comment =
-      Comment.makeMultiLineComment ~loc:id.loc ~docComment:true s
-    in
-    printLeadingComment comment
+    Doc.concat [Doc.text "/**"; Doc.text txt; Doc.text "*/"]
   | _ ->
     Doc.group
       (Doc.concat
