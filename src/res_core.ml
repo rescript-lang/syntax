@@ -972,10 +972,12 @@ let parseTemplateConstant ~prefix (p : Parser.t) =
     Parsetree.Pconst_string (txt, prefix)
   | _ ->
     let rec skipTokens () =
-      Parser.next p;
-      match p.token with
-      | Backtick -> Parser.next p; ()
-      | _ -> skipTokens ()
+      if p.token <> Eof then (
+        Parser.next p;
+        match p.token with
+        | Backtick -> Parser.next p; ()
+        | _ -> skipTokens ()
+      )
     in
     skipTokens ();
     Parser.err ~startPos ~endPos:p.prevEndPos p
