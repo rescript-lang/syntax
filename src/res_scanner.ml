@@ -480,12 +480,12 @@ let scanSingleLineComment scanner =
 
 let scanMultiLineComment scanner =
   (* assumption: we're only ever using this helper in `scan` after detecting a comment *)
-  let contentStartOff = scanner.offset + 2 in
-  let startPos = position scanner in
   let docComment =
     peek2 scanner = '*' &&
     peek3 scanner <> '/' (* no /**/ *) &&
     peek3 scanner <> '*' (* no /*** *) in
+  let contentStartOff = scanner.offset + (if docComment then 3 else 2) in
+  let startPos = position scanner in
   let rec scan ~depth =
     (* invariant: depth > 0 right after this match. See assumption *)
     match scanner.ch, peek scanner with
