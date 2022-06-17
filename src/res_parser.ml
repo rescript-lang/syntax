@@ -50,7 +50,6 @@ let endRegion p =
   | _ :: rest -> p.regions <- rest
 
 let docCommentToAttributeToken comment =
-  let open Ast_helper in
   let txt = Comment.txt comment in
   let loc = Comment.loc comment in
   Token.DocComment (loc, txt)
