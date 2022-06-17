@@ -9,13 +9,13 @@ bootstrap: build
 bench: build
 	dune exec -- bench
 
-test:
+test: build
 	dune exec -- testrunner
 	dune exec -- bash ./scripts/test.sh
 	make reanalyze
 	bash ./scripts/testok.sh
 
-roundtrip-test:
+roundtrip-test: build
 	dune exec -- testrunner
 	ROUNDTRIP_TEST=1 dune exec -- bash ./scripts/test.sh
 	make reanalyze
