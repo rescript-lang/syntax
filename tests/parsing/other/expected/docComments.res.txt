@@ -1,2 +1,2 @@
-let z = 34[@@ns.doc {js| This is a doc comment |js}]
+let z = 34[@@ns.doc " This is a doc comment "]
 let q = 11[@@ns.doc {js|And this is a ns.doc annotation|js}]
