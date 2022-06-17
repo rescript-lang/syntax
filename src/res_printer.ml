@@ -4620,7 +4620,7 @@ and printRecordRow (lbl, expr) cmtTbl punningAllowed =
   let doc =
     Doc.group
       (match expr.pexp_desc with
-      | Pexp_ident {txt = Lident key; loc = keyLoc}
+      | Pexp_ident {txt = Lident key; loc = _keyLoc}
         when punningAllowed && Longident.last lbl.txt = key ->
         (* print punned field *)
         printLidentPath lbl cmtTbl

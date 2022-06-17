@@ -62,7 +62,6 @@ let printEntries tbl =
     tbl []
 
 let log t =
-  let open Location in
   let leadingStuff = printEntries t.leading in
   let trailingStuff = printEntries t.trailing in
   let stuffInside = printEntries t.inside in
