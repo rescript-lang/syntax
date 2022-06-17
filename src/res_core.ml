@@ -6392,7 +6392,7 @@ and parseAttribute p =
   | DocComment (loc, s) -> 
     Parser.next p;
     Some ({txt="ns.doc"; loc},
-    PStr [Ast_helper.Str.eval ~loc (Ast_helper.Exp.constant ~loc (Pconst_string(s, Some "js")) )])
+    PStr [Ast_helper.Str.eval ~loc (Ast_helper.Exp.constant ~loc (Pconst_string(s, None)) )])
   | _ -> None
 
 and parseAttributes p =
