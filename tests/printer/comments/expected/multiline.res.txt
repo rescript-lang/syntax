@@ -17,10 +17,6 @@ let f = () => ()
 /*  */
 /*  */
 
-/**
- * test
- */
-
 /* BuckleScript outperforms a classic for-loop: 
    function equals3(m1, m2) {
     for (var i = 0; i < 4; i++) {
@@ -34,6 +30,9 @@ let f = () => ()
     }
     return true
   } */
+/* **
+ * test
+ */
 let equals = (matrix1, matrix2) => {
   let rec loop = (i, j) =>
     if i > 3 {
