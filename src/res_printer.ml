@@ -109,7 +109,7 @@ let hasCommentBelow tbl loc =
   | [] -> false
   | exception Not_found -> false
 
-let printMultilineCommentContent txt =
+let printMultilineCommentContent ~docComment txt =
   (* Turns
    *         |* first line
    *  * second line
@@ -149,7 +149,7 @@ let printMultilineCommentContent txt =
   match lines with
   | [] -> Doc.text "/* */"
   | [line] -> Doc.concat [
-      Doc.text "/* ";
+      Doc.text (if docComment then "/*" else "/* ");
       Doc.text (Comment.trimSpaces line);
       Doc.text " */";
     ]
@@ -166,12 +166,13 @@ let printMultilineCommentContent txt =
 
 let printTrailingComment (prevLoc: Location.t) (nodeLoc : Location.t) comment =
   let singleLine = Comment.isSingleLineComment comment in
+  let docComment = Comment.isDocComment comment in
   let content =
     let txt = Comment.txt comment in
     if singleLine then
        Doc.text ("//" ^ txt)
     else
-      printMultilineCommentContent txt
+      printMultilineCommentContent ~docComment txt
   in
   let diff =
     let cmtStart = (Comment.loc comment).loc_start in
@@ -193,12 +194,13 @@ let printTrailingComment (prevLoc: Location.t) (nodeLoc : Location.t) comment =
 
 let printLeadingComment ?nextComment comment =
   let singleLine = Comment.isSingleLineComment comment in
+  let docComment = Comment.isDocComment comment in
   let content =
     let txt = Comment.txt comment in
     if singleLine then
        Doc.text ("//" ^ txt)
     else
-      printMultilineCommentContent txt
+      printMultilineCommentContent ~docComment txt
   in
   let separator = Doc.concat  [
     if singleLine then Doc.concat [
@@ -595,10 +597,8 @@ and printStructureItem (si: Parsetree.structure_item) cmtTbl =
       printAttributes attrs cmtTbl;
       exprDoc;
     ]
-  | Pstr_attribute attr -> Doc.concat [
-      Doc.text "@";
-      printAttribute attr cmtTbl
-    ]
+  | Pstr_attribute attr ->
+      printAttribute ~standalone:true attr cmtTbl
   | Pstr_extension (extension, attrs) -> Doc.concat [
       printAttributes attrs cmtTbl;
       Doc.concat [printExtension ~atModuleLvl:true extension cmtTbl];
@@ -970,10 +970,8 @@ and printSignatureItem (si : Parsetree.signature_item) cmtTbl =
     printOpenDescription openDescription cmtTbl
   | Psig_include includeDescription ->
     printIncludeDescription includeDescription cmtTbl
-  | Psig_attribute attr -> Doc.concat [
-      Doc.text "@";
-      printAttribute attr cmtTbl
-    ]
+  | Psig_attribute attr ->
+      printAttribute ~standalone:true attr cmtTbl
   | Psig_extension (extension, attrs) -> Doc.concat [
       printAttributes attrs cmtTbl;
       Doc.concat [printExtension ~atModuleLvl:true extension cmtTbl];
@@ -4986,14 +4984,20 @@ and printPayload (payload : Parsetree.payload) cmtTbl =
       Doc.rparen;
     ]
 
-and printAttribute ((id, payload) : Parsetree.attribute) cmtTbl =
-  Doc.group (
-    Doc.concat [
-      Doc.text "@";
-      Doc.text (convertBsExternalAttribute id.txt);
-      printPayload payload cmtTbl
-    ]
-  )
+and printAttribute ?(standalone=false) ((id, payload) : Parsetree.attribute) cmtTbl =
+  match id, payload with
+  | ( {txt = "ns.doc"},
+      PStr [{pstr_desc = Pstr_eval ({pexp_desc = Pexp_constant (Pconst_string (s, _))}, _)}] ) ->
+    let comment = Comment.makeMultiLineComment ~loc:id.loc ~docComment:true ("*" ^ s) in
+    printLeadingComment comment
+  | _ ->
+    Doc.group (
+      Doc.concat [
+        Doc.text (if standalone then "@@" else "@");
+        Doc.text (convertBsExternalAttribute id.txt);
+        printPayload payload cmtTbl
+      ]
+    )
 
 and printModExpr modExpr cmtTbl =
   let doc = match modExpr.pmod_desc with
