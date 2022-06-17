@@ -190,7 +190,7 @@ end = struct
   let spec = [
     ("-recover", Arg.Unit (fun () -> recover := true), "Emit partial ast");
     ("-parse", Arg.String (fun txt -> origin := txt), "Parse reasonBinary, ml or res. Default: res");
-    ("-print", Arg.String (fun txt -> print := txt), "Print either binary, ml, ast, sexp or res. Default: res");
+    ("-print", Arg.String (fun txt -> print := txt), "Print either binary, ml, ast, sexp, comments or res. Default: res");
     ("-width", Arg.Int (fun w -> width := w), "Specify the line length for the printer (formatter)");
     ("-interface", Arg.Unit (fun () -> interface := true), "Parse as interface");
     ("-ppx", Arg.String (fun txt -> ppx := txt), "Apply a specific built-in ppx before parsing, none or jsx. Default: none");
@@ -229,9 +229,10 @@ module CliArgProcessor = struct
       | "ml" -> Res_driver_ml_parser.printEngine
       | "ast" -> Res_ast_debugger.printEngine
       | "sexp" -> Res_ast_debugger.sexpPrintEngine
+      | "comments" -> Res_ast_debugger.commentsPrintEngine
       | "res"  -> Res_driver.printEngine
       | target ->
-        print_endline ("-print needs to be either binary, ml, ast, sexp or res. You provided " ^ target);
+        print_endline ("-print needs to be either binary, ml, ast, sexp, comments or res. You provided " ^ target);
         exit 1
     in
 
