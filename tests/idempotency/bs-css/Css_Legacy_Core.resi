@@ -1734,7 +1734,7 @@ let animations: list<[Animation.t]> => rule
 
 let animationName: animationName => rule
 
-/*
+/**
  SVG
  *** */
 

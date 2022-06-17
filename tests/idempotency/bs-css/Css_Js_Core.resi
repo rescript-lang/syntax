@@ -1729,7 +1729,7 @@ let animations: array<[Animation.t]> => rule
 
 let animationName: animationName => rule
 
-/*
+/**
  SVG
  *** */
 
