@@ -258,11 +258,6 @@ let makePropsTypeParamsTvar namedTypeList =
          if label = "key" || label = "ref" then None
          else Some (Typ.var label, Invariant))
 
-let extractOptionalCoreType = function
-  | {ptyp_desc = Ptyp_constr ({txt}, [coreType])} when txt = optionIdent ->
-    coreType
-  | t -> t
-
 (* make type params for make fn arguments *)
 (* let make = ({id, name, children}: props<'id, 'name, 'children>) *)
 let makePropsTypeParams namedTypeList =
@@ -274,10 +269,8 @@ let makePropsTypeParams namedTypeList =
 (* let make: React.componentLike<props<string, option<string>>, React.element> *)
 let makePropsTypeParamsSig namedTypeList =
   namedTypeList
-  |> List.filter_map (fun (isOptional, label, _, interiorType) ->
-         if label = "key" || label = "ref" then None
-         else if isOptional then Some (extractOptionalCoreType interiorType)
-         else Some interiorType)
+  |> List.filter_map (fun (_isOptional, label, _, interiorType) ->
+         if label = "key" || label = "ref" then None else Some interiorType)
 
 (* type props<'id, 'name, ...> = { @optional key: string, @optional id: 'id, ... } *)
 let makePropsRecordType propsName loc namedTypeList =
@@ -604,12 +597,10 @@ let jsxMapper () =
     [@@raises Invalid_argument]
   in
 
-  let argToConcreteType types (name, loc, type_) =
+  let argToConcreteType types (name, _loc, type_) =
     match name with
     | name when isLabelled name -> (false, getLabel name, [], type_) :: types
-    | name when isOptional name ->
-      (true, getLabel name, [], Typ.constr ~loc {loc; txt = optionIdent} [type_])
-      :: types
+    | name when isOptional name -> (true, getLabel name, [], type_) :: types
     | _ -> types
   in
 
