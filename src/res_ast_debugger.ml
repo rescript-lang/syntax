@@ -1,4 +1,5 @@
 module Doc = Res_doc
+module CommentTable = Res_comments_table
 
 let printEngine = Res_driver.{
   printImplementation = begin fun ~width:_ ~filename:_ ~comments:_ structure ->
@@ -1236,3 +1237,17 @@ module SexpAst = struct
 end
 
 let sexpPrintEngine = SexpAst.printEngine
+
+let commentsPrintEngine =
+  {
+    Res_driver.printImplementation =
+      (fun ~width:_ ~filename:_ ~comments s ->
+        let cmtTbl = CommentTable.make () in
+        CommentTable.walkStructure s cmtTbl comments;
+        CommentTable.log cmtTbl);
+    printInterface =
+      (fun ~width:_ ~filename:_ ~comments s ->
+        let cmtTbl = CommentTable.make () in
+        CommentTable.walkSignature s cmtTbl comments;
+        CommentTable.log cmtTbl);
+  }

@@ -65,6 +65,7 @@ Debug a file:
 # write code in test.res
 dune exec -- rescript test.res # test printer
 dune exec -- rescript -print ast test.res # print ast
+dune exec -- rescript -print comments test.res # print comment table
 dune exec -- rescript -print ml test.res # show ocaml code
 dune exec -- rescript -print res -width 80 test.res # test printer and change default print width
 ```
