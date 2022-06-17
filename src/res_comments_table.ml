@@ -301,6 +301,7 @@ type node =
   | PackageConstraint of Longident.t Asttypes.loc * Parsetree.core_type
   | Pattern of Parsetree.pattern
   | PatternRecordRow of Longident.t Asttypes.loc * Parsetree.pattern
+  | RowField of Parsetree.row_field
   | SignatureItem of Parsetree.signature_item
   | StructureItem of Parsetree.structure_item
   | TypeDeclaration of Parsetree.type_declaration
@@ -334,6 +335,11 @@ let getLoc node =
   | PackageConstraint (li, te) -> {li.loc with loc_end = te.ptyp_loc.loc_end }
   | Pattern p -> p.ppat_loc
   | PatternRecordRow (li, p) -> {li.loc with loc_end = p.ppat_loc.loc_end}
+  | RowField rf -> (
+      match rf with 
+      | Parsetree.Rtag ({loc}, _, _, _) -> loc
+      | Rinherit({ptyp_loc}) -> ptyp_loc
+    )
   | SignatureItem si -> si.psig_loc
   | StructureItem si -> si.pstr_loc
   | TypeDeclaration td -> td.ptype_loc
@@ -533,6 +539,7 @@ let rec walkStructure s t comments =
   | PackageConstraint (li, te) -> walkPackageConstraint (li, te) tbl comments
   | Pattern p -> walkPattern p tbl comments
   | PatternRecordRow (li, p) -> walkPatternRecordRow (li, p) tbl comments
+  | RowField rf -> walkRowField rf tbl comments
   | SignatureItem si -> walkSignatureItem si tbl comments
   | StructureItem si -> walkStructureItem si tbl comments
   | TypeDeclaration td -> walkTypeDeclaration td tbl comments
@@ -1776,11 +1783,7 @@ and walkExprArgument expr t comments =
       attach t.trailing typexpr.ptyp_loc afterTyp
     | Ptyp_variant(rowFields, _, _) ->
       walkList
-        ~getLoc:(function 
-         | Parsetree.Rtag ({loc}, _, _, _) -> loc
-         | Rinherit({ptyp_loc}) -> ptyp_loc)
-        ~walkNode:walkRowField
-        rowFields
+        (rowFields |> List.map (fun rf -> RowField rf))
         t
         comments
     
