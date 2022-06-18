@@ -996,9 +996,7 @@ let parseConstant p =
     | Float {f; suffix} ->
       let floatTxt = if isNegative then "-" ^ f else f in
       Parsetree.Pconst_float (floatTxt, suffix)
-    | String s ->
-      if p.mode = ParseForTypeChecker then Pconst_string (s, Some "js")
-      else Pconst_string (s, None)
+    | String s -> Pconst_string (s, Some "js")
     | Codepoint {c; original} ->
       if p.mode = ParseForTypeChecker then Pconst_char c
       else
@@ -1258,10 +1256,6 @@ let rec parsePattern ?(alias = true) ?(or_ = true) p =
         let ident, loc =
           match p.token with
           | String text ->
-            let text =
-              if p.mode = ParseForTypeChecker then parseStringLiteral text
-              else text
-            in
             Parser.next p;
             (text, mkLoc startPos p.prevEndPos)
           | Int {i; suffix} ->
@@ -2067,7 +2061,6 @@ and parseBracketAccess p expr startPos =
   let stringStart = p.startPos in
   match p.Parser.token with
   | String s -> (
-    let s = if p.mode = ParseForTypeChecker then parseStringLiteral s else s in
     Parser.next p;
     let stringEnd = p.prevEndPos in
     Parser.expect Rbracket p;
@@ -2875,7 +2868,6 @@ and parseBracedOrRecordExpr p =
     Parser.expect Rbrace p;
     expr
   | String s -> (
-    let s = if p.mode = ParseForTypeChecker then parseStringLiteral s else s in
     let field =
       let loc = mkLoc p.startPos p.endPos in
       Parser.next p;
