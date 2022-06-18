@@ -1111,7 +1111,7 @@ let reactComponentSignatureTransform mapper signatures =
   List.fold_right (transformComponentSignature mapper) signatures []
   [@@raises Invalid_argument]
 
-let transformJsxCall jsxVersion mapper callExpression callArguments attrs =
+let transformJsxCall mapper callExpression callArguments attrs =
   match callExpression.pexp_desc with
   | Pexp_ident caller -> (
     match caller with
@@ -1120,20 +1120,14 @@ let transformJsxCall jsxVersion mapper callExpression callArguments attrs =
         (Invalid_argument
            "JSX: `createElement` should be preceeded by a module name.")
     (* Foo.createElement(~prop1=foo, ~prop2=bar, ~children=[], ()) *)
-    | {loc; txt = Ldot (modulePath, ("createElement" | "make"))} -> (
-      match !jsxVersion with
-      | None | Some 3 ->
-        transformUppercaseCall3 modulePath mapper loc attrs callExpression
-          callArguments
-      | Some _ -> raise (Invalid_argument "JSX: the JSX version must be  3"))
+    | {loc; txt = Ldot (modulePath, ("createElement" | "make"))} ->
+      transformUppercaseCall3 modulePath mapper loc attrs callExpression
+        callArguments
     (* div(~prop1=foo, ~prop2=bar, ~children=[bla], ()) *)
     (* turn that into
        ReactDOMRe.createElement(~props=ReactDOMRe.props(~props1=foo, ~props2=bar, ()), [|bla|]) *)
-    | {loc; txt = Lident id} -> (
-      match !jsxVersion with
-      | None | Some 3 ->
-        transformLowercaseCall3 mapper loc attrs callExpression callArguments id
-      | Some _ -> raise (Invalid_argument "JSX: the JSX version must be 3"))
+    | {loc; txt = Lident id} ->
+      transformLowercaseCall3 mapper loc attrs callExpression callArguments id
     | {txt = Ldot (_, anythingNotCreateElementOrMake)} ->
       raise
         (Invalid_argument
@@ -1165,7 +1159,7 @@ let structure nestedModules mapper structure =
     @@ reactComponentTransform nestedModules mapper structures
   [@@raises Invalid_argument]
 
-let expr jsxVersion mapper expression =
+let expr mapper expression =
   match expression with
   (* Does the function application have the @JSX attribute? *)
   | {pexp_desc = Pexp_apply (callExpression, callArguments); pexp_attributes}
@@ -1179,8 +1173,7 @@ let expr jsxVersion mapper expression =
     (* no JSX attribute *)
     | [], _ -> default_mapper.expr mapper expression
     | _, nonJSXAttributes ->
-      transformJsxCall jsxVersion mapper callExpression callArguments
-        nonJSXAttributes)
+      transformJsxCall mapper callExpression callArguments nonJSXAttributes)
   (* is it a list with jsx attribute? Reason <>foo</> desugars to [@JSX][foo]*)
   | {
       pexp_desc =
@@ -1231,10 +1224,8 @@ let module_binding nestedModules mapper module_binding =
 
 (* TODO: some line number might still be wrong *)
 let jsxMapper nestedModules =
-  let jsxVersion = ref None in
   let structure = structure nestedModules in
   let module_binding = module_binding nestedModules in
-  let expr = expr jsxVersion in
   {default_mapper with structure; expr; signature; module_binding}
   [@@raises Invalid_argument, Failure]
 
