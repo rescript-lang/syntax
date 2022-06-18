@@ -38,3 +38,14 @@ switch count {
     Js.Console.log("Must be block")
   }
 }
+
+switch route {
+| A => <div> // div tag moves to the next line
+    <div> {React.string("First A div")} </div>
+    <div> {React.string("Second A div")} </div>
+  </div>
+| B => <> // fragment tag moves to the next line
+    <div> {React.string("First B div")} </div>
+    <div> {React.string("Second B div")} </div>
+  </>
+}

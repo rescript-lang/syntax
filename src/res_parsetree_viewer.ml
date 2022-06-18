@@ -217,7 +217,6 @@ let isHuggableExpression expr =
 let isHuggableRhs expr =
   match expr.pexp_desc with
   | Pexp_array _ | Pexp_tuple _
-  | Pexp_construct ({txt = Longident.Lident ("::" | "[]")}, _)
   | Pexp_extension ({txt = "bs.obj" | "obj"}, _)
   | Pexp_record _ ->
     true
