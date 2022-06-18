@@ -50,6 +50,9 @@ jobs:
     - name: Install dependencies
       run: opam install . --deps-only
 
+    - name: Check format
+      run: opam exec -- dune build @fmt
+
     - name: Build executables
       run: opam exec -- dune build
 
