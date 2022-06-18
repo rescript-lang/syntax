@@ -1088,7 +1088,9 @@ and walkExpression expr t comments =
       walkExpression expr2 t inside;
       attach t.trailing expr2.pexp_loc trailing
   | Pexp_ifthenelse (ifExpr, thenExpr, elseExpr) -> (
-    let leading, inside, trailing = partitionByLoc comments ifExpr.pexp_loc in
+    let leading, rest = partitionLeadingTrailing comments expr.pexp_loc in
+    attach t.leading expr.pexp_loc leading;
+    let leading, inside, trailing = partitionByLoc rest ifExpr.pexp_loc in
     let comments =
       if isBlockExpr ifExpr then (
         let afterExpr, comments =

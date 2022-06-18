@@ -343,11 +343,12 @@ type ifConditionKind =
 
 let collectIfExpressions expr =
   let rec collect acc expr =
+    let exprLoc = expr.pexp_loc in
     match expr.pexp_desc with
     | Pexp_ifthenelse (ifExpr, thenExpr, Some elseExpr) ->
-      collect ((If ifExpr, thenExpr) :: acc) elseExpr
+      collect ((exprLoc, If ifExpr, thenExpr) :: acc) elseExpr
     | Pexp_ifthenelse (ifExpr, thenExpr, (None as elseExpr)) ->
-      let ifs = List.rev ((If ifExpr, thenExpr) :: acc) in
+      let ifs = List.rev ((exprLoc, If ifExpr, thenExpr) :: acc) in
       (ifs, elseExpr)
     | Pexp_match
         ( condition,
@@ -359,7 +360,9 @@ let collectIfExpressions expr =
             };
           ] )
       when isIfLetExpr expr ->
-      let ifs = List.rev ((IfLet (pattern, condition), thenExpr) :: acc) in
+      let ifs =
+        List.rev ((exprLoc, IfLet (pattern, condition), thenExpr) :: acc)
+      in
       (ifs, None)
     | Pexp_match
         ( condition,
@@ -368,7 +371,7 @@ let collectIfExpressions expr =
             {pc_rhs = elseExpr};
           ] )
       when isIfLetExpr expr ->
-      collect ((IfLet (pattern, condition), thenExpr) :: acc) elseExpr
+      collect ((exprLoc, IfLet (pattern, condition), thenExpr) :: acc) elseExpr
     | _ -> (List.rev acc, Some expr)
   in
   collect [] expr

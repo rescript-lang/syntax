@@ -2362,51 +2362,54 @@ and printIfChain pexp_attributes ifs elseExpr cmtTbl =
   let ifDocs =
     Doc.join ~sep:Doc.space
       (List.mapi
-         (fun i (ifExpr, thenExpr) ->
+         (fun i (outerLoc, ifExpr, thenExpr) ->
            let ifTxt = if i > 0 then Doc.text "else if " else Doc.text "if " in
-           match ifExpr with
-           | ParsetreeViewer.If ifExpr ->
-             let condition =
-               if ParsetreeViewer.isBlockExpr ifExpr then
-                 printExpressionBlock ~braces:true ifExpr cmtTbl
-               else
-                 let doc = printExpressionWithComments ifExpr cmtTbl in
-                 match Parens.expr ifExpr with
+           let doc =
+             match ifExpr with
+             | ParsetreeViewer.If ifExpr ->
+               let condition =
+                 if ParsetreeViewer.isBlockExpr ifExpr then
+                   printExpressionBlock ~braces:true ifExpr cmtTbl
+                 else
+                   let doc = printExpressionWithComments ifExpr cmtTbl in
+                   match Parens.expr ifExpr with
+                   | Parens.Parenthesized -> addParens doc
+                   | Braced braces -> printBraces doc ifExpr braces
+                   | Nothing -> Doc.ifBreaks (addParens doc) doc
+               in
+               Doc.concat
+                 [
+                   ifTxt;
+                   Doc.group condition;
+                   Doc.space;
+                   (let thenExpr =
+                      match ParsetreeViewer.processBracesAttr thenExpr with
+                      (* This case only happens when coming from Reason, we strip braces *)
+                      | Some _, expr -> expr
+                      | _ -> thenExpr
+                    in
+                    printExpressionBlock ~braces:true thenExpr cmtTbl);
+                 ]
+             | IfLet (pattern, conditionExpr) ->
+               let conditionDoc =
+                 let doc = printExpressionWithComments conditionExpr cmtTbl in
+                 match Parens.expr conditionExpr with
                  | Parens.Parenthesized -> addParens doc
-                 | Braced braces -> printBraces doc ifExpr braces
-                 | Nothing -> Doc.ifBreaks (addParens doc) doc
-             in
-             Doc.concat
-               [
-                 ifTxt;
-                 Doc.group condition;
-                 Doc.space;
-                 (let thenExpr =
-                    match ParsetreeViewer.processBracesAttr thenExpr with
-                    (* This case only happens when coming from Reason, we strip braces *)
-                    | Some _, expr -> expr
-                    | _ -> thenExpr
-                  in
-                  printExpressionBlock ~braces:true thenExpr cmtTbl);
-               ]
-           | IfLet (pattern, conditionExpr) ->
-             let conditionDoc =
-               let doc = printExpressionWithComments conditionExpr cmtTbl in
-               match Parens.expr conditionExpr with
-               | Parens.Parenthesized -> addParens doc
-               | Braced braces -> printBraces doc conditionExpr braces
-               | Nothing -> doc
-             in
-             Doc.concat
-               [
-                 ifTxt;
-                 Doc.text "let ";
-                 printPattern pattern cmtTbl;
-                 Doc.text " = ";
-                 conditionDoc;
-                 Doc.space;
-                 printExpressionBlock ~braces:true thenExpr cmtTbl;
-               ])
+                 | Braced braces -> printBraces doc conditionExpr braces
+                 | Nothing -> doc
+               in
+               Doc.concat
+                 [
+                   ifTxt;
+                   Doc.text "let ";
+                   printPattern pattern cmtTbl;
+                   Doc.text " = ";
+                   conditionDoc;
+                   Doc.space;
+                   printExpressionBlock ~braces:true thenExpr cmtTbl;
+                 ]
+           in
+           printLeadingComments doc cmtTbl.leading outerLoc)
          ifs)
   in
   let elseDoc =
