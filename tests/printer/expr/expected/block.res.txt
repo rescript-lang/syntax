@@ -32,7 +32,9 @@ let reifyStyle = (type a, x: 'a): (style<a>, a) => {
       Obj.magic(Pattern)
     } else {
       raise(
-        Invalid_argument("Unknown canvas style kind. Known values are: String, CanvasGradient, CanvasPattern"),
+        Invalid_argument(
+          "Unknown canvas style kind. Known values are: String, CanvasGradient, CanvasPattern",
+        ),
       )
     },
     Obj.magic(x),
@@ -42,7 +44,9 @@ let reifyStyle = (type a, x: 'a): (style<a>, a) => {
 React.useEffect0(() => {
   let watcherId = watchUrl(url => setUrl(_ => url))
 
-  @ocaml.doc("\n      * check for updates that may have occured between\n      * the initial state and the subscribe above\n      ")
+  @ocaml.doc(
+    "\n      * check for updates that may have occured between\n      * the initial state and the subscribe above\n      "
+  )
   let newUrl = dangerouslyGetInitialUrl()
   if urlNotEqual(newUrl, url) {
     setUrl(_ => newUrl)
