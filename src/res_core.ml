@@ -782,7 +782,6 @@ let parseOpenDescription ~attrs p =
   Parser.eatBreadcrumb p;
   Ast_helper.Opn.mk ~loc ~attrs ~override modident
 
-
 (* constant	::=	integer-literal   *)
 (* ∣	 float-literal   *)
 (* ∣	 string-literal   *)
