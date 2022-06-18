@@ -24,5 +24,4 @@ let e = (((fun x -> x + 1) |> sideEffect; logToAnalytics Shady.ml)
 let f = ((fun event -> (event.target).value)[@ns.braces ])
 let f = ((fun event -> ((event.target).value : string))[@ns.braces ])
 let x = ((let a = 1 in let b = 2 in a + b)[@ns.braces ])
-;;(([(({js|
-|js} |. React.string)[@ns.braces ])])[@JSX ])
+;;(([(({js|\n|js} |. React.string)[@ns.braces ])])[@JSX ])
