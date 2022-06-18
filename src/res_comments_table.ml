@@ -351,7 +351,10 @@ let getLoc node =
     | ({Location.txt = "ns.namedArgLoc"; loc}, _) :: _attrs ->
       {loc with loc_end = expr.pexp_loc.loc_end}
     | _ -> expr.pexp_loc)
-  | Expression e -> e.pexp_loc
+  | Expression e -> (
+    match e.pexp_attributes with
+    | ({txt = "ns.braces"; loc}, _) :: _ -> loc
+    | _ -> e.pexp_loc)
   | ExprRecordRow (li, e) -> {li.loc with loc_end = e.pexp_loc.loc_end}
   | ExtensionConstructor ec -> ec.pext_loc
   | LabelDeclaration ld -> ld.pld_loc

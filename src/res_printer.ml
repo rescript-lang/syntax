@@ -3765,15 +3765,19 @@ and printJsxChildren (childrenExpr : Parsetree.expression) cmtTbl =
                 hasLeadingLineComment cmtTbl expr.pexp_loc
               in
               let exprDoc = printExpressionWithComments expr cmtTbl in
-              match Parens.jsxChildExpr expr with
-              | Parenthesized | Braced _ ->
+              let addParensOrBraces exprDoc =
                 (* {(20: int)} make sure that we also protect the expression inside *)
                 let innerDoc =
                   if Parens.bracedExpr expr then addParens exprDoc else exprDoc
                 in
                 if leadingLineCommentPresent then addBraces innerDoc
                 else Doc.concat [Doc.lbrace; innerDoc; Doc.rbrace]
-              | Nothing -> exprDoc)
+              in
+              match Parens.jsxChildExpr expr with
+              | Nothing -> exprDoc
+              | Parenthesized -> addParensOrBraces exprDoc
+              | Braced bracesLoc ->
+                printComments (addParensOrBraces exprDoc) cmtTbl bracesLoc)
             children))
   | _ ->
     let leadingLineCommentPresent =
