@@ -1020,10 +1020,6 @@ let parseTemplateConstant ~prefix (p : Parser.t) =
   match p.token with
   | TemplateTail txt ->
     Parser.next p;
-    let txt =
-      if p.mode = ParseForTypeChecker then parseTemplateStringLiteral txt
-      else txt
-    in
     Parsetree.Pconst_string (txt, prefix)
   | _ ->
     let rec skipTokens () =
@@ -2333,10 +2329,6 @@ and parseTemplateExpr ?(prefix = "js") p =
     | TemplateTail txt ->
       Parser.next p;
       let loc = mkLoc startPos p.prevEndPos in
-      let txt =
-        if p.mode = ParseForTypeChecker then parseTemplateStringLiteral txt
-        else txt
-      in
       let str =
         Ast_helper.Exp.constant ~attrs:[templateLiteralAttr] ~loc
           (Pconst_string (txt, Some prefix))
@@ -2375,10 +2367,6 @@ and parseTemplateExpr ?(prefix = "js") p =
   match p.token with
   | TemplateTail txt ->
     Parser.next p;
-    let txt =
-      if p.mode = ParseForTypeChecker then parseTemplateStringLiteral txt
-      else txt
-    in
     Ast_helper.Exp.constant ~attrs:[templateLiteralAttr]
       ~loc:(mkLoc startPos p.prevEndPos)
       (Pconst_string (txt, Some prefix))
