@@ -996,7 +996,8 @@ let parseConstant p =
     | Float {f; suffix} ->
       let floatTxt = if isNegative then "-" ^ f else f in
       Parsetree.Pconst_float (floatTxt, suffix)
-    | String s -> Pconst_string (s, Some "js")
+    | String s ->
+      Pconst_string (s, if p.mode = ParseForTypeChecker then Some "js" else None)
     | Codepoint {c; original} ->
       if p.mode = ParseForTypeChecker then Pconst_char c
       else
