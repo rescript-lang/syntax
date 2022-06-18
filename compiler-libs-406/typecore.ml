@@ -3769,6 +3769,7 @@ and type_format loc str env =
         pexp_desc = pexp_desc;
         pexp_loc = loc;
         pexp_attributes = [];
+        pexp_comment = ""
       } and mk_lid_loc lid = {
         txt = lid;
         loc = loc;

@@ -79,7 +79,8 @@ let rec rewriteReasonFastPipe expr =
     let newRhs = {
       pexp_loc = rhsLoc;
       pexp_attributes = [];
-      pexp_desc = Pexp_apply (rhs, args)
+      pexp_desc = Pexp_apply (rhs, args);
+      pexp_comment = ""
     } in
     let allArgs = (Asttypes.Nolabel, newLhs)::[(Asttypes.Nolabel, newRhs)] in
     {expr with pexp_desc = Pexp_apply (op, allArgs)}
@@ -106,7 +107,7 @@ let makeReasonArityMapper ~forPrinter =
         | Some {pexp_desc = Pexp_tuple [sp]} -> Some sp
         | _ -> args
         in
-        default_mapper.expr mapper { pexp_desc=Pexp_construct(lid, newArgs); pexp_loc; pexp_attributes}
+        default_mapper.expr mapper { pexp_desc=Pexp_construct(lid, newArgs); pexp_loc; pexp_attributes; pexp_comment=""}
       | expr ->
         default_mapper.expr mapper (rewriteReasonFastPipe expr)
     end;
@@ -428,6 +429,7 @@ let normalize =
           ppat_desc = Ppat_var (Location.mknoloc "x");
         } in
         {
+          pexp_comment = "";
           pexp_loc = loc;
           pexp_attributes = [];
           pexp_desc = Pexp_fun (
@@ -435,10 +437,12 @@ let normalize =
             None,
             var,
             {
+              pexp_comment = "";
               pexp_loc = loc;
               pexp_attributes = [];
               pexp_desc = Pexp_match (
                 {
+                  pexp_comment = "";
                   pexp_loc = Location.none;
                   pexp_attributes = [];
                   pexp_desc = Pexp_ident (Location.mknoloc (Longident.Lident "x"))
@@ -455,6 +459,7 @@ let normalize =
         ) ->
         (* turn `!foo` into `foo.contents` *)
         {
+          pexp_comment = "";
           pexp_loc = expr.pexp_loc;
           pexp_attributes = expr.pexp_attributes;
           pexp_desc = Pexp_field (mapper.expr mapper operand, (Location.mknoloc (Longident.Lident "contents")))
@@ -467,6 +472,7 @@ let normalize =
         ) ->
         let label = Location.mkloc txt labelLoc in
         {
+          pexp_comment = "";
           pexp_loc = expr.pexp_loc;
           pexp_attributes = expr.pexp_attributes;
           pexp_desc = Pexp_send (mapper.expr mapper lhs, label)
@@ -480,6 +486,7 @@ let normalize =
         ) ->
         let ternaryMarker = (Location.mknoloc "ns.ternary", Parsetree.PStr []) in
         {Parsetree.pexp_loc = expr.pexp_loc;
+          pexp_comment = "";
           pexp_desc = Pexp_ifthenelse (
             mapper.expr mapper condition,
             mapper.expr mapper thenExpr,

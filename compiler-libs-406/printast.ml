@@ -249,7 +249,7 @@ and pattern i ppf x =
       payload i ppf arg
 
 and expression i ppf x =
-  line i ppf "expression %a\n" fmt_location x.pexp_loc;
+  line i ppf "expression %a comment:%s\n" fmt_location x.pexp_loc x.pexp_comment;
   attributes i ppf x.pexp_attributes;
   let i = i+1 in
   match x.pexp_desc with
