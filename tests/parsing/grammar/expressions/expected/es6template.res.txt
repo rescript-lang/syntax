@@ -93,8 +93,8 @@ let s = (({js|$dollar without $braces $interpolation|js})[@res.template ])
 let s = (({json|null|json})[@res.template ])
 let x = (({js|foo\`bar\$\\foo|js})[@res.template ])
 let x =
-  ((((((((({js|foo`bar$\foo|js})[@res.template ]) ^ a)[@res.template ]) ^
-         (({js| ` |js})[@res.template ]))
+  ((((((((({js|foo\`bar\$\\foo|js})[@res.template ]) ^ a)[@res.template ]) ^
+         (({js| \` |js})[@res.template ]))
        [@res.template ]) ^ b)
       ^ (({js| \` xx|js})[@res.template ]))
   [@res.template ])
@@ -103,5 +103,5 @@ let thisIsAlsoFine = (({js|fine\$|js})[@res.template ])
 let isThisFine = (({js|shouldBeFine$|js})[@res.template ])
 ;;(((((({js|$|js})[@res.template ]) ^ dollarAmountInt)[@res.template ]) ^
       (({js||js})[@res.template ]))[@res.template ])
-;;(((((({js|$|js})[@res.template ]) ^ dollarAmountInt)[@res.template ]) ^
+;;(((((({js|\$|js})[@res.template ]) ^ dollarAmountInt)[@res.template ]) ^
       (({js||js})[@res.template ]))[@res.template ])

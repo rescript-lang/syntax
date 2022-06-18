@@ -782,42 +782,6 @@ let parseOpenDescription ~attrs p =
   Parser.eatBreadcrumb p;
   Ast_helper.Opn.mk ~loc ~attrs ~override modident
 
-let parseTemplateStringLiteral s =
-  let len = String.length s in
-  let b = Buffer.create len in
-
-  let rec loop i =
-    if i < len then (
-      let c = String.unsafe_get s i in
-      match c with
-      | '\\' as c ->
-        if i + 1 < len then (
-          let nextChar = String.unsafe_get s (i + 1) in
-          match nextChar with
-          | '\\' as c ->
-            Buffer.add_char b c;
-            loop (i + 2)
-          | '$' as c ->
-            Buffer.add_char b c;
-            loop (i + 2)
-          | '`' as c ->
-            Buffer.add_char b c;
-            loop (i + 2)
-          | '\n' | '\r' ->
-            (* line break *)
-            loop (i + 2)
-          | c ->
-            Buffer.add_char b '\\';
-            Buffer.add_char b c;
-            loop (i + 2))
-        else Buffer.add_char b c
-      | c ->
-        Buffer.add_char b c;
-        loop (i + 1))
-    else ()
-  in
-  loop 0;
-  Buffer.contents b
 
 (* constant	::=	integer-literal   *)
 (* ∣	 float-literal   *)
@@ -2179,10 +2143,6 @@ and parseTemplateExpr ?(prefix = "js") p =
       let loc = mkLoc startPos p.prevEndPos in
       let expr = parseExprBlock p in
       let fullLoc = mkLoc startPos p.prevEndPos in
-      let txt =
-        if p.mode = ParseForTypeChecker then parseTemplateStringLiteral txt
-        else txt
-      in
       let str =
         Ast_helper.Exp.constant ~attrs:[templateLiteralAttr] ~loc
           (Pconst_string (txt, Some prefix))
@@ -2214,10 +2174,6 @@ and parseTemplateExpr ?(prefix = "js") p =
     let constantLoc = mkLoc startPos p.prevEndPos in
     let expr = parseExprBlock p in
     let fullLoc = mkLoc startPos p.prevEndPos in
-    let txt =
-      if p.mode = ParseForTypeChecker then parseTemplateStringLiteral txt
-      else txt
-    in
     let str =
       Ast_helper.Exp.constant ~attrs:[templateLiteralAttr] ~loc:constantLoc
         (Pconst_string (txt, Some prefix))
