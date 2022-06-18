@@ -26,7 +26,8 @@ type ifConditionKind =
    * Basically compute: ([if, else if, else if, else if], else) *)
 val collectIfExpressions :
   Parsetree.expression ->
-  (ifConditionKind * Parsetree.expression) list * Parsetree.expression option
+  (Location.t * ifConditionKind * Parsetree.expression) list
+  * Parsetree.expression option
 
 val collectListExpressions :
   Parsetree.expression ->
