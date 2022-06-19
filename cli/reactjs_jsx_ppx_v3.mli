@@ -38,14 +38,30 @@
   `ReactDOMRe.createDOMElementVariadic("div", ~props=ReactDOMRe.domProps(~props1=1, ~props2=b), [|foo, bar|])`.
   transform the upper-cased case
   `[@JSX] Foo.createElement(~key=a, ~ref=b, ~foo=bar, ~spreadProps=baz ~children=[], ())` into
-  `Foo.make({...baz, key: a, ref: b, foo: bar})`
+  `React.createElement(Foo.make, {...baz, key: a, ref: b, foo: bar})`
   transform the upper-cased case
   `[@JSX] Foo.createElement(~foo=bar, ~spreadProps=baz, ~children=[foo, bar], ())` into
-  Foo.make({...baz, foo: bar, children: React.null}), [|foo, bar|])`
+  `React.createElement(Foo.make, {...baz, foo: bar, children: React.null}), [|foo, bar|])`
   transform `[@JSX] [foo]` into
   `ReactDOMRe.createElement(ReasonReact.fragment, [|foo|])`
 *)
 
+(*
+  New JSX transform with React v17
+
+  if has key
+  `jsxKeyed("div", { ... }, "key") or jsxsKeyed("div", { ... }, "key")`
+
+  upper case
+  child X -> `jsx(Foo.make, { ... })`
+  child -> `jsx(Foo.make, { ... , children: ... })`
+  children O -> `jsxs(Foo.make, { ..., children: [ ... ]})`
+
+  lower case
+  child X -> `jsx("div", { ... })`
+  child O -> `jsx("div", { ..., children: ... })`
+  children O -> `jsxs("div", { ..., children: [ ... ]})`
+*)
 val rewrite_implementation : Parsetree.structure -> Parsetree.structure
 
 val rewrite_signature : Parsetree.signature -> Parsetree.signature
