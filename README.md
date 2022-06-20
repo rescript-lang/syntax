@@ -29,9 +29,9 @@ Required:
 - OS: macOS, Linux or Windows
 
 ```sh
-opam install dune reanalyze
 git clone https://github.com/rescript-lang/syntax.git
 cd syntax
+opam install . --deps-only --with-test
 make # or "dune build"
 ```
 
