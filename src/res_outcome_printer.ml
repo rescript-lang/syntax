@@ -522,11 +522,12 @@ and printOutConstructorDoc (name, args, gadt) =
   in
   Doc.group (Doc.concat [Doc.text name; argsDoc; gadtDoc])
 
-and printRecordDeclRowDoc (name, mut, arg) =
+and printRecordDeclRowDoc (name, mut, opt, arg) =
   Doc.group
     (Doc.concat
        [
-         (if mut then Doc.text "mutable " else Doc.nil);
+        (if opt then Doc.text "@optional " else Doc.nil);
+        (if mut then Doc.text "mutable " else Doc.nil);
          printIdentLike ~allowUident:false name;
          Doc.text ": ";
          printOutTypeDoc arg;
