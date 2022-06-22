@@ -3701,6 +3701,7 @@ and printJsxExpression lident args cmtTbl =
       childExprs |> List.exists ParsetreeViewer.isJsxExpression
     | None -> false
   in
+  let lineSep = if hasNestedJsx then Doc.hardLine else Doc.line in
   Doc.group
     (Doc.concat
        [
@@ -3735,12 +3736,10 @@ and printJsxExpression lident args cmtTbl =
                       Doc.line;
                       (match children with
                       | Some childrenExpression ->
-                        printJsxChildren childrenExpression
-                          ~sep:(if hasNestedJsx then Doc.hardLine else Doc.line)
-                          cmtTbl
+                        printJsxChildren childrenExpression ~sep:lineSep cmtTbl
                       | None -> Doc.nil);
                     ]);
-               (if hasNestedJsx then Doc.hardLine else Doc.line);
+               lineSep;
                Doc.text "</";
                name;
                Doc.greaterThan;
@@ -3752,6 +3751,7 @@ and printJsxFragment expr cmtTbl =
   let closing = Doc.text "</>" in
   let children, _ = ParsetreeViewer.collectListExpressions expr in
   let hasNestedJsx = children |> List.exists ParsetreeViewer.isJsxExpression in
+  let lineSep = if hasNestedJsx then Doc.hardLine else Doc.line in
   Doc.group
     (Doc.concat
        [
@@ -3760,14 +3760,8 @@ and printJsxFragment expr cmtTbl =
          | Pexp_construct ({txt = Longident.Lident "[]"}, None) -> Doc.nil
          | _ ->
            Doc.indent
-             (Doc.concat
-                [
-                  Doc.line;
-                  printJsxChildren expr
-                    ~sep:(if hasNestedJsx then Doc.hardLine else Doc.line)
-                    cmtTbl;
-                ]));
-         (if hasNestedJsx then Doc.hardLine else Doc.line);
+             (Doc.concat [Doc.line; printJsxChildren expr ~sep:lineSep cmtTbl]));
+         lineSep;
          closing;
        ])
 
