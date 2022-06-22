@@ -294,7 +294,9 @@ module App = {
 module App = {
   @react.component
   let make = () => {
-    <> <div /> </>
+    <>
+      <div />
+    </>
   }
 }
 

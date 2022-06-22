@@ -3750,7 +3750,8 @@ and printJsxExpression lident args cmtTbl =
 and printJsxFragment expr cmtTbl =
   let opening = Doc.text "<>" in
   let closing = Doc.text "</>" in
-  (* let (children, _) = ParsetreeViewer.collectListExpressions expr in *)
+  let children, _ = ParsetreeViewer.collectListExpressions expr in
+  let hasNestedJsx = children |> List.exists ParsetreeViewer.isJsxExpression in
   Doc.group
     (Doc.concat
        [
@@ -3759,8 +3760,14 @@ and printJsxFragment expr cmtTbl =
          | Pexp_construct ({txt = Longident.Lident "[]"}, None) -> Doc.nil
          | _ ->
            Doc.indent
-             (Doc.concat [Doc.line; printJsxChildren expr ~sep:Doc.line cmtTbl]));
-         Doc.line;
+             (Doc.concat
+                [
+                  Doc.line;
+                  printJsxChildren expr
+                    ~sep:(if hasNestedJsx then Doc.hardLine else Doc.line)
+                    cmtTbl;
+                ]));
+         (if hasNestedJsx then Doc.hardLine else Doc.line);
          closing;
        ])
 
