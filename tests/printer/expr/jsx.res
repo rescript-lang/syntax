@@ -7,6 +7,8 @@ let x = <Foo.baz
  className="multiline"
 />
 
+// https://github.com/rescript-lang/syntax/issues/570
+let x = <A> <B> <C> <D /> <E /> </C> <F> <G /> <H /> </F> </B> </A>
 
 let x =
   <div

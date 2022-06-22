@@ -5,6 +5,21 @@ let x = <Foo.Bar.Baz className="container" />
 let x = <Foo.bar className="container" />
 let x = <Foo.baz className="multiline" />
 
+// https://github.com/rescript-lang/syntax/issues/570
+let x =
+  <A>
+    <B>
+      <C>
+        <D />
+        <E />
+      </C>
+      <F>
+        <G />
+        <H />
+      </F>
+    </B>
+  </A>
+
 let x = <div className="container" className2="container2" className3="container3" onClick />
 
 let nav =
@@ -58,7 +73,9 @@ let nav3 =
 
 let avatarSection =
   <>
-    <div style={{"zIndex": "1", "opacity": opacityUser}}> <Avatar user={user} size={45} /> </div>
+    <div style={{"zIndex": "1", "opacity": opacityUser}}>
+      <Avatar user={user} size={45} />
+    </div>
     {user.email !== viewer.email
       ? <div
           style={{
@@ -258,8 +275,14 @@ let x = <MyComponent sidebar={<div> test </div>} nav={<Navbar />} />
 
 // https://github.com/rescript-lang/syntax/issues/113
 <div> {Js.log(a <= 10)} </div>
-<div> <div> {Js.log(a <= 10)} </div> </div>
-<div> <div onClick={_ => Js.log(a <= 10)}> <div> {Js.log(a <= 10)} </div> </div> </div>
+<div>
+  <div> {Js.log(a <= 10)} </div>
+</div>
+<div>
+  <div onClick={_ => Js.log(a <= 10)}>
+    <div> {Js.log(a <= 10)} </div>
+  </div>
+</div>
 
 module App = {
   @react.component
