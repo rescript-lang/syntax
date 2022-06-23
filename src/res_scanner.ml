@@ -337,7 +337,22 @@ let scanStringEscapeSequence ~startPos scanner =
   match scanner.ch with
   (* \ already consumed *)
   | 'n' | 't' | 'b' | 'r' | '\\' | ' ' | '\'' | '"' -> next scanner
-  | '0' -> next scanner
+  | '0' ->
+    next scanner;
+    let nextCharIsDecimalDigit =
+      match scanner.ch with
+      | '0' .. '9' -> true
+      | _ -> false
+    in
+    if nextCharIsDecimalDigit then
+      let pos = position scanner in
+      let msg = "The only valid numeric escape in strict mode is '\\0'" in
+      scanner.err ~startPos ~endPos:pos (Diagnostics.message msg)
+  | '1' .. '9' ->
+    let pos = position scanner in
+    let msg = "The only valid numeric escape in strict mode is '\\0'" in
+    scanner.err ~startPos ~endPos:pos (Diagnostics.message msg);
+    next scanner
   | 'x' ->
     (* hex *)
     next scanner;

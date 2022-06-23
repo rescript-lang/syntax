@@ -1,1 +1,24 @@
+
+  Syntax error!
+  tests/parsing/errors/expressions/stringLiteral.res:2:4-5
+
+  1 │ switch x {
+  2 │ | "\055" => ()
+  3 │ | "\123" => ()
+  4 │ }
+
+  The only valid numeric escape in strict mode is '\0'
+
+
+  Syntax error!
+  tests/parsing/errors/expressions/stringLiteral.res:3:4
+
+  1 │ switch x {
+  2 │ | "\055" => ()
+  3 │ | "\123" => ()
+  4 │ }
+  5 │ 
+
+  The only valid numeric escape in strict mode is '\0'
+
 ;;match x with | {js|\055|js} -> () | {js|\123|js} -> ()
