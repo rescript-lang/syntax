@@ -1,6 +1,6 @@
 let x = a + b
 let x = @attr (a + b)
-let x = @attr (@attr a + @attr b)
+let x = @attr ((@attr a) + (@attr b))
 let x = a && b + c
 let x = (a && b) + c
 let x = (a && b) || c
@@ -182,13 +182,13 @@ let x = a && (b || c) && d
 let x = a && b + c
 let x = a && b + c && d
 
-let x = a && @attr b && c
-let x = @attr a && @attr b && @attr c
+let x = a && (@attr b) && c
+let x = (@attr a) && (@attr b) && (@attr c)
 let x = a && @attr (b && c)
-let x = a && @attr (b && c) && @attr (d && e)
+let x = a && (@attr (b && c)) && @attr (d && e)
 
 let x = a && @attr (x |> f(g))
-let x = a && @attr (x |> f(g)) && @attr (y |> f(h))
+let x = a && (@attr (x |> f(g))) && @attr (y |> f(h))
 
 let x = a && a.b
 let x = a && x.y && g.h
@@ -516,3 +516,8 @@ React.useEffect4(() => {
 let make = (~keycap) => <Kbd keycap="Ctrl" /> + <Kbd keycap="Shift" /> + <Kbd keycap />
 
 <Kbd keycap="Cmd" /> + <Kbd keycap="Option" /> + <Kbd keycap="Shift" /> + <Kbd keycap />
+
+// rescript-lang/syntax/issues/499
+(@doesNotRaise [])->Belt.Array.getExn(0)
+@doesNotRaise
+[]->Belt.Array.getExn(0)

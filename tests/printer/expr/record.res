@@ -28,3 +28,38 @@ let user = {name: {
 }}
 // braced + constrained expr
 let user = {name: {(ceo.name: string)}}
+
+
+// Punning
+let r = {a} // actually not a record, just an expression in braces
+let r = {a: a} // single-element record, not punned
+let r = {A.a: a} // single-element record, not punned
+let r = {a, b}
+let r = {a, b, c: 42}
+let r = {A.a, b}
+let r = {A.a: a, b}
+let r = {a: a, b}
+let r = {a, b: b}
+
+// Punning + comments
+let r = {
+  // a
+  a,
+  // b
+  b,
+}
+let r = {
+  a, // a
+  b, // b
+}
+let r = {
+  /* a */
+  a,
+  /* b */
+  b,
+}
+let r = {
+  a /* a */,
+  b /* b */,
+}
+let r = {a /* a */, b /* b */}

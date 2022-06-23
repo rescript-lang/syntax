@@ -5,6 +5,8 @@ let r = {Parsetree.pexp_attributes: [], Parsetree.loc: loc}
 
 // punning
 let r = {a, b, c} 
+let r = {A.a, b}
+let r = {A.a, b, C.c}
 
 let r = {Parsetree.pexp_attributes, Parsetree.loc}
 // trailing comma

@@ -1,0 +1,13 @@
+(executable
+ (name benchmark)
+ (public_name bench)
+ (enabled_if
+  (= %{system} macosx))
+ (flags
+  (-open Syntax -open Compilerlibs406))
+ (foreign_stubs
+  (language c)
+  (names mac_osx_time))
+ (libraries syntax compilerlibs406))
+
+(data_only_dirs data)

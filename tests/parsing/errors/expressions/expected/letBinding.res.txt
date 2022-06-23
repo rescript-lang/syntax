@@ -84,5 +84,5 @@ let foo = true
 let foo = 2
 let foo = f ()
 let foo = ((2)[@ns.braces ])
-let foo = (("foo")[@ns.braces ])
+let foo = (({js|foo|js})[@ns.braces ])
 let foo as x = ()

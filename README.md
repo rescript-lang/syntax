@@ -22,35 +22,37 @@ J. Blow.
 ### Setup & Usage (For Repo Devs Only)
 
 Required:
-- [NodeJS](https://nodejs.org/)
-- Ocaml 4.06.1
-- OS: Mac
+
+- OCaml 4.10 or later
+- Dune
+- Reanalyze
+- OS: macOS, Linux or Windows
 
 ```sh
-opam switch create 4.06.1 && eval $(opam env)
 git clone https://github.com/rescript-lang/syntax.git
 cd syntax
-npm install
-make # or: make -j9 for faster build
+opam install . --deps-only --with-test
+make # or "dune build"
 ```
 
-This will produce the final binary `lib/rescript.exe` used for testing.
+This will produce the three binaries `rescript`, `tests` and `bench` (with `.exe` extension on Windows).
 
-First build is super slow because we're also building our vendored `refmt` (only used for the conversion tool). Subsequent builds should be <2s. If not, please file an issue (build speed is a priority).
-
-We only build production binary, even in dev mode. No need for a separate dev binary when the build is fast enough. Plus, this encourages proper benchmarking of the (production) binary each diff.
+We only build production binaries, even in dev mode. No need for a separate dev binary when the build is fast enough. Plus, this encourages proper benchmarking of the (production) binary each diff.
 
 After you make a change:
+
 ```sh
 make
 ```
 
 Run the core tests:
+
 ```sh
 make test
 ```
 
-Run the extended tests:
+Run the extended tests (not fully working on Windows yet):
+
 ```sh
 make roundtrip-test
 ```
@@ -58,20 +60,24 @@ make roundtrip-test
 Those will tell you whether you've got a test output difference. If it's intentional, check them in.
 
 Debug a file:
+
 ```sh
 # write code in test.res
-./lib/rescript.exe test.res # test printer
-./lib/rescript.exe -print ast test.res # print ast
-./lib/rescript.exe -print ml test.res # show ocaml code
-./lib/rescript.exe -print res -width 80 test.res # test printer and change default print width
+dune exec -- rescript test.res # test printer
+dune exec -- rescript -print ast test.res # print ast
+dune exec -- rescript -print comments test.res # print comment table
+dune exec -- rescript -print ml test.res # show ocaml code
+dune exec -- rescript -print res -width 80 test.res # test printer and change default print width
 ```
 
 Benchmark:
+
 ```sh
 make bench
 ```
 
 Enable stack trace:
+
 ```sh
 # Before you run the binary
 export OCAMLRUNPARAM="b"
@@ -81,7 +87,10 @@ This is likely a known knowledge: add the above line into your shell rc file so 
 
 ### Development Docs
 
-`src/syntax` contains all the source code. Don't change folder structure without notice; ReScript uses this repo as a submodule and assumes `src/syntax`.
+#### Folder Structure
+
+- `src` contains all the parser/printer source code. Don't change folder structure without notice; The [rescript-compiler](https://github.com/rescript-lang/rescript-compiler) repo uses this repo as a submodule and assumes `src`.
+- `benchmarks`, `cli` and `tests` contain the source code for the executables used for testing/benchmarking. These are not used by the [rescript-compiler](https://github.com/rescript-lang/rescript-compiler) repo.
 
 #### Error Reporting Logic
 
@@ -94,40 +103,23 @@ Right now, ReScript's compiler's error reporting mechanism, for architectural re
 - The errors are reported by the parser [here](https://github.com/rescript-lang/syntax/blob/ec5cefb23b659b0a7be170ae0ad26f3fe8a05456/src/res_diagnostics.ml#L146).
 - Our editor plugin parses the error report from the compiler and from the syntax [here](https://github.com/rescript-lang/rescript-vscode/blob/0dbf2eb9cdb0bd6d95be1aee88b73830feecb5cc/server/src/utils.ts#L129-L329).
 
-### Example File Conversion
-
-In a random project of yours:
-
-```sh
-node_modules/.bin/bsrefmt --print=binary myFile.re | your/path/to/rescript.exe -parse reasonBinary -print ns > myFile.res
-node_modules/.bin/bsrefmt --print=binary --interface=true myFile.rei | your/path/to/rescript.exe -parse reasonBinary -print ns -interface > myFile.resi
-mv myFile.re myFile.re.backup # random backup name. Could be anything
-```
-
 ### Example API usage
 
 ```ocaml
-module Parser = ResCore.Parser
-module Diagnostics = ResCore.Diagnostics
-
 let filename = "foo.res"
 let src = FS.readFile filename
 
 let p =
   (* intended for ocaml compiler *)
-  let mode = Parser.ParseForTypeChecker in
-  (* if you want to target the printer use: let mode = Parser.Default in*)
-  Parser.make ~mode src filename
+  let mode = Res_parser.ParseForTypeChecker in
+  (* if you want to target the printer use: let mode = Res_parser.Default in*)
+  Res_parser.make ~mode src filename
 
-let structure = ResParser.parseImplementation p
-let signature = ResParser.parseInterface p
+let structure = Res_core.parseImplementation p
+let signature = Res_core.parseSpecification p
 
-let () = match p.Parser.diagnostics with
+let () = match p.diagnostics with
 | [] -> () (* no problems *)
 | diagnostics -> (* parser contains problems *)
-  prerr_string (
-    Diagnostics.stringOfReport
-      ~style:Diagnostics.Pretty
-      diagnostics src
-  )
+  Res_diagnostics.printReport diagnostics src
 ```

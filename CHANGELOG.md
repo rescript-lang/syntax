@@ -1,5 +1,7 @@
 ## Unreleased
 
+* Fix printing for inline nullary functor types [#477](https://github.com/rescript-lang/syntax/pull/477)
+* Fix stripping of quotes for empty poly variants [#474](https://github.com/rescript-lang/syntax/pull/474)
 * Implement syntax for arity zero vs arity one in uncurried application in [#139](https://github.com/rescript-lang/syntax/pull/139)
 * Fix parsing of first class module exprs as part of binary/ternary expr in [#256](https://github.com/rescript-lang/syntax/pull/256)
 

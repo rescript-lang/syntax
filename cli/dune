@@ -1,0 +1,6 @@
+(executable
+ (name res_cli)
+ (public_name rescript)
+ (flags
+  (-open Syntax -open Compilerlibs406 -w -d))
+ (libraries syntax compilerlibs406))

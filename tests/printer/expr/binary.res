@@ -400,3 +400,8 @@ let make = (~keycap) =>
 <Kbd keycap="Option" /> +
 <Kbd keycap="Shift" /> +
 <Kbd keycap />
+
+// rescript-lang/syntax/issues/499
+(@doesNotRaise [])->Belt.Array.getExn(0)
+@doesNotRaise
+[]->Belt.Array.getExn(0)

@@ -13,3 +13,7 @@ module type Functor = @attr1 (SetLike) => @attr2 (BtreeLike) => @attr3 NeoTree
 
 module type Functor = SetLike => Set with type t = A.t
 module type Functor = SetLike => (Set with type t = A.t)
+
+module type B = () => {
+
+}

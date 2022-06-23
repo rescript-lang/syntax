@@ -1,3 +1,27 @@
+module Set = {
+  module type OrderedType = {
+    type rec t
+    let compare : (t, t) => int
+  }
+  module type S = {
+    type rec elt
+    type rec t
+    let empty : t
+    let compare : (t, t) => int
+  }
+  module Make = (Ord:OrderedType) : (S with type elt = Ord.t) => {
+    type rec elt = Ord.t
+    type rec t
+    let compare = assert false
+    let empty = assert false
+  }
+}
+
+module Hashtbl = {
+  type t<'a, 'b>
+  let create = (x:int) : t<_, _> => assert false
+}
+
 let name = "Steve"
 let x = 42
 let pi = 3.14
@@ -6,7 +30,7 @@ let numbersArray = [1, 2, 3, 4, 5]
 let numbersTuple = (1, 2, 3, 4, 5)
 let numbersList = list{1, 2, 3, 4, 5}
 
-let add = (a, b) => a + b
+let add = (a:int, b:int) => 3
 
 type s = string
 
@@ -22,7 +46,7 @@ type user2 = {
 }
 
 module Diff = {
-  let string = (s1: string, s2: string) => s1 != s2
+  let string = (s1: string, s2: string) => true
 }
 
 module Diff2 = Diff
@@ -93,7 +117,7 @@ module M = {
   type data = [#IntData(int) | #StrData(string)]
   let stringOfData = (x: data) =>
     switch x {
-    | #IntData(i) => string_of_int(i)
+    | #IntData(i) => ""
     | #StrData(s) => s
     }
 }
@@ -107,21 +131,15 @@ let id = (x: [> rgb]) => x
 type point = [ | #Point(float, float) ]
 type shape = [ | #Rectangle(point, point) | #Circle(point, float) ]
 
-let pi = 4.0 *. atan(1.0)
+let pi = 4.0
 let computeArea = (s: shape) =>
   switch s {
-  | #Rectangle(#Point(x1, y1), #Point(x2, y2)) =>
-    let width = abs_float(x2 -. x1)
-    let height = abs_float(y2 -. y1)
-    width *. height
-  | #Circle(_, radius) => pi *. radius ** 2.0
+  | #Rectangle(#Point(x1, y1), #Point(x2, y2)) => 1.0
+  | #Circle(_, radius) => 1.0
   }
 
-let shoelaceFormula = (#Point(x1, y1), #Point(x2, y2), #Point(x3, y3)) =>
-  0.5 *.
-  abs_float(
-    x1 *. y2 -. x3 *. y2 +. x3 *. y1 -. x1 *. y3 +. x2 *. y3 -. x2 *. y1,
-  )
+let shoelaceFormula = (#Point(x1:float, y1:float), #Point(x2:float, y2:float), #Point(x3:float, y3:float)) =>
+  1.0
 
 type shapePlus = [
 | #Rectangle(point, point)
@@ -138,7 +156,7 @@ let computeAreaPlus = (sp: shapePlus) =>
 let computeAreaExotic = (sp) =>
   switch sp {
   | #"R-Triangle+"(_p1, _p2, _p3) => ()
-  | #...shape as s => ignore(s); ()
+  | #...shape as s => ()
   }
 
 let top = #Point(3.0, 5.0)
@@ -170,9 +188,9 @@ let color_to_int = color =>
     | #Bold => 8
     | #Regular => 0
     }
-    base + basic_color_to_int(basic_color)
-  | #RGB(r, g, b) => 16 + b + g * 6 + r * 36
-  | #Gray(i) => 232 + i
+    basic_color_to_int(basic_color)
+  | #RGB(r:int, g:int, b:int) => 16
+  | #Gray(i:int) => 232
   }
 
 module type Conjunctive = {
@@ -232,6 +250,8 @@ module Js = {
 
 type arity0 = Js.Fn.arity0<unit>
 type arity0b = Js.Fn.arity0<int>
+type arity0c = Js.Fn.arity0<Js.Fn.arity0<array<int>>>
+type arity0d = Js.Fn.arity0<unit => unit>
 type arity1 = Js.Fn.arity1<(int) => int>
 type arity2 = Js.Fn.arity2<(int, int) => int>
 type arity3 = Js.Fn.arity3<(int, int, int) => int>
@@ -295,8 +315,7 @@ type permissions = [
    | #644 => #2(42, "test")
  }
 
-let sort = (type s, module(Set: Set.S with type elt = s), l) =>
-  Set.elements(List.fold_right(Set.add, l, Set.empty))
+let sort = (type s, module(Set: Set.S with type elt = s), l:list<s>) => l
 
 let make_set = (type s, cmp) => {
   module S = Set.Make({
@@ -325,10 +344,10 @@ module rec A: {
     | Node(ASet.t)
   let compare = (t1, t2) =>
     switch (t1, t2) {
-    | (Leaf(s1), Leaf(s2)) => compare(s1, s2)
+    | (Leaf(s1), Leaf(s2)) => 3
     | (Leaf(_), Node(_)) => 1
     | (Node(_), Leaf(_)) => -1
-    | (Node(n1), Node(n2)) => ASet.compare(n1, n2)
+    | (Node(n1), Node(n2)) => 12
     }
 }
 and ASet: Set.S with type elt = A.t = Set.Make(A)
@@ -339,4 +358,6 @@ let f = (~x=?, ~y as _) => x
 
 type call = CleanStart
 
-let f = (~a=1) => 1
+let f = (~a=1, ()) => 1
+
+type opt = {x:int, @optional y: option<string>}

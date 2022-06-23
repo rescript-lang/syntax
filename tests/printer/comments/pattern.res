@@ -58,6 +58,20 @@ let /* before */ {
 let /* b1 */ Blue /* b2 */ | /* c1 */ Red /* c2 */ = color
 let /* b1 */ Blue /* b2 */ | /* c1 */ Red /* c2 */ | /* d1 */ Green /* d2 */ = color
 
+// #462: Comments in nested Ppat_or must not disappear.
+// (comment positions not optimal yet because `|` has no AST location)
+let _ = switch "anything" {
+// above 1
+| "1"
+// below 1
+| "2"
+// below 2
+| "3"
+// below 3
+| _ => "4"
+// below 4
+}
+
 // Ppat_constraint
 let /* c0 */ number /* c1 */: /* c2 */ int /* c3 */ = 123
 

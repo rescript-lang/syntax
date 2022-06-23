@@ -12,7 +12,7 @@ type empty =
      * Not an ordered map yet, but should be.
      */
     | ElementMap(list<elem<'t>>): elem<list<'t>>
-  /**
+  /*
    * Instance subtree. Mirrors the shape of JSX, instead of just being a List.
    */
   and subtree<'t> =
@@ -34,7 +34,7 @@ type empty =
   constraint 't = ('s, 'a) => 'sub
   and self<'t> = {
     reduceEvent: 'e .('e => 'a, 'e) => unit,
-    /**
+    /*
      * Implements the ability to cause your node to be swapped out from within
      * its tree. Not purely functional by design. This is for things like
      * external subscriptions that don't arive via propagations through the tree.
@@ -53,7 +53,7 @@ type empty =
     send: 'a => unit,
   }
   constraint 't = ('s, 'a) => 'sub
-  /**
+  /*
    * The result of applying props. Now the result is a function that just waits
    * for React to supply the state, and in turn returns the componentSpec.
    */

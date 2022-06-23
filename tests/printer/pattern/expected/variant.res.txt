@@ -43,3 +43,5 @@ switch numericPolyVar {
 | #42 => ()
 | #3(x, y, z) => Js.log3(x, y, z)
 }
+
+let e = #""

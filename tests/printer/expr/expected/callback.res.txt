@@ -199,7 +199,8 @@ let f = () => {
     | NotAsked => React.null
     | Loading => "Loading ..."->React.string
     | Done(Error(_)) => "Error"->React.string
-    | Done(Ok(users)) => <>
+    | Done(Ok(users)) =>
+      <>
         <ul>
           {users
           ->Array.map(user => {

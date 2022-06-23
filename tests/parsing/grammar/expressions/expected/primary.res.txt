@@ -31,6 +31,5 @@ let x = (arr.((x : int))).((y : int))
 ;;((connection#left)#account)#accountName
 ;;john#age #= 99
 ;;(john#son)#age #= (steve#age - 5)
-;;dict#
- #= abc
-;;dict#" #= dict2#"
+;;dict#\n #= abc
+;;dict#\" #= dict2#\"
