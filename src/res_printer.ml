@@ -1883,12 +1883,12 @@ and printValueBinding ~recFlag vb cmtTbl i =
     if ParsetreeViewer.isSinglePipeExpr vb.pvb_expr then
       Doc.customLayout
         [
-          Doc.group
+          lazy (Doc.group
             (Doc.concat
                [
                  attrs; header; patternDoc; Doc.text " ="; Doc.space; printedExpr;
-               ]);
-          Doc.group
+           ]));
+          lazy (Doc.group
             (Doc.concat
                [
                  attrs;
@@ -1896,7 +1896,7 @@ and printValueBinding ~recFlag vb cmtTbl i =
                  patternDoc;
                  Doc.text " =";
                  Doc.indent (Doc.concat [Doc.line; printedExpr]);
-               ]);
+                 ]));
         ]
     else
       let shouldIndent =
@@ -3936,7 +3936,7 @@ and printArgumentsWithCallbackInFirstPosition ~uncurried args cmtTbl =
    * }, longArgumet, veryLooooongArgument)
    *)
   let fitsOnOneLine =
-    Doc.concat
+    lazy (Doc.concat
       [
         (if uncurried then Doc.text "(. " else Doc.lparen);
         callback;
@@ -3944,7 +3944,7 @@ and printArgumentsWithCallbackInFirstPosition ~uncurried args cmtTbl =
         Doc.line;
         printedArgs;
         Doc.rparen;
-      ]
+          ])
   in
 
   (* Thing.map(
@@ -3954,7 +3954,7 @@ and printArgumentsWithCallbackInFirstPosition ~uncurried args cmtTbl =
    *   arg3,
    * )
    *)
-  let breakAllArgs = printArguments ~uncurried args cmtTblCopy in
+  let breakAllArgs = lazy (printArguments ~uncurried args cmtTblCopy) in
 
   (* Sometimes one of the non-callback arguments will break.
    * There might be a single line comment in there, or a multiline string etc.
@@ -3971,7 +3971,7 @@ and printArgumentsWithCallbackInFirstPosition ~uncurried args cmtTbl =
    * In this case, we always want the arguments broken over multiple lines,
    * like a normal function call.
    *)
-  if Doc.willBreak printedArgs then breakAllArgs
+  if Doc.willBreak printedArgs then Lazy.force breakAllArgs
   else Doc.customLayout [fitsOnOneLine; breakAllArgs]
 
 and printArgumentsWithCallbackInLastPosition ~uncurried args cmtTbl =
@@ -4015,13 +4015,13 @@ and printArgumentsWithCallbackInLastPosition ~uncurried args cmtTbl =
 
   (* Thing.map(foo, (arg1, arg2) => MyModuleBlah.toList(argument)) *)
   let fitsOnOneLine =
-    Doc.concat
+    lazy (Doc.concat
       [
         (if uncurried then Doc.text "(." else Doc.lparen);
         printedArgs;
         callback;
         Doc.rparen;
-      ]
+  ])
   in
 
   (* Thing.map(longArgumet, veryLooooongArgument, (arg1, arg2) =>
@@ -4029,13 +4029,13 @@ and printArgumentsWithCallbackInLastPosition ~uncurried args cmtTbl =
    * )
    *)
   let arugmentsFitOnOneLine =
-    Doc.concat
+    lazy (Doc.concat
       [
         (if uncurried then Doc.text "(." else Doc.lparen);
         printedArgs;
         Doc.breakableGroup ~forceBreak:true callback2;
         Doc.rparen;
-      ]
+      ])
   in
 
   (* Thing.map(
@@ -4045,7 +4045,7 @@ and printArgumentsWithCallbackInLastPosition ~uncurried args cmtTbl =
    *   (param1, parm2) => doStuff(param1, parm2)
    * )
    *)
-  let breakAllArgs = printArguments ~uncurried args cmtTblCopy2 in
+  let breakAllArgs = lazy (printArguments ~uncurried args cmtTblCopy2) in
 
   (* Sometimes one of the non-callback arguments will break.
    * There might be a single line comment in there, or a multiline string etc.
@@ -4062,7 +4062,7 @@ and printArgumentsWithCallbackInLastPosition ~uncurried args cmtTbl =
    * In this case, we always want the arguments broken over multiple lines,
    * like a normal function call.
    *)
-  if Doc.willBreak printedArgs then breakAllArgs
+  if Doc.willBreak printedArgs then Lazy.force breakAllArgs
   else Doc.customLayout [fitsOnOneLine; arugmentsFitOnOneLine; breakAllArgs]
 
 and printArguments ~uncurried

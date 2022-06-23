@@ -21,7 +21,7 @@ type t =
   | LineSuffix of t
   | LineBreak of lineStyle
   | Group of {mutable shouldBreak: bool; doc: t}
-  | CustomLayout of t list
+  | CustomLayout of (t Lazy.t) list
   | BreakParent
 
 let nil = Nil
@@ -72,54 +72,13 @@ let equal = Text "="
 let trailingComma = ifBreaks comma nil
 let doubleQuote = Text "\""
 
-let propagateForcedBreaks doc =
-  let rec walk doc =
-    match doc with
-    | Text _ | Nil | LineSuffix _ -> false
-    | BreakParent -> true
-    | LineBreak (Hard | Literal) -> true
-    | LineBreak (Classic | Soft) -> false
-    | Indent children ->
-      let childForcesBreak = walk children in
-      childForcesBreak
-    | IfBreaks ({yes = trueDoc; no = falseDoc} as ib) ->
-      let falseForceBreak = walk falseDoc in
-      if falseForceBreak then (
-        let _ = walk trueDoc in
-        ib.broken <- true;
-        true)
-      else
-        let forceBreak = walk trueDoc in
-        forceBreak
-    | Group ({shouldBreak = forceBreak; doc = children} as gr) ->
-      let childForcesBreak = walk children in
-      let shouldBreak = forceBreak || childForcesBreak in
-      gr.shouldBreak <- shouldBreak;
-      shouldBreak
-    | Concat children ->
-      List.fold_left
-        (fun forceBreak child ->
-          let childForcesBreak = walk child in
-          forceBreak || childForcesBreak)
-        false children
-    | CustomLayout children ->
-      (* When using CustomLayout, we don't want to propagate forced breaks
-       * from the children up. By definition it picks the first layout that fits
-       * otherwise it takes the last of the list.
-       * However we do want to propagate forced breaks in the sublayouts. They
-       * might need to be broken. We just don't propagate them any higher here *)
-      let _ = walk (Concat children) in
-      false
-  in
-  let _ = walk doc in
-  ()
-
 (* See documentation in interface file *)
 let rec willBreak doc =
   match doc with
   | LineBreak (Hard | Literal) | BreakParent | Group {shouldBreak = true} ->
     true
-  | Group {doc} | Indent doc | CustomLayout (doc :: _) -> willBreak doc
+  | Group {doc} | Indent doc -> willBreak doc
+  | CustomLayout (doc :: _) -> willBreak (Lazy.force doc)
   | Concat docs -> List.exists willBreak docs
   | IfBreaks {yes; no} -> willBreak yes || willBreak no
   | _ -> false
@@ -157,7 +116,7 @@ let fits w stack =
     | _, Concat docs -> calculateConcat indent mode docs
     | _, CustomLayout (hd :: _) ->
       (* TODO: if we have nested custom layouts, what we should do here? *)
-      calculate indent mode hd
+      calculate indent mode (Lazy.force hd)
     | _, CustomLayout [] -> ()
   and calculateConcat indent mode docs =
     if result.contents == None then
@@ -178,7 +137,6 @@ let fits w stack =
   calculateAll stack
 
 let toString ~width doc =
-  propagateForcedBreaks doc;
   let buffer = MiniBuffer.create 1000 in
 
   let rec process ~pos lineSuffices stack =
@@ -238,9 +196,10 @@ let toString ~width doc =
         let rec findGroupThatFits groups =
           match groups with
           | [] -> Nil
-          | [lastGroup] -> lastGroup
+          | [lastGroup] -> Lazy.force lastGroup
           | doc :: docs ->
-            if fits (width - pos) ((ind, Flat, doc) :: rest) then doc
+            let computedDoc = Lazy.force doc in
+            if fits (width - pos) ((ind, Flat, computedDoc) :: rest) then computedDoc
             else findGroupThatFits docs
         in
         let doc = findGroupThatFits docs in
@@ -291,7 +250,7 @@ let debug t =
                (concat
                   [
                     line;
-                    join ~sep:(concat [text ","; line]) (List.map toDoc docs);
+                    join ~sep:(concat [text ","; line]) (List.map (fun doc -> toDoc (Lazy.force doc)) docs);
                   ]);
              line;
              text ")";

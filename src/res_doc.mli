@@ -16,7 +16,7 @@ val breakableGroup : forceBreak:bool -> t -> t
 (* `customLayout docs` will pick the layout that fits from `docs`.
  * This is a very expensive computation as every layout from the list
  * will be checked until one fits. *)
-val customLayout : t list -> t
+val customLayout : (t Lazy.t) list -> t
 val breakParent : t
 val join : sep:t -> t list -> t
 
