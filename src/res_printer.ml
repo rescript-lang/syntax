@@ -99,6 +99,15 @@ let hasCommentBelow tbl loc =
   | [] -> false
   | exception Not_found -> false
 
+let rec hasNestedJsx expr =
+  match expr.Parsetree.pexp_desc with
+  | Pexp_construct ({txt = Longident.Lident "[]"}, _) -> false
+  | Pexp_construct
+      ( {txt = Longident.Lident "::"},
+        Some {pexp_desc = Pexp_tuple (hd :: [tail])} ) ->
+    hasNestedJsx hd || hasNestedJsx tail
+  | _ -> ParsetreeViewer.isJsxExpression expr
+
 let printMultilineCommentContent txt =
   (* Turns
    *         |* first line
@@ -3694,14 +3703,11 @@ and printJsxExpression lident args cmtTbl =
       true
     | _ -> false
   in
-  let hasNestedJsx =
+  let lineSep =
     match children with
-    | Some expr ->
-      let childExprs, _ = ParsetreeViewer.collectListExpressions expr in
-      childExprs |> List.exists ParsetreeViewer.isJsxExpression
-    | None -> false
+    | Some expr -> if hasNestedJsx expr then Doc.hardLine else Doc.line
+    | None -> Doc.line
   in
-  let lineSep = if hasNestedJsx then Doc.hardLine else Doc.line in
   Doc.group
     (Doc.concat
        [
@@ -3749,9 +3755,7 @@ and printJsxExpression lident args cmtTbl =
 and printJsxFragment expr cmtTbl =
   let opening = Doc.text "<>" in
   let closing = Doc.text "</>" in
-  let children, _ = ParsetreeViewer.collectListExpressions expr in
-  let hasNestedJsx = children |> List.exists ParsetreeViewer.isJsxExpression in
-  let lineSep = if hasNestedJsx then Doc.hardLine else Doc.line in
+  let lineSep = if hasNestedJsx expr then Doc.hardLine else Doc.line in
   Doc.group
     (Doc.concat
        [
