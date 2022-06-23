@@ -1,12 +1,17 @@
+let s = "a string with \b \n \r \t abcdef"
 
-  Syntax error!
-  tests/printer/other/string.res:11:10-11
+let s = "🚀 🤭 🔥 😀 with emojis 😅 👌 test 👀"
 
-   9 │ let s = "what happens here \\n"
-  10 │ 
-  11 │ let s = "\0 \xA0"
-  12 │ 
-  13 │ let s = "unknown escape \m111 as passed through"
+let s = "a \"string inside\" a string"
 
-  unknown escape sequence
+let s = "a double escaped \\ test"
 
+let s = "what happens here \\n"
+
+let s = "\0 \xA0"
+
+let s = "unknown escape \m111 as passed through"
+
+let heart = "\u2665"
+
+let smile = "emoji: \u{1F600}"

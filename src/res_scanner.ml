@@ -337,9 +337,7 @@ let scanStringEscapeSequence ~startPos scanner =
   match scanner.ch with
   (* \ already consumed *)
   | 'n' | 't' | 'b' | 'r' | '\\' | ' ' | '\'' | '"' -> next scanner
-  | '0' .. '9' ->
-    (* decimal *)
-    scan ~n:3 ~base:10 ~max:255
+  | '0' -> next scanner
   | 'x' ->
     (* hex *)
     next scanner;
