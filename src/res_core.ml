@@ -508,98 +508,16 @@ let processUnderscoreApplication args =
   in
   (args, wrap)
 
-let hexValue ch =
-  match ch with
-  | '0'..'9' -> (Char.code ch) - 48
-  | 'a'..'f' -> (Char.code ch) - (Char.code 'a') + 10
-  | 'A'..'F' -> (Char.code ch) + 32 - (Char.code 'a') + 10
-  | _ -> 16 (* larger than any legal value *)
-
-let parseStringLiteral s =
-  let len = String.length s in
-  let b = Buffer.create (String.length s) in
-
-  let rec parse state i d =
-    if i = len then
-      (match state with
-      | HexEscape | UnicodeEscape | UnicodeCodePointEscape -> false
-      | _ -> true)
-    else
-      let c = String.unsafe_get s i in
-      match state with
-      | Start ->
-        (match c with
-        | '\\' -> parse Backslash (i + 1) d
-        | c -> Buffer.add_char b c; parse Start (i + 1) d)
-      | Backslash ->
-        (match c with
-        | 'n' -> Buffer.add_char b '\n'; parse Start (i + 1) d
-        | 'r' -> Buffer.add_char b '\r'; parse Start (i + 1) d
-        | 'b' -> Buffer.add_char b '\008'; parse Start (i + 1) d
-        | 't' -> Buffer.add_char b '\009'; parse Start (i + 1) d
-        | '0' -> Buffer.add_char b '\000'; parse Start (i + 1) d
-        | ('\\' | ' ' | '\'' | '"') as c -> Buffer.add_char b c; parse Start (i + 1) d
-        | 'x' -> parse HexEscape (i + 1) 0
-        | 'u' -> parse UnicodeEscapeStart (i + 1) 0
-        | '\010' | '\013' -> parse EscapedLineBreak (i + 1) d
-        | c -> Buffer.add_char b '\\'; Buffer.add_char b c; parse Start (i + 1) d)
-      | HexEscape ->
-        if d == 1 then
-          let c0 = String.unsafe_get s (i - 1) in
-          let c1 = String.unsafe_get s i in
-          let c = (16 * (hexValue c0)) + (hexValue c1) in
-          if c < 0 || c > 255 then false
-          else (
-            Buffer.add_char b (Char.unsafe_chr c);
-            parse Start (i + 1) 0
-          )
-        else
-          parse HexEscape (i + 1) (d + 1)
-      | UnicodeEscapeStart ->
-        (match c with
-        | '{' -> parse UnicodeCodePointEscape (i + 1) 0
-        | _ -> parse UnicodeEscape (i + 1) 1)
-      | UnicodeEscape ->
-        if d == 3 then
-          let c0 = String.unsafe_get s (i - 3) in
-          let c1 = String.unsafe_get s (i - 2) in
-          let c2 = String.unsafe_get s (i - 1) in
-          let c3 = String.unsafe_get s i in
-          let c = (4096 * (hexValue c0)) + (256 * (hexValue c1)) + (16 * (hexValue c2)) + (hexValue c3) in
-          if Res_utf8.isValidCodePoint c then (
-            let codePoint = Res_utf8.encodeCodePoint c in
-            Buffer.add_string b codePoint;
-            parse Start (i + 1) 0
-          ) else (
-            false
-          )
-        else
-          parse UnicodeEscape (i + 1) (d + 1)
-      | UnicodeCodePointEscape ->
-        (match c with
-        | '0'..'9' | 'a'..'f' | 'A'.. 'F' ->
-          parse UnicodeCodePointEscape (i + 1) (d + 1)
-        | '}' ->
-          let x = ref 0 in
-          for remaining = d downto 1 do
-            let ix = i - remaining in
-            x := (!x * 16) + (hexValue (String.unsafe_get s ix));
-          done;
-          let c = !x in
-          if Res_utf8.isValidCodePoint c then (
-            let codePoint = Res_utf8.encodeCodePoint !x in
-            Buffer.add_string b codePoint;
-            parse Start (i + 1) 0
-          ) else (
-            false
-          )
-        | _ -> false)
-      | EscapedLineBreak ->
-        (match c with
-        | ' ' | '\t' -> parse EscapedLineBreak (i + 1) d
-        | c -> Buffer.add_char b c; parse Start (i + 1) d)
-    in
-    if parse Start 0 0 then Buffer.contents b else s
+(* Transform A.a into a. For use with punned record fields as in {A.a, b}. *)
+let removeModuleNameFromPunnedFieldValue exp =
+  match exp.Parsetree.pexp_desc with
+  | Pexp_ident pathIdent ->
+    {
+      exp with
+      pexp_desc =
+        Pexp_ident {pathIdent with txt = Lident (Longident.last pathIdent.txt)};
+    }
+  | _ -> exp
 
 let rec parseLident p =
   let recoverLident p =

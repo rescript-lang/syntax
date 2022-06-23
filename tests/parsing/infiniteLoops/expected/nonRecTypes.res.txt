@@ -25,6 +25,1266 @@
 
 
   Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:23:38-39
+
+  21 ┆   t('value) =
+  22 ┆   ""
+  23 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0#\0\0\0\r\0\0\0&\0\0\0#\x91\xa0\xa0A\x
+     ┆ a0$size@\xa0\xa0A\xa0$root@\xa0\xa0A\xa0'compare@@";
+  24 ┆ external sizeSet: (t('value), int) => unit =
+  25 ┆   "size"
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:23:40-41
+
+  21 ┆   t('value) =
+  22 ┆   ""
+  23 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0#\0\0\0\r\0\0\0&\0\0\0#\x91\xa0\xa0A\x
+     ┆ a0$size@\xa0\xa0A\xa0$root@\xa0\xa0A\xa0'compare@@";
+  24 ┆ external sizeSet: (t('value), int) => unit =
+  25 ┆   "size"
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:23:42-43
+
+  21 ┆   t('value) =
+  22 ┆   ""
+  23 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0#\0\0\0\r\0\0\0&\0\0\0#\x91\xa0\xa0A\x
+     ┆ a0$size@\xa0\xa0A\xa0$root@\xa0\xa0A\xa0'compare@@";
+  24 ┆ external sizeSet: (t('value), int) => unit =
+  25 ┆   "size"
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:23:45-46
+
+  21 ┆   t('value) =
+  22 ┆   ""
+  23 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0#\0\0\0\r\0\0\0&\0\0\0#\x91\xa0\xa0A\x
+     ┆ a0$size@\xa0\xa0A\xa0$root@\xa0\xa0A\xa0'compare@@";
+  24 ┆ external sizeSet: (t('value), int) => unit =
+  25 ┆   "size"
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:23:47-48
+
+  21 ┆   t('value) =
+  22 ┆   ""
+  23 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0#\0\0\0\r\0\0\0&\0\0\0#\x91\xa0\xa0A\x
+     ┆ a0$size@\xa0\xa0A\xa0$root@\xa0\xa0A\xa0'compare@@";
+  24 ┆ external sizeSet: (t('value), int) => unit =
+  25 ┆   "size"
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:23:49-50
+
+  21 ┆   t('value) =
+  22 ┆   ""
+  23 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0#\0\0\0\r\0\0\0&\0\0\0#\x91\xa0\xa0A\x
+     ┆ a0$size@\xa0\xa0A\xa0$root@\xa0\xa0A\xa0'compare@@";
+  24 ┆ external sizeSet: (t('value), int) => unit =
+  25 ┆   "size"
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:23:53-54
+
+  21 ┆   t('value) =
+  22 ┆   ""
+  23 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0#\0\0\0\r\0\0\0&\0\0\0#\x91\xa0\xa0A\x
+     ┆ a0$size@\xa0\xa0A\xa0$root@\xa0\xa0A\xa0'compare@@";
+  24 ┆ external sizeSet: (t('value), int) => unit =
+  25 ┆   "size"
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:23:55-56
+
+  21 ┆   t('value) =
+  22 ┆   ""
+  23 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0#\0\0\0\r\0\0\0&\0\0\0#\x91\xa0\xa0A\x
+     ┆ a0$size@\xa0\xa0A\xa0$root@\xa0\xa0A\xa0'compare@@";
+  24 ┆ external sizeSet: (t('value), int) => unit =
+  25 ┆   "size"
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:23:57-58
+
+  21 ┆   t('value) =
+  22 ┆   ""
+  23 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0#\0\0\0\r\0\0\0&\0\0\0#\x91\xa0\xa0A\x
+     ┆ a0$size@\xa0\xa0A\xa0$root@\xa0\xa0A\xa0'compare@@";
+  24 ┆ external sizeSet: (t('value), int) => unit =
+  25 ┆   "size"
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:23:60-61
+
+  21 ┆   t('value) =
+  22 ┆   ""
+  23 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0#\0\0\0\r\0\0\0&\0\0\0#\x91\xa0\xa0A\x
+     ┆ a0$size@\xa0\xa0A\xa0$root@\xa0\xa0A\xa0'compare@@";
+  24 ┆ external sizeSet: (t('value), int) => unit =
+  25 ┆   "size"
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:23:62-63
+
+  21 ┆   t('value) =
+  22 ┆   ""
+  23 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0#\0\0\0\r\0\0\0&\0\0\0#\x91\xa0\xa0A\x
+     ┆ a0$size@\xa0\xa0A\xa0$root@\xa0\xa0A\xa0'compare@@";
+  24 ┆ external sizeSet: (t('value), int) => unit =
+  25 ┆   "size"
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:23:64-65
+
+  21 ┆   t('value) =
+  22 ┆   ""
+  23 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0#\0\0\0\r\0\0\0&\0\0\0#\x91\xa0\xa0A\x
+     ┆ a0$size@\xa0\xa0A\xa0$root@\xa0\xa0A\xa0'compare@@";
+  24 ┆ external sizeSet: (t('value), int) => unit =
+  25 ┆   "size"
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:26:38-39
+
+  24 ┆ external sizeSet: (t('value), int) => unit =
+  25 ┆   "size"
+  26 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x15\0\0\0\t\0\0\0\x1a\0\0\0\x19\xb0\x
+     ┆ a0\xa0A\x91@\xa0\xa0A\x04\x03@E\x97\xa0$size@";
+  27 ┆ [@ocaml.deprecated
+  28 ┆   "use sizeGet instead or use {abstract = light} explicitly"
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:26:40-41
+
+  24 ┆ external sizeSet: (t('value), int) => unit =
+  25 ┆   "size"
+  26 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x15\0\0\0\t\0\0\0\x1a\0\0\0\x19\xb0\x
+     ┆ a0\xa0A\x91@\xa0\xa0A\x04\x03@E\x97\xa0$size@";
+  27 ┆ [@ocaml.deprecated
+  28 ┆   "use sizeGet instead or use {abstract = light} explicitly"
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:26:42-43
+
+  24 ┆ external sizeSet: (t('value), int) => unit =
+  25 ┆   "size"
+  26 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x15\0\0\0\t\0\0\0\x1a\0\0\0\x19\xb0\x
+     ┆ a0\xa0A\x91@\xa0\xa0A\x04\x03@E\x97\xa0$size@";
+  27 ┆ [@ocaml.deprecated
+  28 ┆   "use sizeGet instead or use {abstract = light} explicitly"
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:26:48-49
+
+  24 ┆ external sizeSet: (t('value), int) => unit =
+  25 ┆   "size"
+  26 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x15\0\0\0\t\0\0\0\x1a\0\0\0\x19\xb0\x
+     ┆ a0\xa0A\x91@\xa0\xa0A\x04\x03@E\x97\xa0$size@";
+  27 ┆ [@ocaml.deprecated
+  28 ┆   "use sizeGet instead or use {abstract = light} explicitly"
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:26:50-51
+
+  24 ┆ external sizeSet: (t('value), int) => unit =
+  25 ┆   "size"
+  26 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x15\0\0\0\t\0\0\0\x1a\0\0\0\x19\xb0\x
+     ┆ a0\xa0A\x91@\xa0\xa0A\x04\x03@E\x97\xa0$size@";
+  27 ┆ [@ocaml.deprecated
+  28 ┆   "use sizeGet instead or use {abstract = light} explicitly"
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:26:52-53
+
+  24 ┆ external sizeSet: (t('value), int) => unit =
+  25 ┆   "size"
+  26 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x15\0\0\0\t\0\0\0\x1a\0\0\0\x19\xb0\x
+     ┆ a0\xa0A\x91@\xa0\xa0A\x04\x03@E\x97\xa0$size@";
+  27 ┆ [@ocaml.deprecated
+  28 ┆   "use sizeGet instead or use {abstract = light} explicitly"
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:26:56-57
+
+  24 ┆ external sizeSet: (t('value), int) => unit =
+  25 ┆   "size"
+  26 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x15\0\0\0\t\0\0\0\x1a\0\0\0\x19\xb0\x
+     ┆ a0\xa0A\x91@\xa0\xa0A\x04\x03@E\x97\xa0$size@";
+  27 ┆ [@ocaml.deprecated
+  28 ┆   "use sizeGet instead or use {abstract = light} explicitly"
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:26:58-59
+
+  24 ┆ external sizeSet: (t('value), int) => unit =
+  25 ┆   "size"
+  26 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x15\0\0\0\t\0\0\0\x1a\0\0\0\x19\xb0\x
+     ┆ a0\xa0A\x91@\xa0\xa0A\x04\x03@E\x97\xa0$size@";
+  27 ┆ [@ocaml.deprecated
+  28 ┆   "use sizeGet instead or use {abstract = light} explicitly"
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:26:60-61
+
+  24 ┆ external sizeSet: (t('value), int) => unit =
+  25 ┆   "size"
+  26 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x15\0\0\0\t\0\0\0\x1a\0\0\0\x19\xb0\x
+     ┆ a0\xa0A\x91@\xa0\xa0A\x04\x03@E\x97\xa0$size@";
+  27 ┆ [@ocaml.deprecated
+  28 ┆   "use sizeGet instead or use {abstract = light} explicitly"
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:26:66-67
+
+  24 ┆ external sizeSet: (t('value), int) => unit =
+  25 ┆   "size"
+  26 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x15\0\0\0\t\0\0\0\x1a\0\0\0\x19\xb0\x
+     ┆ a0\xa0A\x91@\xa0\xa0A\x04\x03@E\x97\xa0$size@";
+  27 ┆ [@ocaml.deprecated
+  28 ┆   "use sizeGet instead or use {abstract = light} explicitly"
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:26:68-69
+
+  24 ┆ external sizeSet: (t('value), int) => unit =
+  25 ┆   "size"
+  26 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x15\0\0\0\t\0\0\0\x1a\0\0\0\x19\xb0\x
+     ┆ a0\xa0A\x91@\xa0\xa0A\x04\x03@E\x97\xa0$size@";
+  27 ┆ [@ocaml.deprecated
+  28 ┆   "use sizeGet instead or use {abstract = light} explicitly"
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:26:70-71
+
+  24 ┆ external sizeSet: (t('value), int) => unit =
+  25 ┆   "size"
+  26 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x15\0\0\0\t\0\0\0\x1a\0\0\0\x19\xb0\x
+     ┆ a0\xa0A\x91@\xa0\xa0A\x04\x03@E\x97\xa0$size@";
+  27 ┆ [@ocaml.deprecated
+  28 ┆   "use sizeGet instead or use {abstract = light} explicitly"
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:33:38-39
+
+  31 ┆ external size: t('value) => int =
+  32 ┆   ""
+  33 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x10\0\0\0\x07\0\0\0\x14\0\0\0\x13\xb0
+     ┆ \xa0\xa0A\x91@@A\x98\xa0$size@";
+  34 ┆ [@internal.arity 1]
+  35 ┆ external sizeGet: t('value) => int =
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:33:40-41
+
+  31 ┆ external size: t('value) => int =
+  32 ┆   ""
+  33 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x10\0\0\0\x07\0\0\0\x14\0\0\0\x13\xb0
+     ┆ \xa0\xa0A\x91@@A\x98\xa0$size@";
+  34 ┆ [@internal.arity 1]
+  35 ┆ external sizeGet: t('value) => int =
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:33:42-43
+
+  31 ┆ external size: t('value) => int =
+  32 ┆   ""
+  33 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x10\0\0\0\x07\0\0\0\x14\0\0\0\x13\xb0
+     ┆ \xa0\xa0A\x91@@A\x98\xa0$size@";
+  34 ┆ [@internal.arity 1]
+  35 ┆ external sizeGet: t('value) => int =
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:33:48-49
+
+  31 ┆ external size: t('value) => int =
+  32 ┆   ""
+  33 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x10\0\0\0\x07\0\0\0\x14\0\0\0\x13\xb0
+     ┆ \xa0\xa0A\x91@@A\x98\xa0$size@";
+  34 ┆ [@internal.arity 1]
+  35 ┆ external sizeGet: t('value) => int =
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:33:50-51
+
+  31 ┆ external size: t('value) => int =
+  32 ┆   ""
+  33 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x10\0\0\0\x07\0\0\0\x14\0\0\0\x13\xb0
+     ┆ \xa0\xa0A\x91@@A\x98\xa0$size@";
+  34 ┆ [@internal.arity 1]
+  35 ┆ external sizeGet: t('value) => int =
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:33:52-53
+
+  31 ┆ external size: t('value) => int =
+  32 ┆   ""
+  33 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x10\0\0\0\x07\0\0\0\x14\0\0\0\x13\xb0
+     ┆ \xa0\xa0A\x91@@A\x98\xa0$size@";
+  34 ┆ [@internal.arity 1]
+  35 ┆ external sizeGet: t('value) => int =
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:33:58-59
+
+  31 ┆ external size: t('value) => int =
+  32 ┆   ""
+  33 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x10\0\0\0\x07\0\0\0\x14\0\0\0\x13\xb0
+     ┆ \xa0\xa0A\x91@@A\x98\xa0$size@";
+  34 ┆ [@internal.arity 1]
+  35 ┆ external sizeGet: t('value) => int =
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:33:60-61
+
+  31 ┆ external size: t('value) => int =
+  32 ┆   ""
+  33 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x10\0\0\0\x07\0\0\0\x14\0\0\0\x13\xb0
+     ┆ \xa0\xa0A\x91@@A\x98\xa0$size@";
+  34 ┆ [@internal.arity 1]
+  35 ┆ external sizeGet: t('value) => int =
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:33:62-63
+
+  31 ┆ external size: t('value) => int =
+  32 ┆   ""
+  33 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x10\0\0\0\x07\0\0\0\x14\0\0\0\x13\xb0
+     ┆ \xa0\xa0A\x91@@A\x98\xa0$size@";
+  34 ┆ [@internal.arity 1]
+  35 ┆ external sizeGet: t('value) => int =
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:33:68-69
+
+  31 ┆ external size: t('value) => int =
+  32 ┆   ""
+  33 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x10\0\0\0\x07\0\0\0\x14\0\0\0\x13\xb0
+     ┆ \xa0\xa0A\x91@@A\x98\xa0$size@";
+  34 ┆ [@internal.arity 1]
+  35 ┆ external sizeGet: t('value) => int =
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:33:70-71
+
+  31 ┆ external size: t('value) => int =
+  32 ┆   ""
+  33 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x10\0\0\0\x07\0\0\0\x14\0\0\0\x13\xb0
+     ┆ \xa0\xa0A\x91@@A\x98\xa0$size@";
+  34 ┆ [@internal.arity 1]
+  35 ┆ external sizeGet: t('value) => int =
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:33:72-73
+
+  31 ┆ external size: t('value) => int =
+  32 ┆   ""
+  33 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x10\0\0\0\x07\0\0\0\x14\0\0\0\x13\xb0
+     ┆ \xa0\xa0A\x91@@A\x98\xa0$size@";
+  34 ┆ [@internal.arity 1]
+  35 ┆ external sizeGet: t('value) => int =
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:37:38-39
+
+  35 ┆ external sizeGet: t('value) => int =
+  36 ┆   ""
+  37 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x10\0\0\0\x07\0\0\0\x14\0\0\0\x13\xb0
+     ┆ \xa0\xa0A\x91@@A\x98\xa0$size@";
+  38 ┆ external rootSet: (t('value), option(node('value))) => unit =
+  39 ┆   "root"
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:37:40-41
+
+  35 ┆ external sizeGet: t('value) => int =
+  36 ┆   ""
+  37 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x10\0\0\0\x07\0\0\0\x14\0\0\0\x13\xb0
+     ┆ \xa0\xa0A\x91@@A\x98\xa0$size@";
+  38 ┆ external rootSet: (t('value), option(node('value))) => unit =
+  39 ┆   "root"
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:37:42-43
+
+  35 ┆ external sizeGet: t('value) => int =
+  36 ┆   ""
+  37 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x10\0\0\0\x07\0\0\0\x14\0\0\0\x13\xb0
+     ┆ \xa0\xa0A\x91@@A\x98\xa0$size@";
+  38 ┆ external rootSet: (t('value), option(node('value))) => unit =
+  39 ┆   "root"
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:37:48-49
+
+  35 ┆ external sizeGet: t('value) => int =
+  36 ┆   ""
+  37 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x10\0\0\0\x07\0\0\0\x14\0\0\0\x13\xb0
+     ┆ \xa0\xa0A\x91@@A\x98\xa0$size@";
+  38 ┆ external rootSet: (t('value), option(node('value))) => unit =
+  39 ┆   "root"
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:37:50-51
+
+  35 ┆ external sizeGet: t('value) => int =
+  36 ┆   ""
+  37 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x10\0\0\0\x07\0\0\0\x14\0\0\0\x13\xb0
+     ┆ \xa0\xa0A\x91@@A\x98\xa0$size@";
+  38 ┆ external rootSet: (t('value), option(node('value))) => unit =
+  39 ┆   "root"
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:37:52-53
+
+  35 ┆ external sizeGet: t('value) => int =
+  36 ┆   ""
+  37 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x10\0\0\0\x07\0\0\0\x14\0\0\0\x13\xb0
+     ┆ \xa0\xa0A\x91@@A\x98\xa0$size@";
+  38 ┆ external rootSet: (t('value), option(node('value))) => unit =
+  39 ┆   "root"
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:37:58-59
+
+  35 ┆ external sizeGet: t('value) => int =
+  36 ┆   ""
+  37 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x10\0\0\0\x07\0\0\0\x14\0\0\0\x13\xb0
+     ┆ \xa0\xa0A\x91@@A\x98\xa0$size@";
+  38 ┆ external rootSet: (t('value), option(node('value))) => unit =
+  39 ┆   "root"
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:37:60-61
+
+  35 ┆ external sizeGet: t('value) => int =
+  36 ┆   ""
+  37 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x10\0\0\0\x07\0\0\0\x14\0\0\0\x13\xb0
+     ┆ \xa0\xa0A\x91@@A\x98\xa0$size@";
+  38 ┆ external rootSet: (t('value), option(node('value))) => unit =
+  39 ┆   "root"
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:37:62-63
+
+  35 ┆ external sizeGet: t('value) => int =
+  36 ┆   ""
+  37 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x10\0\0\0\x07\0\0\0\x14\0\0\0\x13\xb0
+     ┆ \xa0\xa0A\x91@@A\x98\xa0$size@";
+  38 ┆ external rootSet: (t('value), option(node('value))) => unit =
+  39 ┆   "root"
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:37:68-69
+
+  35 ┆ external sizeGet: t('value) => int =
+  36 ┆   ""
+  37 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x10\0\0\0\x07\0\0\0\x14\0\0\0\x13\xb0
+     ┆ \xa0\xa0A\x91@@A\x98\xa0$size@";
+  38 ┆ external rootSet: (t('value), option(node('value))) => unit =
+  39 ┆   "root"
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:37:70-71
+
+  35 ┆ external sizeGet: t('value) => int =
+  36 ┆   ""
+  37 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x10\0\0\0\x07\0\0\0\x14\0\0\0\x13\xb0
+     ┆ \xa0\xa0A\x91@@A\x98\xa0$size@";
+  38 ┆ external rootSet: (t('value), option(node('value))) => unit =
+  39 ┆   "root"
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:37:72-73
+
+  35 ┆ external sizeGet: t('value) => int =
+  36 ┆   ""
+  37 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x10\0\0\0\x07\0\0\0\x14\0\0\0\x13\xb0
+     ┆ \xa0\xa0A\x91@@A\x98\xa0$size@";
+  38 ┆ external rootSet: (t('value), option(node('value))) => unit =
+  39 ┆   "root"
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:40:38-39
+
+  38 ┆ external rootSet: (t('value), option(node('value))) => unit =
+  39 ┆   "root"
+  40 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x15\0\0\0\t\0\0\0\x1a\0\0\0\x19\xb0\x
+     ┆ a0\xa0A\x91@\xa0\xa0A\x04\x03@E\x97\xa0$root@";
+  41 ┆ [@ocaml.deprecated
+  42 ┆   "use rootGet instead or use {abstract = light} explicitly"
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:40:40-41
+
+  38 ┆ external rootSet: (t('value), option(node('value))) => unit =
+  39 ┆   "root"
+  40 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x15\0\0\0\t\0\0\0\x1a\0\0\0\x19\xb0\x
+     ┆ a0\xa0A\x91@\xa0\xa0A\x04\x03@E\x97\xa0$root@";
+  41 ┆ [@ocaml.deprecated
+  42 ┆   "use rootGet instead or use {abstract = light} explicitly"
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:40:42-43
+
+  38 ┆ external rootSet: (t('value), option(node('value))) => unit =
+  39 ┆   "root"
+  40 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x15\0\0\0\t\0\0\0\x1a\0\0\0\x19\xb0\x
+     ┆ a0\xa0A\x91@\xa0\xa0A\x04\x03@E\x97\xa0$root@";
+  41 ┆ [@ocaml.deprecated
+  42 ┆   "use rootGet instead or use {abstract = light} explicitly"
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:40:48-49
+
+  38 ┆ external rootSet: (t('value), option(node('value))) => unit =
+  39 ┆   "root"
+  40 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x15\0\0\0\t\0\0\0\x1a\0\0\0\x19\xb0\x
+     ┆ a0\xa0A\x91@\xa0\xa0A\x04\x03@E\x97\xa0$root@";
+  41 ┆ [@ocaml.deprecated
+  42 ┆   "use rootGet instead or use {abstract = light} explicitly"
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:40:50-51
+
+  38 ┆ external rootSet: (t('value), option(node('value))) => unit =
+  39 ┆   "root"
+  40 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x15\0\0\0\t\0\0\0\x1a\0\0\0\x19\xb0\x
+     ┆ a0\xa0A\x91@\xa0\xa0A\x04\x03@E\x97\xa0$root@";
+  41 ┆ [@ocaml.deprecated
+  42 ┆   "use rootGet instead or use {abstract = light} explicitly"
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:40:52-53
+
+  38 ┆ external rootSet: (t('value), option(node('value))) => unit =
+  39 ┆   "root"
+  40 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x15\0\0\0\t\0\0\0\x1a\0\0\0\x19\xb0\x
+     ┆ a0\xa0A\x91@\xa0\xa0A\x04\x03@E\x97\xa0$root@";
+  41 ┆ [@ocaml.deprecated
+  42 ┆   "use rootGet instead or use {abstract = light} explicitly"
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:40:56-57
+
+  38 ┆ external rootSet: (t('value), option(node('value))) => unit =
+  39 ┆   "root"
+  40 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x15\0\0\0\t\0\0\0\x1a\0\0\0\x19\xb0\x
+     ┆ a0\xa0A\x91@\xa0\xa0A\x04\x03@E\x97\xa0$root@";
+  41 ┆ [@ocaml.deprecated
+  42 ┆   "use rootGet instead or use {abstract = light} explicitly"
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:40:58-59
+
+  38 ┆ external rootSet: (t('value), option(node('value))) => unit =
+  39 ┆   "root"
+  40 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x15\0\0\0\t\0\0\0\x1a\0\0\0\x19\xb0\x
+     ┆ a0\xa0A\x91@\xa0\xa0A\x04\x03@E\x97\xa0$root@";
+  41 ┆ [@ocaml.deprecated
+  42 ┆   "use rootGet instead or use {abstract = light} explicitly"
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:40:60-61
+
+  38 ┆ external rootSet: (t('value), option(node('value))) => unit =
+  39 ┆   "root"
+  40 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x15\0\0\0\t\0\0\0\x1a\0\0\0\x19\xb0\x
+     ┆ a0\xa0A\x91@\xa0\xa0A\x04\x03@E\x97\xa0$root@";
+  41 ┆ [@ocaml.deprecated
+  42 ┆   "use rootGet instead or use {abstract = light} explicitly"
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:40:66-67
+
+  38 ┆ external rootSet: (t('value), option(node('value))) => unit =
+  39 ┆   "root"
+  40 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x15\0\0\0\t\0\0\0\x1a\0\0\0\x19\xb0\x
+     ┆ a0\xa0A\x91@\xa0\xa0A\x04\x03@E\x97\xa0$root@";
+  41 ┆ [@ocaml.deprecated
+  42 ┆   "use rootGet instead or use {abstract = light} explicitly"
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:40:68-69
+
+  38 ┆ external rootSet: (t('value), option(node('value))) => unit =
+  39 ┆   "root"
+  40 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x15\0\0\0\t\0\0\0\x1a\0\0\0\x19\xb0\x
+     ┆ a0\xa0A\x91@\xa0\xa0A\x04\x03@E\x97\xa0$root@";
+  41 ┆ [@ocaml.deprecated
+  42 ┆   "use rootGet instead or use {abstract = light} explicitly"
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:40:70-71
+
+  38 ┆ external rootSet: (t('value), option(node('value))) => unit =
+  39 ┆   "root"
+  40 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x15\0\0\0\t\0\0\0\x1a\0\0\0\x19\xb0\x
+     ┆ a0\xa0A\x91@\xa0\xa0A\x04\x03@E\x97\xa0$root@";
+  41 ┆ [@ocaml.deprecated
+  42 ┆   "use rootGet instead or use {abstract = light} explicitly"
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:47:38-39
+
+  45 ┆ external root: t('value) => option(node('value)) =
+  46 ┆   ""
+  47 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x10\0\0\0\x07\0\0\0\x14\0\0\0\x13\xb0
+     ┆ \xa0\xa0A\x91@@A\x98\xa0$root@";
+  48 ┆ [@internal.arity 1]
+  49 ┆ external rootGet: t('value) => option(node('value)) =
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:47:40-41
+
+  45 ┆ external root: t('value) => option(node('value)) =
+  46 ┆   ""
+  47 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x10\0\0\0\x07\0\0\0\x14\0\0\0\x13\xb0
+     ┆ \xa0\xa0A\x91@@A\x98\xa0$root@";
+  48 ┆ [@internal.arity 1]
+  49 ┆ external rootGet: t('value) => option(node('value)) =
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:47:42-43
+
+  45 ┆ external root: t('value) => option(node('value)) =
+  46 ┆   ""
+  47 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x10\0\0\0\x07\0\0\0\x14\0\0\0\x13\xb0
+     ┆ \xa0\xa0A\x91@@A\x98\xa0$root@";
+  48 ┆ [@internal.arity 1]
+  49 ┆ external rootGet: t('value) => option(node('value)) =
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:47:48-49
+
+  45 ┆ external root: t('value) => option(node('value)) =
+  46 ┆   ""
+  47 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x10\0\0\0\x07\0\0\0\x14\0\0\0\x13\xb0
+     ┆ \xa0\xa0A\x91@@A\x98\xa0$root@";
+  48 ┆ [@internal.arity 1]
+  49 ┆ external rootGet: t('value) => option(node('value)) =
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:47:50-51
+
+  45 ┆ external root: t('value) => option(node('value)) =
+  46 ┆   ""
+  47 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x10\0\0\0\x07\0\0\0\x14\0\0\0\x13\xb0
+     ┆ \xa0\xa0A\x91@@A\x98\xa0$root@";
+  48 ┆ [@internal.arity 1]
+  49 ┆ external rootGet: t('value) => option(node('value)) =
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:47:52-53
+
+  45 ┆ external root: t('value) => option(node('value)) =
+  46 ┆   ""
+  47 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x10\0\0\0\x07\0\0\0\x14\0\0\0\x13\xb0
+     ┆ \xa0\xa0A\x91@@A\x98\xa0$root@";
+  48 ┆ [@internal.arity 1]
+  49 ┆ external rootGet: t('value) => option(node('value)) =
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:47:58-59
+
+  45 ┆ external root: t('value) => option(node('value)) =
+  46 ┆   ""
+  47 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x10\0\0\0\x07\0\0\0\x14\0\0\0\x13\xb0
+     ┆ \xa0\xa0A\x91@@A\x98\xa0$root@";
+  48 ┆ [@internal.arity 1]
+  49 ┆ external rootGet: t('value) => option(node('value)) =
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:47:60-61
+
+  45 ┆ external root: t('value) => option(node('value)) =
+  46 ┆   ""
+  47 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x10\0\0\0\x07\0\0\0\x14\0\0\0\x13\xb0
+     ┆ \xa0\xa0A\x91@@A\x98\xa0$root@";
+  48 ┆ [@internal.arity 1]
+  49 ┆ external rootGet: t('value) => option(node('value)) =
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:47:62-63
+
+  45 ┆ external root: t('value) => option(node('value)) =
+  46 ┆   ""
+  47 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x10\0\0\0\x07\0\0\0\x14\0\0\0\x13\xb0
+     ┆ \xa0\xa0A\x91@@A\x98\xa0$root@";
+  48 ┆ [@internal.arity 1]
+  49 ┆ external rootGet: t('value) => option(node('value)) =
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:47:68-69
+
+  45 ┆ external root: t('value) => option(node('value)) =
+  46 ┆   ""
+  47 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x10\0\0\0\x07\0\0\0\x14\0\0\0\x13\xb0
+     ┆ \xa0\xa0A\x91@@A\x98\xa0$root@";
+  48 ┆ [@internal.arity 1]
+  49 ┆ external rootGet: t('value) => option(node('value)) =
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:47:70-71
+
+  45 ┆ external root: t('value) => option(node('value)) =
+  46 ┆   ""
+  47 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x10\0\0\0\x07\0\0\0\x14\0\0\0\x13\xb0
+     ┆ \xa0\xa0A\x91@@A\x98\xa0$root@";
+  48 ┆ [@internal.arity 1]
+  49 ┆ external rootGet: t('value) => option(node('value)) =
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:47:72-73
+
+  45 ┆ external root: t('value) => option(node('value)) =
+  46 ┆   ""
+  47 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x10\0\0\0\x07\0\0\0\x14\0\0\0\x13\xb0
+     ┆ \xa0\xa0A\x91@@A\x98\xa0$root@";
+  48 ┆ [@internal.arity 1]
+  49 ┆ external rootGet: t('value) => option(node('value)) =
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:51:38-39
+
+  49 ┆ external rootGet: t('value) => option(node('value)) =
+  50 ┆   ""
+  51 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x10\0\0\0\x07\0\0\0\x14\0\0\0\x13\xb0
+     ┆ \xa0\xa0A\x91@@A\x98\xa0$root@";
+  52 ┆ [@ocaml.deprecated
+  53 ┆   "use compareGet instead or use {abstract = light} explicitly"
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:51:40-41
+
+  49 ┆ external rootGet: t('value) => option(node('value)) =
+  50 ┆   ""
+  51 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x10\0\0\0\x07\0\0\0\x14\0\0\0\x13\xb0
+     ┆ \xa0\xa0A\x91@@A\x98\xa0$root@";
+  52 ┆ [@ocaml.deprecated
+  53 ┆   "use compareGet instead or use {abstract = light} explicitly"
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:51:42-43
+
+  49 ┆ external rootGet: t('value) => option(node('value)) =
+  50 ┆   ""
+  51 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x10\0\0\0\x07\0\0\0\x14\0\0\0\x13\xb0
+     ┆ \xa0\xa0A\x91@@A\x98\xa0$root@";
+  52 ┆ [@ocaml.deprecated
+  53 ┆   "use compareGet instead or use {abstract = light} explicitly"
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:51:48-49
+
+  49 ┆ external rootGet: t('value) => option(node('value)) =
+  50 ┆   ""
+  51 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x10\0\0\0\x07\0\0\0\x14\0\0\0\x13\xb0
+     ┆ \xa0\xa0A\x91@@A\x98\xa0$root@";
+  52 ┆ [@ocaml.deprecated
+  53 ┆   "use compareGet instead or use {abstract = light} explicitly"
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:51:50-51
+
+  49 ┆ external rootGet: t('value) => option(node('value)) =
+  50 ┆   ""
+  51 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x10\0\0\0\x07\0\0\0\x14\0\0\0\x13\xb0
+     ┆ \xa0\xa0A\x91@@A\x98\xa0$root@";
+  52 ┆ [@ocaml.deprecated
+  53 ┆   "use compareGet instead or use {abstract = light} explicitly"
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:51:52-53
+
+  49 ┆ external rootGet: t('value) => option(node('value)) =
+  50 ┆   ""
+  51 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x10\0\0\0\x07\0\0\0\x14\0\0\0\x13\xb0
+     ┆ \xa0\xa0A\x91@@A\x98\xa0$root@";
+  52 ┆ [@ocaml.deprecated
+  53 ┆   "use compareGet instead or use {abstract = light} explicitly"
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:51:58-59
+
+  49 ┆ external rootGet: t('value) => option(node('value)) =
+  50 ┆   ""
+  51 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x10\0\0\0\x07\0\0\0\x14\0\0\0\x13\xb0
+     ┆ \xa0\xa0A\x91@@A\x98\xa0$root@";
+  52 ┆ [@ocaml.deprecated
+  53 ┆   "use compareGet instead or use {abstract = light} explicitly"
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:51:60-61
+
+  49 ┆ external rootGet: t('value) => option(node('value)) =
+  50 ┆   ""
+  51 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x10\0\0\0\x07\0\0\0\x14\0\0\0\x13\xb0
+     ┆ \xa0\xa0A\x91@@A\x98\xa0$root@";
+  52 ┆ [@ocaml.deprecated
+  53 ┆   "use compareGet instead or use {abstract = light} explicitly"
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:51:62-63
+
+  49 ┆ external rootGet: t('value) => option(node('value)) =
+  50 ┆   ""
+  51 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x10\0\0\0\x07\0\0\0\x14\0\0\0\x13\xb0
+     ┆ \xa0\xa0A\x91@@A\x98\xa0$root@";
+  52 ┆ [@ocaml.deprecated
+  53 ┆   "use compareGet instead or use {abstract = light} explicitly"
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:51:68-69
+
+  49 ┆ external rootGet: t('value) => option(node('value)) =
+  50 ┆   ""
+  51 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x10\0\0\0\x07\0\0\0\x14\0\0\0\x13\xb0
+     ┆ \xa0\xa0A\x91@@A\x98\xa0$root@";
+  52 ┆ [@ocaml.deprecated
+  53 ┆   "use compareGet instead or use {abstract = light} explicitly"
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:51:70-71
+
+  49 ┆ external rootGet: t('value) => option(node('value)) =
+  50 ┆   ""
+  51 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x10\0\0\0\x07\0\0\0\x14\0\0\0\x13\xb0
+     ┆ \xa0\xa0A\x91@@A\x98\xa0$root@";
+  52 ┆ [@ocaml.deprecated
+  53 ┆   "use compareGet instead or use {abstract = light} explicitly"
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:51:72-73
+
+  49 ┆ external rootGet: t('value) => option(node('value)) =
+  50 ┆   ""
+  51 ┆   "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x10\0\0\0\x07\0\0\0\x14\0\0\0\x13\xb0
+     ┆ \xa0\xa0A\x91@@A\x98\xa0$root@";
+  52 ┆ [@ocaml.deprecated
+  53 ┆   "use compareGet instead or use {abstract = light} explicitly"
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:64:38-39
+
+  62 │             t('value) => Js.Internal.fn([ | `Arity_2('value, 'value)], 
+     │ int) =
+  63 │             ""
+  64 │             "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x13\0\0\0\x07\0\0\0\x14\0\0
+     │ \0\x13\xb0\xa0\xa0A\x91@@A\x98\xa0'compare@";
+  65 │         };
+  66 │ let has = (rbt, value) => _findNode(rbt, rootGet(rbt), value) !== None;
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:64:40-41
+
+  62 │             t('value) => Js.Internal.fn([ | `Arity_2('value, 'value)], 
+     │ int) =
+  63 │             ""
+  64 │             "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x13\0\0\0\x07\0\0\0\x14\0\0
+     │ \0\x13\xb0\xa0\xa0A\x91@@A\x98\xa0'compare@";
+  65 │         };
+  66 │ let has = (rbt, value) => _findNode(rbt, rootGet(rbt), value) !== None;
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:64:42-43
+
+  62 │             t('value) => Js.Internal.fn([ | `Arity_2('value, 'value)], 
+     │ int) =
+  63 │             ""
+  64 │             "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x13\0\0\0\x07\0\0\0\x14\0\0
+     │ \0\x13\xb0\xa0\xa0A\x91@@A\x98\xa0'compare@";
+  65 │         };
+  66 │ let has = (rbt, value) => _findNode(rbt, rootGet(rbt), value) !== None;
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:64:48-49
+
+  62 │             t('value) => Js.Internal.fn([ | `Arity_2('value, 'value)], 
+     │ int) =
+  63 │             ""
+  64 │             "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x13\0\0\0\x07\0\0\0\x14\0\0
+     │ \0\x13\xb0\xa0\xa0A\x91@@A\x98\xa0'compare@";
+  65 │         };
+  66 │ let has = (rbt, value) => _findNode(rbt, rootGet(rbt), value) !== None;
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:64:50-51
+
+  62 │             t('value) => Js.Internal.fn([ | `Arity_2('value, 'value)], 
+     │ int) =
+  63 │             ""
+  64 │             "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x13\0\0\0\x07\0\0\0\x14\0\0
+     │ \0\x13\xb0\xa0\xa0A\x91@@A\x98\xa0'compare@";
+  65 │         };
+  66 │ let has = (rbt, value) => _findNode(rbt, rootGet(rbt), value) !== None;
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:64:52-53
+
+  62 │             t('value) => Js.Internal.fn([ | `Arity_2('value, 'value)], 
+     │ int) =
+  63 │             ""
+  64 │             "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x13\0\0\0\x07\0\0\0\x14\0\0
+     │ \0\x13\xb0\xa0\xa0A\x91@@A\x98\xa0'compare@";
+  65 │         };
+  66 │ let has = (rbt, value) => _findNode(rbt, rootGet(rbt), value) !== None;
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:64:58-59
+
+  62 │             t('value) => Js.Internal.fn([ | `Arity_2('value, 'value)], 
+     │ int) =
+  63 │             ""
+  64 │             "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x13\0\0\0\x07\0\0\0\x14\0\0
+     │ \0\x13\xb0\xa0\xa0A\x91@@A\x98\xa0'compare@";
+  65 │         };
+  66 │ let has = (rbt, value) => _findNode(rbt, rootGet(rbt), value) !== None;
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:64:60-61
+
+  62 │             t('value) => Js.Internal.fn([ | `Arity_2('value, 'value)], 
+     │ int) =
+  63 │             ""
+  64 │             "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x13\0\0\0\x07\0\0\0\x14\0\0
+     │ \0\x13\xb0\xa0\xa0A\x91@@A\x98\xa0'compare@";
+  65 │         };
+  66 │ let has = (rbt, value) => _findNode(rbt, rootGet(rbt), value) !== None;
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:64:62-63
+
+  62 │             t('value) => Js.Internal.fn([ | `Arity_2('value, 'value)], 
+     │ int) =
+  63 │             ""
+  64 │             "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x13\0\0\0\x07\0\0\0\x14\0\0
+     │ \0\x13\xb0\xa0\xa0A\x91@@A\x98\xa0'compare@";
+  65 │         };
+  66 │ let has = (rbt, value) => _findNode(rbt, rootGet(rbt), value) !== None;
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:64:68-69
+
+  62 │             t('value) => Js.Internal.fn([ | `Arity_2('value, 'value)], 
+     │ int) =
+  63 │             ""
+  64 │             "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x13\0\0\0\x07\0\0\0\x14\0\0
+     │ \0\x13\xb0\xa0\xa0A\x91@@A\x98\xa0'compare@";
+  65 │         };
+  66 │ let has = (rbt, value) => _findNode(rbt, rootGet(rbt), value) !== None;
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:64:70-71
+
+  62 │             t('value) => Js.Internal.fn([ | `Arity_2('value, 'value)], 
+     │ int) =
+  63 │             ""
+  64 │             "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x13\0\0\0\x07\0\0\0\x14\0\0
+     │ \0\x13\xb0\xa0\xa0A\x91@@A\x98\xa0'compare@";
+  65 │         };
+  66 │ let has = (rbt, value) => _findNode(rbt, rootGet(rbt), value) !== None;
+
+  unknown escape sequence
+
+
+  Syntax error!
+  tests/parsing/infiniteLoops/nonRecTypes.res:64:72-73
+
+  62 │             t('value) => Js.Internal.fn([ | `Arity_2('value, 'value)], 
+     │ int) =
+  63 │             ""
+  64 │             "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x13\0\0\0\x07\0\0\0\x14\0\0
+     │ \0\x13\xb0\xa0\xa0A\x91@@A\x98\xa0'compare@";
+  65 │         };
+  66 │ let has = (rbt, value) => _findNode(rbt, rootGet(rbt), value) !== None;
+
+  unknown escape sequence
+
+
+  Syntax error!
   tests/parsing/infiniteLoops/nonRecTypes.res:67:26-68:3
 
   65 │         };
