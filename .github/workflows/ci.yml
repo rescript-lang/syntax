@@ -32,10 +32,6 @@ jobs:
       uses: ocaml/setup-ocaml@v2
       with:
         ocaml-compiler: ${{env.OCAML_VERSION}}
-        # Set default repo explicitly.
-        # Windows uses https://github.com/fdopen/opam-repository-mingw otherwise which may be out of date.
-        opam-repositories: |
-          default: https://github.com/ocaml/opam-repository.git
         opam-pin: false
         opam-depext: false
 
