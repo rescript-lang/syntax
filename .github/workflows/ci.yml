@@ -2,61 +2,55 @@ name: CI
 
 on:
   push:
-    branches: [ master ]
+    branches: [master]
   pull_request:
-    branches: [ master ]
+    branches: [master]
 
-env:
-  OCAML_VERSION: 4.14.0
-  
 jobs:
   test:
     strategy:
       fail-fast: false
       matrix:
         os: [macos-latest, ubuntu-latest, windows-latest, macos-arm]
+        ocaml_compiler: [4.14.0]
 
     runs-on: ${{matrix.os}}
-    
+
     steps:
-    - name: "Windows: Set git to use LF"
-      if: runner.os == 'Windows'
-      run: |
-        git config --global core.autocrlf false
-        git config --global core.eol lf
+      - name: "Windows: Set git to use LF"
+        if: runner.os == 'Windows'
+        run: |
+          git config --global core.autocrlf false
+          git config --global core.eol lf
 
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-    - name: Use OCaml ${{env.OCAML_VERSION}}
-      if: runner.name != 'macos-arm'
-      uses: ocaml/setup-ocaml@v2.0.3
-      with:
-        ocaml-compiler: ${{env.OCAML_VERSION}}
-        # Set default repo explicitly.
-        # Windows uses https://github.com/fdopen/opam-repository-mingw otherwise which may be out of date.
-        opam-repositories: |
-          default: https://github.com/ocaml/opam-repository.git
-        opam-pin: false
-        opam-depext: false
+      - name: Use OCaml ${{matrix.ocaml_compiler}}
+        if: runner.name != 'macos-arm'
+        uses: ocaml/setup-ocaml@v2
+        with:
+          ocaml-compiler: ${{matrix.ocaml_compiler}}
+          opam-pin: false
+          opam-depext: false
 
-    - name: Use OCaml ${{env.OCAML_VERSION}}
-      if: runner.name == 'macos-arm'
-      uses: AbstractMachinesLab/setup-ocaml@arm-support
-      with:
-        ocaml-compiler: ${{env.OCAML_VERSION}}
-        opam-pin: false
-        opam-depext: false
+      - name: Use OCaml ${{matrix.ocaml_compiler}} (macOS ARM)
+        if: runner.name == 'macos-arm'
+        uses: AbstractMachinesLab/setup-ocaml@arm-support
+        with:
+          ocaml-compiler: ${{matrix.ocaml_compiler}}
+          opam-pin: false
+          opam-depext: false
 
-    - name: Install dependencies
-      run: opam install . --deps-only
+      - name: Install dependencies
+        run: opam install . --deps-only
 
-    - name: Build executables
-      run: opam exec -- dune build
+      - name: Build executables
+        run: opam exec -- dune build
 
-    - name: Run roundtrip tests
-      if: runner.os != 'Windows'
-      run: opam exec -- make roundtrip-test
+      - name: Run roundtrip tests
+        if: runner.os != 'Windows'
+        run: opam exec -- make roundtrip-test
 
-    - name: Run tests (Windows)
-      if: runner.os == 'Windows'
-      run: opam exec -- make test
+      - name: Run tests (Windows)
+        if: runner.os == 'Windows'
+        run: opam exec -- make test
