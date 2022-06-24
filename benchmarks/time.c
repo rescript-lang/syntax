@@ -33,7 +33,7 @@ CAMLprim value caml_mach_absolute_time(value unit) {
 
 #if (defined(__MACH__) && defined(__APPLE__))
   uint64_t now = mach_absolute_time();
-  result = (now * info.numer) / info.denom
+  result = (now * info.numer) / info.denom;
 #elif defined(__linux__)
   struct timespec now;
   clock_gettime(CLOCK_MONOTONIC, &now);
