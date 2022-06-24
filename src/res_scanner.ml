@@ -342,7 +342,7 @@ let scanStringEscapeSequence ~startPos scanner =
          c < '0' || c > '9' ->
     (* Allow \0 *)
     next scanner
-  | '0' .. '9' -> scan ~n:3 ~base:8 ~max:255
+  | '0' .. '9' -> scan ~n:3 ~base:10 ~max:255
   | 'x' ->
     (* hex *)
     next scanner;
@@ -384,18 +384,36 @@ let scanString scanner =
   (* assumption: we've just matched a quote *)
   let startPosWithQuote = position scanner in
   next scanner;
-  let firstCharOffset = scanner.offset in
-  let lastOffsetProcessed = ref firstCharOffset in
 
+  (* If the text needs changing, a buffer is used *)
   let buf = Buffer.create 0 in
+  let firstCharOffset = scanner.offset in
+  let lastOffsetInBuf = ref firstCharOffset in
+
+  let bringBufUpToDate ~startOffset =
+    let strUpToNow =
+      (String.sub scanner.src !lastOffsetInBuf
+         (startOffset - !lastOffsetInBuf) [@doesNotRaise])
+    in
+    Buffer.add_string buf strUpToNow;
+    lastOffsetInBuf := startOffset
+  in
+
+  let result ~firstCharOffset ~lastCharOffset =
+    if Buffer.length buf = 0 then
+      (String.sub [@doesNotRaise]) scanner.src firstCharOffset
+        (lastCharOffset - firstCharOffset)
+    else (
+      bringBufUpToDate ~startOffset:lastCharOffset;
+      Buffer.contents buf)
+  in
 
   let rec scan () =
     match scanner.ch with
     | '"' ->
       let lastCharOffset = scanner.offset in
       next scanner;
-      (String.sub [@doesNotRaise]) scanner.src firstCharOffset
-        (lastCharOffset - firstCharOffset)
+      result ~firstCharOffset ~lastCharOffset
     | '\\' ->
       let startPos = position scanner in
       let startOffset = scanner.offset + 1 in
@@ -406,8 +424,8 @@ let scanString scanner =
     | ch when ch == hackyEOFChar ->
       let endPos = position scanner in
       scanner.err ~startPos:startPosWithQuote ~endPos Diagnostics.unclosedString;
-      (String.sub [@doesNotRaise]) scanner.src firstCharOffset
-        (scanner.offset - firstCharOffset)
+      let lastCharOffset = scanner.offset in
+      result ~firstCharOffset ~lastCharOffset
     | _ ->
       next scanner;
       scan ()
@@ -418,36 +436,22 @@ let scanString scanner =
       | _ -> false
     in
     let txt = scanner.src in
-    let isOctalEscape =
+    let isNumericEscape =
       len = 3
       && (isDigit txt.[startOffset] [@doesNotRaise])
       && (isDigit txt.[startOffset + 1] [@doesNotRaise])
       && (isDigit txt.[startOffset + 2] [@doesNotRaise])
     in
-    if isOctalEscape then (
-      let strOctal = (String.sub txt startOffset 3 [@doesNotRaise]) in
-      let strBefore =
-        (String.sub txt !lastOffsetProcessed
-           (startOffset - !lastOffsetProcessed) [@doesNotRaise])
-      in
-      Buffer.add_string buf strBefore;
-      let strHex = Res_string.convertOctalToHex ~strOctal in
-      lastOffsetProcessed := startOffset + 3;
+    if isNumericEscape then (
+      let strDecimal = (String.sub txt startOffset 3 [@doesNotRaise]) in
+      bringBufUpToDate ~startOffset;
+      let strHex = Res_string.convertDecimalToHex ~strDecimal in
+      lastOffsetInBuf := startOffset + 3;
       Buffer.add_string buf strHex;
       scan ())
     else scan ()
   in
-  let token =
-    if Buffer.length buf = 0 then scan ()
-    else
-      let strBefore =
-        (String.sub scanner.src !lastOffsetProcessed
-           (scanner.offset - !lastOffsetProcessed) [@doesNotRaise])
-      in
-      Buffer.add_string buf strBefore;
-      Buffer.contents buf
-  in
-  Token.String token
+  Token.String (scan ())
 
 let scanEscape scanner =
   (* '\' consumed *)

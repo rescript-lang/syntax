@@ -1,2 +1,2 @@
-let x = {js|\055|js}
-let x = {js|\123|js}
+let x = {js|\x37|js}
+let x = {js|\x7b|js}

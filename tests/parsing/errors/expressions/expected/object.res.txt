@@ -1,2 +1,2 @@
 let obj =
-  [%obj { \055 = {js|octal escape|js}; \123 = {js|another octal escape|js} }]
+  [%obj { \x37 = {js|octal escape|js}; \x7b = {js|another octal escape|js} }]

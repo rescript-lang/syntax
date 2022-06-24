@@ -1,1 +1,1 @@
-;;match x with | {js|\055|js} -> () | {js|\123|js} -> ()
+;;match x with | {js|\x37|js} -> () | {js|\x7b|js} -> ()
