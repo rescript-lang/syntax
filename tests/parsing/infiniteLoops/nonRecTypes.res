@@ -20,35 +20,35 @@ include {
             ) =>
             t('value) =
             ""
-            "BS:6.0.1\132\149\166\190\000\000\000#\000\000\000\r\000\000\000&\000\000\000#\145\160\160A\160$size@\160\160A\160$root@\160\160A\160'compare@@";
+            "BS:6.0.1\x84\x95\xa6\xbe\0\0\0#\0\0\0\r\0\0\0&\0\0\0#\x91\xa0\xa0A\xa0$size@\xa0\xa0A\xa0$root@\xa0\xa0A\xa0'compare@@";
           external sizeSet: (t('value), int) => unit =
             "size"
-            "BS:6.0.1\132\149\166\190\000\000\000\021\000\000\000\t\000\000\000\026\000\000\000\025\176\160\160A\145@\160\160A\004\003@E\151\160$size@";
+            "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x15\0\0\0\t\0\0\0\x1a\0\0\0\x19\xb0\xa0\xa0A\x91@\xa0\xa0A\x04\x03@E\x97\xa0$size@";
           [@ocaml.deprecated
             "use sizeGet instead or use {abstract = light} explicitly"
           ]
           [@internal.arity 1]
           external size: t('value) => int =
             ""
-            "BS:6.0.1\132\149\166\190\000\000\000\016\000\000\000\007\000\000\000\020\000\000\000\019\176\160\160A\145@@A\152\160$size@";
+            "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x10\0\0\0\x07\0\0\0\x14\0\0\0\x13\xb0\xa0\xa0A\x91@@A\x98\xa0$size@";
           [@internal.arity 1]
           external sizeGet: t('value) => int =
             ""
-            "BS:6.0.1\132\149\166\190\000\000\000\016\000\000\000\007\000\000\000\020\000\000\000\019\176\160\160A\145@@A\152\160$size@";
+            "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x10\0\0\0\x07\0\0\0\x14\0\0\0\x13\xb0\xa0\xa0A\x91@@A\x98\xa0$size@";
           external rootSet: (t('value), option(node('value))) => unit =
             "root"
-            "BS:6.0.1\132\149\166\190\000\000\000\021\000\000\000\t\000\000\000\026\000\000\000\025\176\160\160A\145@\160\160A\004\003@E\151\160$root@";
+            "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x15\0\0\0\t\0\0\0\x1a\0\0\0\x19\xb0\xa0\xa0A\x91@\xa0\xa0A\x04\x03@E\x97\xa0$root@";
           [@ocaml.deprecated
             "use rootGet instead or use {abstract = light} explicitly"
           ]
           [@internal.arity 1]
           external root: t('value) => option(node('value)) =
             ""
-            "BS:6.0.1\132\149\166\190\000\000\000\016\000\000\000\007\000\000\000\020\000\000\000\019\176\160\160A\145@@A\152\160$root@";
+            "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x10\0\0\0\x07\0\0\0\x14\0\0\0\x13\xb0\xa0\xa0A\x91@@A\x98\xa0$root@";
           [@internal.arity 1]
           external rootGet: t('value) => option(node('value)) =
             ""
-            "BS:6.0.1\132\149\166\190\000\000\000\016\000\000\000\007\000\000\000\020\000\000\000\019\176\160\160A\145@@A\152\160$root@";
+            "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x10\0\0\0\x07\0\0\0\x14\0\0\0\x13\xb0\xa0\xa0A\x91@@A\x98\xa0$root@";
           [@ocaml.deprecated
             "use compareGet instead or use {abstract = light} explicitly"
           ]
@@ -56,12 +56,12 @@ include {
           external compare:
             t('value) => Js.Internal.fn([ | `Arity_2('value, 'value)], int) =
             ""
-            "BS:6.0.1\132\149\166\190\000\000\000\019\000\000\000\007\000\000\000\020\000\000\000\019\176\160\160A\145@@A\152\160'compare@";
+            "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x13\0\0\0\x07\0\0\0\x14\0\0\0\x13\xb0\xa0\xa0A\x91@@A\x98\xa0'compare@";
           [@internal.arity 1]
           external compareGet:
             t('value) => Js.Internal.fn([ | `Arity_2('value, 'value)], int) =
             ""
-            "BS:6.0.1\132\149\166\190\000\000\000\019\000\000\000\007\000\000\000\020\000\000\000\019\176\160\160A\145@@A\152\160'compare@";
+            "BS:6.0.1\x84\x95\xa6\xbe\0\0\0\x13\0\0\0\x07\0\0\0\x14\0\0\0\x13\xb0\xa0\xa0A\x91@@A\x98\xa0'compare@";
         };
 let has = (rbt, value) => _findNode(rbt, rootGet(rbt), value) !== None;
 let rec minNode = node =>

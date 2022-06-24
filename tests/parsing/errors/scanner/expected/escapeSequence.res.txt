@@ -1,23 +1,2 @@
-
-  Syntax error!
-  tests/parsing/errors/scanner/escapeSequence.res:1:10-11
-
-  1 │ let x = "\0"
-  2 │ 
-  3 │ let x = "\oAAA"
-
-  unknown escape sequence
-
-
-  Syntax error!
-  tests/parsing/errors/scanner/escapeSequence.res:3:10-11
-
-  1 │ let x = "\0"
-  2 │ 
-  3 │ let x = "\oAAA"
-  4 │ 
-
-  unknown escape sequence
-
-let x = {js|\0|js}
-let x = {js|\oAAA|js}
+let x = {js|\x37|js}
+let x = {js|\x7b|js}

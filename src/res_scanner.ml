@@ -337,13 +337,12 @@ let scanStringEscapeSequence ~startPos scanner =
   match scanner.ch with
   (* \ already consumed *)
   | 'n' | 't' | 'b' | 'r' | '\\' | ' ' | '\'' | '"' -> next scanner
-  | '0' .. '9' ->
-    (* decimal *)
-    scan ~n:3 ~base:10 ~max:255
-  | 'o' ->
-    (* octal *)
-    next scanner;
-    scan ~n:3 ~base:8 ~max:255
+  | '0'
+    when let c = peek scanner in
+         c < '0' || c > '9' ->
+    (* Allow \0 *)
+    next scanner
+  | '0' .. '9' -> scan ~n:3 ~base:10 ~max:255
   | 'x' ->
     (* hex *)
     next scanner;
@@ -385,28 +384,72 @@ let scanString scanner =
   (* assumption: we've just matched a quote *)
   let startPosWithQuote = position scanner in
   next scanner;
+
+  (* If the text needs changing, a buffer is used *)
+  let buf = Buffer.create 0 in
   let firstCharOffset = scanner.offset in
+  let lastOffsetInBuf = ref firstCharOffset in
+
+  let bringBufUpToDate ~startOffset =
+    let strUpToNow =
+      (String.sub scanner.src !lastOffsetInBuf
+         (startOffset - !lastOffsetInBuf) [@doesNotRaise])
+    in
+    Buffer.add_string buf strUpToNow;
+    lastOffsetInBuf := startOffset
+  in
+
+  let result ~firstCharOffset ~lastCharOffset =
+    if Buffer.length buf = 0 then
+      (String.sub [@doesNotRaise]) scanner.src firstCharOffset
+        (lastCharOffset - firstCharOffset)
+    else (
+      bringBufUpToDate ~startOffset:lastCharOffset;
+      Buffer.contents buf)
+  in
 
   let rec scan () =
     match scanner.ch with
     | '"' ->
       let lastCharOffset = scanner.offset in
       next scanner;
-      (String.sub [@doesNotRaise]) scanner.src firstCharOffset
-        (lastCharOffset - firstCharOffset)
+      result ~firstCharOffset ~lastCharOffset
     | '\\' ->
       let startPos = position scanner in
+      let startOffset = scanner.offset + 1 in
       next scanner;
       scanStringEscapeSequence ~startPos scanner;
-      scan ()
+      let endOffset = scanner.offset in
+      convertOctalToHex ~startOffset ~endOffset
     | ch when ch == hackyEOFChar ->
       let endPos = position scanner in
       scanner.err ~startPos:startPosWithQuote ~endPos Diagnostics.unclosedString;
-      (String.sub [@doesNotRaise]) scanner.src firstCharOffset
-        (scanner.offset - firstCharOffset)
+      let lastCharOffset = scanner.offset in
+      result ~firstCharOffset ~lastCharOffset
     | _ ->
       next scanner;
       scan ()
+  and convertOctalToHex ~startOffset ~endOffset =
+    let len = endOffset - startOffset in
+    let isDigit = function
+      | '0' .. '9' -> true
+      | _ -> false
+    in
+    let txt = scanner.src in
+    let isNumericEscape =
+      len = 3
+      && (isDigit txt.[startOffset] [@doesNotRaise])
+      && (isDigit txt.[startOffset + 1] [@doesNotRaise])
+      && (isDigit txt.[startOffset + 2] [@doesNotRaise])
+    in
+    if isNumericEscape then (
+      let strDecimal = (String.sub txt startOffset 3 [@doesNotRaise]) in
+      bringBufUpToDate ~startOffset;
+      let strHex = Res_string.convertDecimalToHex ~strDecimal in
+      lastOffsetInBuf := startOffset + 3;
+      Buffer.add_string buf strHex;
+      scan ())
+    else scan ()
   in
   Token.String (scan ())
 

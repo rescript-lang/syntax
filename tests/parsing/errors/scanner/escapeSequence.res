@@ -1,3 +1,3 @@
-let x = "\0"
+let x = "\055"
 
-let x = "\oAAA"
+let x = "\123"
