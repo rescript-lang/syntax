@@ -13,14 +13,12 @@ test: build
 	dune exec -- testrunner
 	dune exec -- bash ./scripts/test.sh
 	make reanalyze
-	make checkformat
 	bash ./scripts/testok.sh
 
 roundtrip-test: build
 	dune exec -- testrunner
 	ROUNDTRIP_TEST=1 dune exec -- bash ./scripts/test.sh
 	make reanalyze
-	make checkformat
 	bash ./scripts/testok.sh
 
 reanalyze: build
