@@ -19,6 +19,16 @@ let x =
       </F>
     </B>
   </A>
+let x =
+  <A>
+    {children}
+    <B />
+  </A>
+let x =
+  <A>
+    <B />
+    {children}
+  </A>
 
 let x = <div className="container" className2="container2" className3="container3" onClick />
 

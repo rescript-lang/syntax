@@ -9,6 +9,8 @@ let x = <Foo.baz
 
 // https://github.com/rescript-lang/syntax/issues/570
 let x = <A> <B> <C> <D /> <E /> </C> <F> <G /> <H /> </F> </B> </A>
+let x = <A> {children} <B/> </A>
+let x = <A> <B/> {children} </A>
 
 let x =
   <div
