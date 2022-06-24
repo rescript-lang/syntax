@@ -99,6 +99,18 @@ let hasCommentBelow tbl loc =
   | [] -> false
   | exception Not_found -> false
 
+let hasNestedJsxOrMoreThanOneChild expr =
+  let rec loop inRecursion expr =
+    match expr.Parsetree.pexp_desc with
+    | Pexp_construct
+        ({txt = Longident.Lident "::"}, Some {pexp_desc = Pexp_tuple [hd; tail]})
+      ->
+      if inRecursion || ParsetreeViewer.isJsxExpression hd then true
+      else loop true tail
+    | _ -> false
+  in
+  loop false expr
+
 let printMultilineCommentContent txt =
   (* Turns
    *         |* first line
@@ -3694,6 +3706,12 @@ and printJsxExpression lident args cmtTbl =
       true
     | _ -> false
   in
+  let lineSep =
+    match children with
+    | Some expr ->
+      if hasNestedJsxOrMoreThanOneChild expr then Doc.hardLine else Doc.line
+    | None -> Doc.line
+  in
   Doc.group
     (Doc.concat
        [
@@ -3728,10 +3746,10 @@ and printJsxExpression lident args cmtTbl =
                       Doc.line;
                       (match children with
                       | Some childrenExpression ->
-                        printJsxChildren childrenExpression cmtTbl
+                        printJsxChildren childrenExpression ~sep:lineSep cmtTbl
                       | None -> Doc.nil);
                     ]);
-               Doc.line;
+               lineSep;
                Doc.text "</";
                name;
                Doc.greaterThan;
@@ -3741,24 +3759,28 @@ and printJsxExpression lident args cmtTbl =
 and printJsxFragment expr cmtTbl =
   let opening = Doc.text "<>" in
   let closing = Doc.text "</>" in
-  (* let (children, _) = ParsetreeViewer.collectListExpressions expr in *)
+  let lineSep =
+    if hasNestedJsxOrMoreThanOneChild expr then Doc.hardLine else Doc.line
+  in
   Doc.group
     (Doc.concat
        [
          opening;
          (match expr.pexp_desc with
          | Pexp_construct ({txt = Longident.Lident "[]"}, None) -> Doc.nil
-         | _ -> Doc.indent (Doc.concat [Doc.line; printJsxChildren expr cmtTbl]));
-         Doc.line;
+         | _ ->
+           Doc.indent
+             (Doc.concat [Doc.line; printJsxChildren expr ~sep:lineSep cmtTbl]));
+         lineSep;
          closing;
        ])
 
-and printJsxChildren (childrenExpr : Parsetree.expression) cmtTbl =
+and printJsxChildren (childrenExpr : Parsetree.expression) ~sep cmtTbl =
   match childrenExpr.pexp_desc with
   | Pexp_construct ({txt = Longident.Lident "::"}, _) ->
     let children, _ = ParsetreeViewer.collectListExpressions childrenExpr in
     Doc.group
-      (Doc.join ~sep:Doc.line
+      (Doc.join ~sep
          (List.map
             (fun (expr : Parsetree.expression) ->
               let leadingLineCommentPresent =

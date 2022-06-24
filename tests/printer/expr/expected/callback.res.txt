@@ -230,7 +230,9 @@ let decoratorTags =
   items
   ->Js.Array2.filter(items => {items.category === Decorators})
   ->Belt.Array.map(item => {
-    <span className="mr-2" key=item.name> <Tag text={item.name} /> </span>
+    <span className="mr-2" key=item.name>
+      <Tag text={item.name} />
+    </span>
   })
 
 // Comments should still be printed here (callback in last position)

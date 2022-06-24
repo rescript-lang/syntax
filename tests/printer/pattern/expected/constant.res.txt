@@ -33,7 +33,9 @@ switch science {
   | None => React.null
   | Some(1.0) => React.null
   | Some(uploadProgress) =>
-    <div className=Styles.fill> <StudioUploadProgressIndicator progress=uploadProgress /> </div>
+    <div className=Styles.fill>
+      <StudioUploadProgressIndicator progress=uploadProgress />
+    </div>
   }}
 </div>
 

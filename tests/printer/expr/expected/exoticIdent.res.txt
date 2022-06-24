@@ -61,4 +61,8 @@ lazy \"let"
 @let
 let x = 1
 
-let x = <div \"aria-foo"=\"type"> \"module" \"let" </div>
+let x =
+  <div \"aria-foo"=\"type">
+    \"module"
+    \"let"
+  </div>
