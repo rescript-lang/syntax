@@ -33,7 +33,7 @@ jobs:
           opam-pin: false
           opam-depext: false
 
-      - name: Use OCaml ${{matrix.ocaml_compiler}}
+      - name: Use OCaml ${{matrix.ocaml_compiler}} (macOS ARM)
         if: runner.name == 'macos-arm'
         uses: AbstractMachinesLab/setup-ocaml@arm-support
         with:
