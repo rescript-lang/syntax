@@ -14,7 +14,7 @@
   (-open Syntax -open Compilerlibs406))
  (foreign_stubs
   (language c)
-  (names mac_osx_time))
+  (names time))
  (libraries syntax compilerlibs406))
 
 (data_only_dirs data)
