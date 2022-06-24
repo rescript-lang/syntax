@@ -1,2 +1,0 @@
-/* parses ocaml interface file */
-let x: int
