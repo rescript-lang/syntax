@@ -1,20 +1,2 @@
-
-  Syntax error!
-  tests/parsing/errors/expressions/object.res:1:13-14
-
-  1 │ let obj = {"\055": "octal escape", "\123": "another octal escape"}
-  2 │ 
-
-  The only valid numeric escape in strict mode is '\0'
-
-
-  Syntax error!
-  tests/parsing/errors/expressions/object.res:1:37
-
-  1 │ let obj = {"\055": "octal escape", "\123": "another octal escape"}
-  2 │ 
-
-  The only valid numeric escape in strict mode is '\0'
-
 let obj =
   [%obj { \055 = {js|octal escape|js}; \123 = {js|another octal escape|js} }]
