@@ -2,4 +2,4 @@
  (name syntax)
  (flags
   (-open Compilerlibs406 :standard -w +a-4-42-40-9-48-70))
- (libraries compilerlibs406 str))
+ (libraries compilerlibs406))

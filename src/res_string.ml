@@ -9,12 +9,3 @@ let convertOctalToHex ~strOctal =
     let c2 = Array.get hexTable (intNum land 15) in
     "\\x" ^ String.concat "" [String.make 1 c1; String.make 1 c2]
   with Invalid_argument _ | Failure _ -> strOctal
-
-let convertDecEscapes txt =
-  let regex = Str.regexp "\\\\[0-9][0-9][0-9]" in
-  let convertEscape s =
-    let strOctal = Str.string_after (Str.matched_string s) 1 in
-    try convertOctalToHex ~strOctal
-    with _ -> s (* in theory this should never happen *)
-  in
-  Str.global_substitute regex convertEscape txt

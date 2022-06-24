@@ -468,7 +468,7 @@ let printStringLoc sloc cmtTbl =
   printComments doc cmtTbl sloc.loc
 
 let printStringContents txt =
-  let lines = String.split_on_char '\n' (Res_string.convertDecEscapes txt) in
+  let lines = String.split_on_char '\n' txt in
   Doc.join ~sep:Doc.literalLine (List.map Doc.text lines)
 
 let printConstant ?(templateLiteral = false) c =
