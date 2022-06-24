@@ -385,6 +385,9 @@ let scanString scanner =
   let startPosWithQuote = position scanner in
   next scanner;
   let firstCharOffset = scanner.offset in
+  let lastOffsetProcessed = ref firstCharOffset in
+
+  let buf = Buffer.create 0 in
 
   let rec scan () =
     match scanner.ch with
@@ -395,9 +398,11 @@ let scanString scanner =
         (lastCharOffset - firstCharOffset)
     | '\\' ->
       let startPos = position scanner in
+      let startOffset = scanner.offset + 1 in
       next scanner;
       scanStringEscapeSequence ~startPos scanner;
-      scan ()
+      let endOffset = scanner.offset in
+      convertOctalToHex ~startOffset ~endOffset
     | ch when ch == hackyEOFChar ->
       let endPos = position scanner in
       scanner.err ~startPos:startPosWithQuote ~endPos Diagnostics.unclosedString;
@@ -406,8 +411,43 @@ let scanString scanner =
     | _ ->
       next scanner;
       scan ()
+  and convertOctalToHex ~startOffset ~endOffset =
+    let len = endOffset - startOffset in
+    let isDigit = function
+      | '0' .. '9' -> true
+      | _ -> false
+    in
+    let txt = scanner.src in
+    let isOctalEscape =
+      len = 3
+      && (isDigit txt.[startOffset] [@doesNotRaise])
+      && (isDigit txt.[startOffset + 1] [@doesNotRaise])
+      && (isDigit txt.[startOffset + 2] [@doesNotRaise])
+    in
+    if isOctalEscape then (
+      let strOctal = (String.sub txt startOffset 3 [@doesNotRaise]) in
+      let strBefore =
+        (String.sub txt !lastOffsetProcessed
+           (startOffset - !lastOffsetProcessed) [@doesNotRaise])
+      in
+      Buffer.add_string buf strBefore;
+      let strHex = Res_string.convertOctalToHex ~strOctal in
+      lastOffsetProcessed := startOffset + 3;
+      Buffer.add_string buf strHex;
+      scan ())
+    else scan ()
   in
-  Token.String (scan ())
+  let token =
+    if Buffer.length buf = 0 then scan ()
+    else
+      let strBefore =
+        (String.sub scanner.src !lastOffsetProcessed
+           (scanner.offset - !lastOffsetProcessed) [@doesNotRaise])
+      in
+      Buffer.add_string buf strBefore;
+      Buffer.contents buf
+  in
+  Token.String token
 
 let scanEscape scanner =
   (* '\' consumed *)
