@@ -29,6 +29,12 @@ let x =
     <B />
     {children}
   </A>
+let x = <A> {a} </A>
+let x =
+  <A>
+    {a}
+    {b}
+  </A>
 
 let x = <div className="container" className2="container2" className3="container3" onClick />
 
