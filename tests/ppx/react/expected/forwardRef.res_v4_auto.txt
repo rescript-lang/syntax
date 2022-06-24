@@ -1,0 +1,48 @@
+module FancyInput = {
+  type props<'className, 'children> = {
+    @optional key: string,
+    @optional className: 'className,
+    children: 'children,
+    @optional ref: ReactDOM.Ref.currentDomRef,
+  }
+  let make = ({className, children, ref}: props<'className, 'children>) => {
+    let ref = Js.Nullable.fromOption(ref)
+    let _ = ref
+
+    ReactDOMRe.createDOMElementVariadic(
+      "div",
+      [
+        ReactDOMRe.createDOMElementVariadic(
+          "input",
+          ~props=ReactDOMRe.domProps(
+            ~type_="text",
+            ~className?,
+            ~ref=?{Js.Nullable.toOption(ref)->Belt.Option.map(ReactDOM.Ref.domRef)},
+            (),
+          ),
+          [],
+        ),
+        children,
+      ],
+    )
+  }
+  let make = React.forwardRef({
+    let \"ForwardRef$FancyInput" = (props: props<_>, ref) =>
+      make({...props, ref: @optional Js.Nullable.toOption(ref)})
+    \"ForwardRef$FancyInput"
+  })
+}
+type props = {@optional key: string}
+
+let make = (_: props) => {
+  let input = React.useRef(Js.Nullable.null)
+
+  ReactDOMRe.createDOMElementVariadic(
+    "div",
+    [React.jsx(FancyInput.make, {ref: input, children: {React.string("Click to focus")}})],
+  )
+}
+let make = {
+  let \"ForwardRef" = props => make(props)
+  \"ForwardRef"
+}

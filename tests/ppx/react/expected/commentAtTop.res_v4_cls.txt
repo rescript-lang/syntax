@@ -1,0 +1,9 @@
+type props<'msg> = {@optional key: string, msg: 'msg} // test React JSX file
+
+let make = ({msg}: props<'msg>) => {
+  ReactDOMRe.createDOMElementVariadic("div", [{msg->React.string}])
+}
+let make = {
+  let \"CommentAtTop" = (props: props<_>) => make(props)
+  \"CommentAtTop"
+}
