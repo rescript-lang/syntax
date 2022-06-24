@@ -12,8 +12,6 @@ let make = (~href, ~className="", ~children) =>
 
 <div> ...element </div>
 <div> ...{a => 1} </div>
-<div>
-  ...<span />
-</div>
+<div> ...<span /> </div>
 <div> ...[a, b] </div>
 <div> ...{(1, 2)} </div>

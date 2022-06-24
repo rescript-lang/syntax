@@ -99,14 +99,13 @@ let hasCommentBelow tbl loc =
   | [] -> false
   | exception Not_found -> false
 
-let rec hasNestedJsx expr =
+let hasNestedJsx expr =
   match expr.Parsetree.pexp_desc with
-  | Pexp_construct ({txt = Longident.Lident "[]"}, _) -> false
   | Pexp_construct
-      ( {txt = Longident.Lident "::"},
-        Some {pexp_desc = Pexp_tuple (hd :: [tail])} ) ->
-    hasNestedJsx hd || hasNestedJsx tail
-  | _ -> ParsetreeViewer.isJsxExpression expr
+      ({txt = Longident.Lident "::"}, Some {pexp_desc = Pexp_tuple (hd :: [_])})
+    ->
+    ParsetreeViewer.isJsxExpression hd
+  | _ -> false
 
 let printMultilineCommentContent txt =
   (* Turns
