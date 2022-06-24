@@ -102,8 +102,8 @@ let hasCommentBelow tbl loc =
 let rec hasNestedJsx expr =
   match expr.Parsetree.pexp_desc with
   | Pexp_construct
-      ( {txt = Longident.Lident "::"},
-        Some {pexp_desc = Pexp_tuple (hd :: [tail])} ) ->
+      ({txt = Longident.Lident "::"}, Some {pexp_desc = Pexp_tuple [hd; tail]})
+    ->
     ParsetreeViewer.isJsxExpression hd || hasNestedJsx tail
   | _ -> false
 
