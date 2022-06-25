@@ -158,7 +158,7 @@ let isExprStart = function
   | _ -> false
 
 let isJsxAttributeStart = function
-  | Token.Lident _ | Question -> true
+  | Token.Lident _ | Question | Lbrace -> true
   | _ -> false
 
 let isStructureItemStart = function

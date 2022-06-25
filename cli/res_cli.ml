@@ -163,6 +163,7 @@ module ResClflags : sig
   val file : string ref
   val interface : bool ref
   val ppx : string ref
+  val jsxRuntime : string ref
   val typechecker : bool ref
 
   val parse : unit -> unit
@@ -174,6 +175,7 @@ end = struct
   let origin = ref ""
   let interface = ref false
   let ppx = ref ""
+  let jsxRuntime = ref "automatic"
   let file = ref ""
   let typechecker = ref false
 
@@ -203,8 +205,12 @@ end = struct
         "Parse as interface" );
       ( "-ppx",
         Arg.String (fun txt -> ppx := txt),
-        "Apply a specific built-in ppx before parsing, none or jsx. Default: \
-         none" );
+        "Apply a specific built-in ppx before parsing, none or jsx3, jsx4. \
+         Default: none" );
+      ( "-jsx-runtime",
+        Arg.String (fun txt -> jsxRuntime := txt),
+        "Specify the jsx runtime for React, classic or automatic. Default: \
+         automatic" );
       ( "-typechecker",
         Arg.Unit (fun () -> typechecker := true),
         "Parses the ast as it would be passed to the typechecker and not the \
@@ -218,8 +224,8 @@ module CliArgProcessor = struct
   type backend = Parser : 'diagnostics Res_driver.parsingEngine -> backend
   [@@unboxed]
 
-  let processFile ~isInterface ~width ~recover ~origin ~target ~ppx ~typechecker
-      filename =
+  let processFile ~isInterface ~width ~recover ~origin ~target ~ppx ~jsxRuntime
+      ~typechecker filename =
     let len = String.length filename in
     let processInterface =
       isInterface
@@ -277,7 +283,10 @@ module CliArgProcessor = struct
       else
         let parsetree =
           match ppx with
-          | "jsx" -> Reactjs_jsx_ppx_v3.rewrite_signature parseResult.parsetree
+          | "jsx3" -> Reactjs_jsx_ppx_v3.rewrite_signature parseResult.parsetree
+          | "jsx4" ->
+            Reactjs_jsx_ppx_v4.rewrite_signature jsxRuntime
+              parseResult.parsetree
           | _ -> parseResult.parsetree
         in
         printEngine.printInterface ~width ~filename
@@ -294,8 +303,11 @@ module CliArgProcessor = struct
       else
         let parsetree =
           match ppx with
-          | "jsx" ->
+          | "jsx3" ->
             Reactjs_jsx_ppx_v3.rewrite_implementation parseResult.parsetree
+          | "jsx4" ->
+            Reactjs_jsx_ppx_v4.rewrite_implementation jsxRuntime
+              parseResult.parsetree
           | _ -> parseResult.parsetree
         in
         printEngine.printImplementation ~width ~filename
@@ -309,4 +321,5 @@ let[@raises exit] () =
     CliArgProcessor.processFile ~isInterface:!ResClflags.interface
       ~width:!ResClflags.width ~recover:!ResClflags.recover
       ~target:!ResClflags.print ~origin:!ResClflags.origin ~ppx:!ResClflags.ppx
-      ~typechecker:!ResClflags.typechecker !ResClflags.file)
+      ~jsxRuntime:!ResClflags.jsxRuntime ~typechecker:!ResClflags.typechecker
+      !ResClflags.file)
