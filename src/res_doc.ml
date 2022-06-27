@@ -72,6 +72,50 @@ let equal = Text "="
 let trailingComma = ifBreaks comma nil
 let doubleQuote = Text "\""
 
+let propagateForcedBreaks doc =
+  let rec walk doc =
+    match doc with
+    | Text _ | Nil | LineSuffix _ -> false
+    | BreakParent -> true
+    | LineBreak (Hard | Literal) -> true
+    | LineBreak (Classic | Soft) -> false
+    | Indent children ->
+      let childForcesBreak = walk children in
+      childForcesBreak
+    | IfBreaks ({yes = trueDoc; no = falseDoc} as ib) ->
+      let falseForceBreak = walk falseDoc in
+      if falseForceBreak then (
+        let _ = walk trueDoc in
+        ib.broken <- true;
+        true)
+      else
+        let forceBreak = walk trueDoc in
+        forceBreak
+    | Group ({shouldBreak = forceBreak; doc = children} as gr) ->
+      let childForcesBreak = walk children in
+      let shouldBreak = forceBreak || childForcesBreak in
+      gr.shouldBreak <- shouldBreak;
+      shouldBreak
+    | Concat children ->
+      List.fold_left
+        (fun forceBreak child ->
+          let childForcesBreak = walk child in
+          forceBreak || childForcesBreak)
+        false children
+    | CustomLayout _children ->
+      (* When using CustomLayout, we don't want to propagate forced breaks
+       * from the children up. By definition it picks the first layout that fits
+       * otherwise it takes the last of the list.
+       * However we do want to propagate forced breaks in the sublayouts. They
+       * might need to be broken. We just don't propagate them any higher here *)
+      (* walking through all variation is a serious performance hit. Since we\
+       * don't intend to propagate break up from these variations, we might as
+       * well stop here for now, and later when a variation is chosen, call
+       * this function on that variation alone. *)
+      false
+  in
+  let _ = walk doc in
+  ()
 (* See documentation in interface file *)
 let rec willBreak doc =
   match doc with
@@ -137,6 +181,7 @@ let fits w stack =
   calculateAll stack
 
 let toString ~width doc =
+  propagateForcedBreaks doc;
   let buffer = MiniBuffer.create 1000 in
 
   let rec process ~pos lineSuffices stack =
@@ -203,7 +248,8 @@ let toString ~width doc =
             else findGroupThatFits docs
         in
         let doc = findGroupThatFits docs in
-        process ~pos lineSuffices ((ind, Flat, doc) :: rest))
+        (propagateForcedBreaks doc;
+          process ~pos lineSuffices ((ind, Flat, doc) :: rest)))
     | [] -> (
       match lineSuffices with
       | [] -> ()
