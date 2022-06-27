@@ -1430,15 +1430,15 @@ and printLabelDeclaration (ld : Parsetree.label_declaration) cmtTbl =
     let doc = printIdentLike ld.pld_name.txt in
     printComments doc cmtTbl ld.pld_name.loc
   in
-  let optional = printOptionalLabel ld.pld_type.ptyp_attributes in
+  let optional = printOptionalLabel ld.pld_attributes in
   Doc.group
     (Doc.concat
        [
          attrs;
          mutableFlag;
          name;
-         Doc.text ": ";
          optional;
+         Doc.text ": ";
          printTypExpr ld.pld_type cmtTbl;
        ])
 

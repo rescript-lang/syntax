@@ -170,10 +170,6 @@ let makePatternOptional ~optional (p : Parsetree.pattern) =
   if optional then {p with ppat_attributes = optionalAttr :: p.ppat_attributes}
   else p
 
-let makeTypeOptional ~optional (t : Parsetree.core_type) =
-  if optional then {t with ptyp_attributes = optionalAttr :: t.ptyp_attributes}
-  else t
-
 let suppressFragileMatchWarningAttr =
   ( Location.mknoloc "warning",
     Parsetree.PStr
@@ -4292,32 +4288,20 @@ and parseFieldDeclarationRegion p =
   | Lident _ ->
     let lident, loc = parseLident p in
     let name = Location.mkloc lident loc in
+    let optional = parseOptionalLabel p in
     let typ =
       match p.Parser.token with
       | Colon ->
         Parser.next p;
-        let optional = parseOptionalLabel p in
-        let t = parsePolyTypeExpr p in
-        makeTypeOptional ~optional t
+        parsePolyTypeExpr p
       | _ ->
-        Ast_helper.Typ.constr ~loc:name.loc {name with txt = Lident name.txt} []
-    in
-    let loc = mkLoc startPos typ.ptyp_loc.loc_end in
-    Some (Ast_helper.Type.field ~attrs ~loc ~mut name typ)
-  | Question -> (
-    Parser.next p;
-    match p.token with
-    | Lident _ ->
-      let lident, loc = parseLident p in
-      let name = Location.mkloc lident loc in
-      let typ =
-        Ast_helper.Typ.constr ~loc:name.loc ~attrs:[optionalAttr]
+        Ast_helper.Typ.constr ~loc:name.loc ~attrs
           {name with txt = Lident name.txt}
           []
-      in
-      let loc = mkLoc startPos typ.ptyp_loc.loc_end in
-      Some (Ast_helper.Type.field ~attrs ~loc ~mut name typ)
-    | _ -> None)
+    in
+    let loc = mkLoc startPos typ.ptyp_loc.loc_end in
+    let attrs = if optional then optionalAttr :: attrs else attrs in
+    Some (Ast_helper.Type.field ~attrs ~loc ~mut name typ)
   | _ -> None
 
 (* record-decl ::=

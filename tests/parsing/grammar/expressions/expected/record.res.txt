@@ -32,6 +32,9 @@ let _ =
       z = (((None : tt))[@ns.optional ]) } -> 11
   | { name = ((name)[@ns.optional ]); x = 3 } -> 42
   | { name = ((name)[@ns.optional ]); x = 3 } -> 4242
+type nonrec tt = {
+  x: int ;
+  y: string [@ns.opttinal ]}
 type nonrec ttt = {
   x: int ;
-  y: ((string)[@ns.optional ]) }
+  y: string [@ns.optional ]}
