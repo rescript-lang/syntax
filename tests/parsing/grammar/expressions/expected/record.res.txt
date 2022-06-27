@@ -21,6 +21,7 @@ let r =
 let z name = { name = ((name)[@optional ]); x = 3 }
 let z name = { name = ((name)[@optional ]); x = 3 }
 let z name = { name; x = ((x)[@optional ]) }
+let zz name = { name; x = ((x)[@ns.optional ]) }
 let _ =
   match z with
   | { x = ((None)[@optional ]); y = ((None)[@optional ]);

@@ -2959,6 +2959,23 @@ and parseRecordExprRow p =
         | _ -> value
       in
       Some (field, value))
+  | Question -> (
+    Parser.next p;
+    match p.Parser.token with
+    | Lident _ | Uident _ ->
+      let startToken = p.token in
+      let field = parseValuePath p in
+      let value = Ast_helper.Exp.ident ~loc:field.loc ~attrs field in
+      let value =
+        match startToken with
+        | Uident _ -> removeModuleNameFromPunnedFieldValue value
+        | _ -> value
+      in
+      Some
+        ( field,
+          {value with pexp_attributes = optionalAttr :: value.pexp_attributes}
+        )
+    | _ -> None)
   | _ -> None
 
 and parseRecordExprWithStringKeys ~startPos firstRow p =

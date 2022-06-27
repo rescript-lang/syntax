@@ -32,6 +32,8 @@ let z = name => { @optional name, x: 3}
 
 let z = name => { name, @optional x }
 
+let zz = name => { name, ? x }
+
 let _ = switch z {
   | {x: @optional None, y: @optional None, z: @optional (None:tt)} => 11
   | {name:  @optional name, x: 3} => 42
