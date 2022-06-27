@@ -2893,7 +2893,7 @@ and parseBracedOrRecordExpr p =
     let braces = makeBracesAttr loc in
     {expr with pexp_attributes = braces :: expr.pexp_attributes}
 
-and parseRecordRowWithStringKey p =
+and parseRecordExprRowWithStringKey p =
   match p.Parser.token with
   | String s -> (
     let loc = mkLoc p.startPos p.endPos in
@@ -2907,7 +2907,7 @@ and parseRecordRowWithStringKey p =
     | _ -> Some (field, Ast_helper.Exp.ident ~loc:field.loc field))
   | _ -> None
 
-and parseRecordRow p =
+and parseRecordExprRow p =
   let () =
     match p.Parser.token with
     | Token.DotDotDot ->
@@ -2938,7 +2938,7 @@ and parseRecordExprWithStringKeys ~startPos firstRow p =
   let rows =
     firstRow
     :: parseCommaDelimitedRegion ~grammar:Grammar.RecordRowsStringKey
-         ~closing:Rbrace ~f:parseRecordRowWithStringKey p
+         ~closing:Rbrace ~f:parseRecordExprRowWithStringKey p
   in
   let loc = mkLoc startPos p.endPos in
   let recordStrExpr =
@@ -2950,7 +2950,7 @@ and parseRecordExprWithStringKeys ~startPos firstRow p =
 and parseRecordExpr ~startPos ?(spread = None) rows p =
   let exprs =
     parseCommaDelimitedRegion ~grammar:Grammar.RecordRows ~closing:Rbrace
-      ~f:parseRecordRow p
+      ~f:parseRecordExprRow p
   in
   let rows = List.concat [rows; exprs] in
   let () =
