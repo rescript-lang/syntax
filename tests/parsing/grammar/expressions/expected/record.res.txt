@@ -16,14 +16,14 @@ let r =
   {
     x = ((None)[@optional ]);
     y = ((None)[@optional ]);
-    z = ((None)[@optional ])
+    z = (((None : tt))[@optional ])
   }
 let z name = { name = ((name)[@optional ]); x = 3 }
 let z name = { name = ((name)[@optional ]); x = 3 }
 let z name = { name; x = ((x)[@optional ]) }
 let _ =
   match z with
-  | { x = ((None)[@optional ]); y = ((None)[@optional ]);
-      z = ((None)[@optional ]) } -> 11
+  | { x = ((None)[@optional ]); y = ((None)[@optional ]); z = (None : tt) }
+      -> 11
   | { name = ((name)[@optional ]); x = 3 } -> 42
   | { name = ((name)[@optional ]); x = 3 } -> 4242
