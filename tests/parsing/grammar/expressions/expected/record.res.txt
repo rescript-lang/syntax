@@ -24,3 +24,4 @@ let _ =
   | { x = ((None)[@optional ]); y = ((None)[@optional ]);
       z = ((None)[@optional ]) } -> 11
   | { name = ((name)[@optional ]); x = 3 } -> 42
+  | { name = ((name)[@optional ]); x = 3 } -> 4242

@@ -1206,7 +1206,7 @@ and parseConstrainedPatternRegion p =
  *	 | field , _
  *	 | field , _,
  *)
-and parseRecordPatternRowField p =
+and parseRecordPatternRowField ~attrs p =
   let label = parseValuePath p in
   let pattern =
     match p.Parser.token with
@@ -1214,18 +1214,20 @@ and parseRecordPatternRowField p =
       Parser.next p;
       parsePattern p
     | _ ->
-      Ast_helper.Pat.var ~loc:label.loc
+      Ast_helper.Pat.var ~loc:label.loc ~attrs
         (Location.mkloc (Longident.last label.txt) label.loc)
   in
   (label, pattern)
 
 (* TODO: there are better representations than PatField|Underscore ? *)
 and parseRecordPatternRow p =
+  let attrs = parseAttributes p in
   match p.Parser.token with
   | DotDotDot ->
     Parser.next p;
-    Some (true, PatField (parseRecordPatternRowField p))
-  | Uident _ | Lident _ -> Some (false, PatField (parseRecordPatternRowField p))
+    Some (true, PatField (parseRecordPatternRowField ~attrs p))
+  | Uident _ | Lident _ ->
+    Some (false, PatField (parseRecordPatternRowField ~attrs p))
   | Underscore ->
     Parser.next p;
     Some (false, PatUnderscore)
