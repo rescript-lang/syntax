@@ -16,18 +16,18 @@ let r =
   {
     x = ((None)[@ns.optional ]);
     y = ((None)[@ns.optional ]);
-    z = (((None : tt))[@optional ])
+    z = (((None : tt))[@ns.optional ])
   }
-let z name = { name = ((name)[@optional ]); x = 3 }
 let z name = { name = ((name)[@ns.optional ]); x = 3 }
-let z name = { name; x = ((x)[@optional ]) }
+let z name = { name = ((name)[@ns.optional ]); x = 3 }
+let z name = { name; x = ((x)[@ns.optional ]) }
 let zz name = { name; x = ((x)[@ns.optional ]) }
 let _ =
   match z with
-  | { x = ((None)[@optional ]); y = ((None)[@optional ]);
-      z = (((None : tt))[@optional ]) } -> 11
-  | { name = ((name)[@optional ]); x = 3 } -> 42
-  | { name = ((name)[@optional ]); x = 3 } -> 4242
+  | { x = ((None)[@ns.optional ]); y = ((None)[@ns.optional ]);
+      z = (((None : tt))[@ns.optional ]) } -> 11
+  | { name = ((name)[@ns.optional ]); x = 3 } -> 42
+  | { name = ((name)[@ns.optional ]); x = 3 } -> 4242
   | { x = ((None)[@ns.optional ]); y = ((None)[@ns.optional ]);
       z = (((None : tt))[@ns.optional ]) } -> 11
   | { name = ((name)[@ns.optional ]); x = 3 } -> 42
