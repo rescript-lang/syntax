@@ -19,7 +19,7 @@ let r =
     z = (((None : tt))[@optional ])
   }
 let z name = { name = ((name)[@optional ]); x = 3 }
-let z name = { name = ((name)[@optional ]); x = 3 }
+let z name = { name = ((name)[@ns.optional ]); x = 3 }
 let z name = { name; x = ((x)[@optional ]) }
 let zz name = { name; x = ((x)[@ns.optional ]) }
 let _ =
