@@ -24,7 +24,7 @@ let r = {...expr, pexp_attributes: [],} // trailing comma
 let r = {...make() : myRecord, foo: bar}
 let r = {...(make() : myRecord), foo: bar} // parens optional
 
-let r = {x: @optional None, y: ?None, z: @optional (None:tt)}
+let r = {x: ? None, y: ?None, z: @optional (None:tt)}
 
 let z = name => { name : @optional name, x: 3}
 

@@ -2801,7 +2801,9 @@ and parseBracedOrRecordExpr p =
         expr
       | Colon -> (
         Parser.next p;
+        let optional = parseOptionalLabel p in
         let fieldExpr = parseExpr p in
+        let fieldExpr = makeExpressionOptional ~optional fieldExpr in
         match p.token with
         | Rbrace ->
           Parser.next p;

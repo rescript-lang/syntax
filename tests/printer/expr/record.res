@@ -64,7 +64,7 @@ let r = {
 }
 let r = {a /* a */, b /* b */}
 
-let r = {x: @optional None, y: ?None, z: @optional (None:tt)}
+let r = {x: ? None, y: ?None, z: @optional (None:tt)}
 
 let z = name => { name : @optional name, x: 3}
 
