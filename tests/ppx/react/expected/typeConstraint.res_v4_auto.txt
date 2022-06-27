@@ -1,4 +1,4 @@
-type props<'a, 'b> = {@optional key: string, a: 'a, b: 'b}
+type props<'a, 'b> = {key?: string, a: 'a, b: 'b}
 let make: 'a. (~a: 'a, ~b: 'a, 'a) => React.element = (_: props<'a, 'b>, type a): (
   (~a: a, ~b: a, a) => React.element
 ) => (~a, ~b, _) => ReactDOMRe.createDOMElementVariadic("div", [])
