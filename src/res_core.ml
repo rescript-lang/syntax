@@ -1202,6 +1202,14 @@ and parseConstrainedPatternRegion p =
   | token when Grammar.isPatternStart token -> Some (parseConstrainedPattern p)
   | _ -> None
 
+and parseOptionaPattern p =
+  match p.Parser.token with
+  | Question ->
+    Parser.next p;
+    let pat = parsePattern p in
+    {pat with ppat_attributes = optionalAttr :: pat.ppat_attributes}
+  | _ -> parsePattern p
+
 (* field ::=
  *   | longident
  *   | longident : pattern
@@ -1218,7 +1226,7 @@ and parseRecordPatternRowField ~attrs p =
     match p.Parser.token with
     | Colon ->
       Parser.next p;
-      parsePattern p
+      parseOptionaPattern p
     | _ ->
       Ast_helper.Pat.var ~loc:label.loc ~attrs
         (Location.mkloc (Longident.last label.txt) label.loc)
@@ -1234,6 +1242,18 @@ and parseRecordPatternRow p =
     Some (true, PatField (parseRecordPatternRowField ~attrs p))
   | Uident _ | Lident _ ->
     Some (false, PatField (parseRecordPatternRowField ~attrs p))
+  | Question -> (
+    Parser.next p;
+    match p.token with
+    | Uident _ | Lident _ ->
+      let lid, pat = parseRecordPatternRowField ~attrs p in
+      Some
+        ( false,
+          PatField
+            ( lid,
+              {pat with ppat_attributes = optionalAttr :: pat.ppat_attributes}
+            ) )
+    | _ -> None)
   | Underscore ->
     Parser.next p;
     Some (false, PatUnderscore)

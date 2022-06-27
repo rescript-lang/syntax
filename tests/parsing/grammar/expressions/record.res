@@ -38,4 +38,7 @@ let _ = switch z {
   | {x: @optional None, y: @optional None, z: @optional (None:tt)} => 11
   | {name:  @optional name, x: 3} => 42
   | {@optional name, x: 3} => 4242
+  | {x: ? None, y: ? None, z: ? (None:tt)} => 11
+  | {name: ? name, x: 3} => 42
+  | {? name, x: 3} => 4242
 }
