@@ -2910,6 +2910,7 @@ and parseRecordExprRowWithStringKey p =
   | _ -> None
 
 and parseRecordExprRow p =
+  let attrs = parseAttributes p in
   let () =
     match p.Parser.token with
     | Token.DotDotDot ->
@@ -2927,7 +2928,7 @@ and parseRecordExprRow p =
       let fieldExpr = parseExpr p in
       Some (field, fieldExpr)
     | _ ->
-      let value = Ast_helper.Exp.ident ~loc:field.loc field in
+      let value = Ast_helper.Exp.ident ~loc:field.loc ~attrs field in
       let value =
         match startToken with
         | Uident _ -> removeModuleNameFromPunnedFieldValue value
