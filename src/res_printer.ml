@@ -2345,14 +2345,28 @@ and printPatternRecordRow row cmtTbl =
       {Parsetree.ppat_desc = Ppat_var {txt; _}; ppat_attributes} )
     when ident = txt ->
     Doc.concat
-      [printAttributes ppat_attributes cmtTbl; printLidentPath longident cmtTbl]
+      [
+        (if Res_parsetree_viewer.hasOptionalAttribute ppat_attributes then
+         Doc.text "?"
+        else Doc.nil);
+        printAttributes ppat_attributes cmtTbl;
+        printLidentPath longident cmtTbl;
+      ]
   | longident, pattern ->
     let locForComments =
       {longident.loc with loc_end = pattern.Parsetree.ppat_loc.loc_end}
     in
     let rhsDoc =
       let doc = printPattern pattern cmtTbl in
-      if Parens.patternRecordRowRhs pattern then addParens doc else doc
+      let doc =
+        if Parens.patternRecordRowRhs pattern then addParens doc else doc
+      in
+      let doc =
+        if Res_parsetree_viewer.hasOptionalAttribute pattern.ppat_attributes
+        then Doc.concat [Doc.text "?"; doc]
+        else doc
+      in
+      doc
     in
     let doc =
       Doc.group
