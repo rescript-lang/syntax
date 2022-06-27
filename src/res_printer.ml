@@ -1426,10 +1426,20 @@ and printLabelDeclaration (ld : Parsetree.label_declaration) cmtTbl =
     let doc = printIdentLike ld.pld_name.txt in
     printComments doc cmtTbl ld.pld_name.loc
   in
+  let optional =
+    if Res_parsetree_viewer.hasOptionalAttribute ld.pld_type.ptyp_attributes
+    then Doc.text "?"
+    else Doc.nil
+  in
   Doc.group
     (Doc.concat
        [
-         attrs; mutableFlag; name; Doc.text ": "; printTypExpr ld.pld_type cmtTbl;
+         attrs;
+         mutableFlag;
+         name;
+         Doc.text ": ";
+         optional;
+         printTypExpr ld.pld_type cmtTbl;
        ])
 
 and printTypExpr (typExpr : Parsetree.core_type) cmtTbl =

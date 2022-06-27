@@ -42,3 +42,5 @@ let _ = switch z {
   | {name: ? name, x: 3} => 42
   | {? name, x: 3} => 4242
 }
+
+type ttt = {x:int, y: ?string}

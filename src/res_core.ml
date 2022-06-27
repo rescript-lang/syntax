@@ -4292,12 +4292,36 @@ and parseFieldDeclarationRegion p =
       match p.Parser.token with
       | Colon ->
         Parser.next p;
-        parsePolyTypeExpr p
+        let isOptional =
+          match p.token with
+          | Question ->
+            Parser.next p;
+            true
+          | _ -> false
+        in
+        let t = parsePolyTypeExpr p in
+        if isOptional then
+          {t with ptyp_attributes = optionalAttr :: t.ptyp_attributes}
+        else t
       | _ ->
         Ast_helper.Typ.constr ~loc:name.loc {name with txt = Lident name.txt} []
     in
     let loc = mkLoc startPos typ.ptyp_loc.loc_end in
     Some (Ast_helper.Type.field ~attrs ~loc ~mut name typ)
+  | Question -> (
+    Parser.next p;
+    match p.token with
+    | Lident _ ->
+      let lident, loc = parseLident p in
+      let name = Location.mkloc lident loc in
+      let typ =
+        Ast_helper.Typ.constr ~loc:name.loc ~attrs:[optionalAttr]
+          {name with txt = Lident name.txt}
+          []
+      in
+      let loc = mkLoc startPos typ.ptyp_loc.loc_end in
+      Some (Ast_helper.Type.field ~attrs ~loc ~mut name typ)
+    | _ -> None)
   | _ -> None
 
 (* record-decl ::=
