@@ -33,7 +33,7 @@ let getLabel str =
 
 let optionIdent = Lident "option"
 
-let optionalAttr = [({txt = "optional"; loc = Location.none}, PStr [])]
+let optionalAttr = [({txt = "ns.optional"; loc = Location.none}, PStr [])]
 
 let constantString ~loc str =
   Ast_helper.Exp.constant ~loc (Pconst_string (str, None))

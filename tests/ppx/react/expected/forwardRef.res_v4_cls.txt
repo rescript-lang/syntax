@@ -1,9 +1,9 @@
 module FancyInput = {
   type props<'className, 'children> = {
-    @optional key: string,
-    @optional className: 'className,
+    key?: string,
+    className?: 'className,
     children: 'children,
-    @optional ref: ReactDOM.Ref.currentDomRef,
+    ref?: ReactDOM.Ref.currentDomRef,
   }
   let make = ({className, children, ref}: props<'className, 'children>) => {
     let ref = Js.Nullable.fromOption(ref)
@@ -28,11 +28,11 @@ module FancyInput = {
   }
   let make = React.forwardRef({
     let \"ForwardRef$FancyInput" = (props: props<_>, ref) =>
-      make({...props, ref: @optional Js.Nullable.toOption(ref)})
+      make({...props, ref: ?Js.Nullable.toOption(ref)})
     \"ForwardRef$FancyInput"
   })
 }
-type props = {@optional key: string}
+type props = {key?: string}
 
 let make = (_: props) => {
   let input = React.useRef(Js.Nullable.null)
