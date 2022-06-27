@@ -1202,13 +1202,12 @@ and parseConstrainedPatternRegion p =
   | token when Grammar.isPatternStart token -> Some (parseConstrainedPattern p)
   | _ -> None
 
-and parseOptionaPattern p =
+and parseOptionalLabel p =
   match p.Parser.token with
   | Question ->
     Parser.next p;
-    let pat = parsePattern p in
-    {pat with ppat_attributes = optionalAttr :: pat.ppat_attributes}
-  | _ -> parsePattern p
+    true
+  | _ -> false
 
 (* field ::=
  *   | longident
@@ -1226,7 +1225,11 @@ and parseRecordPatternRowField ~attrs p =
     match p.Parser.token with
     | Colon ->
       Parser.next p;
-      parseOptionaPattern p
+      let optional = parseOptionalLabel p in
+      let pat = parsePattern p in
+      if optional then
+        {pat with ppat_attributes = optionalAttr :: pat.ppat_attributes}
+      else pat
     | _ ->
       Ast_helper.Pat.var ~loc:label.loc ~attrs
         (Location.mkloc (Longident.last label.txt) label.loc)
@@ -2945,14 +2948,6 @@ and parseRecordExprRowWithStringKey p =
     | _ -> Some (field, Ast_helper.Exp.ident ~loc:field.loc field))
   | _ -> None
 
-and parseOptionalExpression p =
-  match p.Parser.token with
-  | Token.Question ->
-    Parser.next p;
-    let e = parseExpr p in
-    {e with pexp_attributes = optionalAttr :: e.pexp_attributes}
-  | _ -> parseExpr p
-
 and parseRecordExprRow p =
   let attrs = parseAttributes p in
   let () =
@@ -2969,7 +2964,16 @@ and parseRecordExprRow p =
     match p.Parser.token with
     | Colon ->
       Parser.next p;
-      let fieldExpr = parseOptionalExpression p in
+      let optional = parseOptionalLabel p in
+      let fieldExpr = parseExpr p in
+      let fieldExpr =
+        if optional then
+          {
+            fieldExpr with
+            pexp_attributes = optionalAttr :: fieldExpr.pexp_attributes;
+          }
+        else fieldExpr
+      in
       Some (field, fieldExpr)
     | _ ->
       let value = Ast_helper.Exp.ident ~loc:field.loc ~attrs field in
