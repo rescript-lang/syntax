@@ -1206,7 +1206,7 @@ and parseConstrainedPatternRegion p =
  *	 | field , _
  *	 | field , _,
  *)
-and parseRecordPatternField p =
+and parseRecordPatternRowField p =
   let label = parseValuePath p in
   let pattern =
     match p.Parser.token with
@@ -1224,8 +1224,8 @@ and parseRecordPatternRow p =
   match p.Parser.token with
   | DotDotDot ->
     Parser.next p;
-    Some (true, PatField (parseRecordPatternField p))
-  | Uident _ | Lident _ -> Some (false, PatField (parseRecordPatternField p))
+    Some (true, PatField (parseRecordPatternRowField p))
+  | Uident _ | Lident _ -> Some (false, PatField (parseRecordPatternRowField p))
   | Underscore ->
     Parser.next p;
     Some (false, PatUnderscore)
