@@ -161,7 +161,7 @@ let jsxAttr = (Location.mknoloc "JSX", Parsetree.PStr [])
 let uncurryAttr = (Location.mknoloc "bs", Parsetree.PStr [])
 let ternaryAttr = (Location.mknoloc "ns.ternary", Parsetree.PStr [])
 let ifLetAttr = (Location.mknoloc "ns.iflet", Parsetree.PStr [])
-let optionalAttr = (Location.mknoloc "optional", Parsetree.PStr [])
+let optionalAttr = (Location.mknoloc "ns.optional", Parsetree.PStr [])
 
 let suppressFragileMatchWarningAttr =
   ( Location.mknoloc "warning",
