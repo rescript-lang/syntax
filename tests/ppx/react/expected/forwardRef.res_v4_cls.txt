@@ -5,7 +5,7 @@ module FancyInput = {
     children: 'children,
     ref?: ReactDOM.Ref.currentDomRef,
   }
-  let make = ({className, children, ref}: props<'className, 'children>) => {
+  let make = ({?className, children, ref, _}: props<'className, 'children>) => {
     let ref = Js.Nullable.fromOption(ref)
     let _ = ref
 

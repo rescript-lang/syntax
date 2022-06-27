@@ -1,5 +1,5 @@
 type props<'a, 'b> = {key?: string, a: 'a, b: 'b}
-let make = ({a, b}: props<'a, 'b>) => {
+let make = ({a, b, _}: props<'a, 'b>) => {
   Js.log("This function should be named 'TopLevel.react'")
   ReactDOMRe.createDOMElementVariadic("div", [])
 }
