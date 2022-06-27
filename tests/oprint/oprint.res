@@ -360,6 +360,4 @@ type call = CleanStart
 
 let f = (~a=1, ()) => 1
 
-type opt0 = {x:int, @optional y: option<string>}
-
 type opt = {x:int, @ns.optional y: option<string>}
