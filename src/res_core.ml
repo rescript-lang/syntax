@@ -2771,6 +2771,10 @@ and parseBracedOrRecordExpr p =
         let loc = mkLoc startPos p.prevEndPos in
         let braces = makeBracesAttr loc in
         {expr with pexp_attributes = braces :: expr.pexp_attributes}))
+  | Question ->
+    let expr = parseRecordExpr ~startPos [] p in
+    Parser.expect Rbrace p;
+    expr
   | Uident _ | Lident _ -> (
     let startToken = p.token in
     let valueOrConstructor = parseValueOrConstructor p in
