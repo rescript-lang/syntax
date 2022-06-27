@@ -14,7 +14,7 @@ let r = { (make () : myRecord) with foo = bar }
 let r = { (make () : myRecord) with foo = bar }
 let r =
   {
-    x = ((None)[@optional ]);
+    x = ((None)[@ns.optional ]);
     y = ((None)[@ns.optional ]);
     z = (((None : tt))[@optional ])
   }
