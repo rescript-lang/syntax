@@ -1047,14 +1047,10 @@ let transformComponentDefinition nestedModules mapper structure returnStructures
           | Pexp_fun (arg_label, _default, {ppat_loc}, expr) ->
             if isLabelled arg_label || isOptional arg_label then
               returnedExpression
-                ((if isOptional arg_label then
-                  (* { name: @optional name } *)
-                  ( {loc = ppat_loc; txt = Lident (getLabel arg_label)},
-                    Pat.var ~attrs:optionalAttr
-                      {txt = getLabel arg_label; loc = ppat_loc} )
-                 else
-                   ( {loc = ppat_loc; txt = Lident (getLabel arg_label)},
-                     Pat.var {txt = getLabel arg_label; loc = ppat_loc} ))
+                (( {loc = ppat_loc; txt = Lident (getLabel arg_label)},
+                   Pat.var
+                     ~attrs:(if isOptional arg_label then optionalAttr else [])
+                     {txt = getLabel arg_label; loc = ppat_loc} )
                 :: patterns)
                 expr
             else returnedExpression patterns expr
