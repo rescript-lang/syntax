@@ -985,8 +985,20 @@ let transformComponentDefinition nestedModules mapper structure returnStructures
           | Pexp_fun (arg_label, _default, {ppat_loc}, expr) ->
             if isLabelled arg_label || isOptional arg_label then
               returnedExpression
-                (( {loc = ppat_loc; txt = Lident (getLabel arg_label)},
-                   Pat.var {txt = getLabel arg_label; loc = ppat_loc} )
+                ((if isOptional arg_label then
+                  (* { name: @optional name } *)
+                  ( {loc = ppat_loc; txt = Lident (getLabel arg_label)},
+                    Pat.constraint_
+                      (Pat.var {txt = getLabel arg_label; loc = ppat_loc})
+                      (Typ.constr ~attrs:optionalAttr
+                         {
+                           txt = Lident (getLabel arg_label);
+                           loc = Location.none;
+                         }
+                         []) )
+                 else
+                   ( {loc = ppat_loc; txt = Lident (getLabel arg_label)},
+                     Pat.var {txt = getLabel arg_label; loc = ppat_loc} ))
                 :: patterns)
                 expr
             else returnedExpression patterns expr
@@ -1005,7 +1017,7 @@ let transformComponentDefinition nestedModules mapper structure returnStructures
         let pattern =
           match patternsWithLid with
           | [] -> Pat.any ()
-          | _ -> Pat.record patternsWithLid Closed
+          | _ -> Pat.record patternsWithLid Open
         in
         (* add patttern matching for optional prop value *)
         let expression =
