@@ -2342,9 +2342,10 @@ and printPatternRecordRow row cmtTbl =
   match row with
   (* punned {x}*)
   | ( ({Location.txt = Longident.Lident ident} as longident),
-      {Parsetree.ppat_desc = Ppat_var {txt; _}} )
+      {Parsetree.ppat_desc = Ppat_var {txt; _}; ppat_attributes} )
     when ident = txt ->
-    printLidentPath longident cmtTbl
+    Doc.concat
+      [printAttributes ppat_attributes cmtTbl; printLidentPath longident cmtTbl]
   | longident, pattern ->
     let locForComments =
       {longident.loc with loc_end = pattern.Parsetree.ppat_loc.loc_end}
@@ -4646,7 +4647,11 @@ and printRecordRow (lbl, expr) cmtTbl punningAllowed =
       | Pexp_ident {txt = Lident key; loc = _keyLoc}
         when punningAllowed && Longident.last lbl.txt = key ->
         (* print punned field *)
-        printLidentPath lbl cmtTbl
+        Doc.concat
+          [
+            printAttributes expr.pexp_attributes cmtTbl;
+            printLidentPath lbl cmtTbl;
+          ]
       | _ ->
         Doc.concat
           [
