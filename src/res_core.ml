@@ -161,6 +161,8 @@ let jsxAttr = (Location.mknoloc "JSX", Parsetree.PStr [])
 let uncurryAttr = (Location.mknoloc "bs", Parsetree.PStr [])
 let ternaryAttr = (Location.mknoloc "ns.ternary", Parsetree.PStr [])
 let ifLetAttr = (Location.mknoloc "ns.iflet", Parsetree.PStr [])
+let optionalAttr = (Location.mknoloc "optional", Parsetree.PStr [])
+
 let suppressFragileMatchWarningAttr =
   ( Location.mknoloc "warning",
     Parsetree.PStr
@@ -2923,6 +2925,14 @@ and parseRecordExprRowWithStringKey p =
     | _ -> Some (field, Ast_helper.Exp.ident ~loc:field.loc field))
   | _ -> None
 
+and parseOptionalExpression p =
+  match p.Parser.token with
+  | Token.Question ->
+    Parser.next p;
+    let e = parseExpr p in
+    {e with pexp_attributes = optionalAttr :: e.pexp_attributes}
+  | _ -> parseExpr p
+
 and parseRecordExprRow p =
   let attrs = parseAttributes p in
   let () =
@@ -2939,7 +2949,7 @@ and parseRecordExprRow p =
     match p.Parser.token with
     | Colon ->
       Parser.next p;
-      let fieldExpr = parseExpr p in
+      let fieldExpr = parseOptionalExpression p in
       Some (field, fieldExpr)
     | _ ->
       let value = Ast_helper.Exp.ident ~loc:field.loc ~attrs field in
