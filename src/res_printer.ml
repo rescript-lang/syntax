@@ -4651,6 +4651,9 @@ and printExpressionRecordRow (lbl, expr) cmtTbl punningAllowed =
         Doc.concat
           [
             printAttributes expr.pexp_attributes cmtTbl;
+            (if Res_parsetree_viewer.hasOptionalAttribute expr.pexp_attributes
+            then Doc.text "?"
+            else Doc.nil);
             printLidentPath lbl cmtTbl;
           ]
       | _ ->
