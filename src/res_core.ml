@@ -1032,7 +1032,11 @@ let rec parsePattern ?(alias = true) ?(or_ = true) p =
         | _ ->
           Parser.expect Rparen p;
           let loc = mkLoc startPos p.prevEndPos in
-          {pat with ppat_loc = loc}))
+          {
+            pat with
+            ppat_loc = loc;
+            ppat_attributes = attrs @ pat.Parsetree.ppat_attributes;
+          }))
     | Lbracket -> parseArrayPattern ~attrs p
     | Lbrace -> parseRecordPattern ~attrs p
     | Underscore ->
