@@ -1,6 +1,6 @@
 type props<'a, 'b, 'c> = {key?: string, a: 'a, b: 'b, c: 'c}
 let make = (_: props<'a, 'b, 'c>, type a, ~a: a, ~b: array<option<[#Foo(a)]>>, ~c: 'a, _) =>
-  ReactDOMRe.createDOMElementVariadic("div", [])
+  Js.React.jsxDom("div", {key: ?None})
 let make = {
   let \"Newtype" = (props: props<_>) => make(props)
   \"Newtype"
