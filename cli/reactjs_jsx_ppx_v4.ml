@@ -988,14 +988,8 @@ let transformComponentDefinition nestedModules mapper structure returnStructures
                 ((if isOptional arg_label then
                   (* { name: @optional name } *)
                   ( {loc = ppat_loc; txt = Lident (getLabel arg_label)},
-                    Pat.constraint_
-                      (Pat.var {txt = getLabel arg_label; loc = ppat_loc})
-                      (Typ.constr ~attrs:optionalAttr
-                         {
-                           txt = Lident (getLabel arg_label);
-                           loc = Location.none;
-                         }
-                         []) )
+                    Pat.var ~attrs:optionalAttr
+                      {txt = getLabel arg_label; loc = ppat_loc} )
                  else
                    ( {loc = ppat_loc; txt = Lident (getLabel arg_label)},
                      Pat.var {txt = getLabel arg_label; loc = ppat_loc} ))
