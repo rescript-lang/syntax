@@ -19,6 +19,7 @@ let r =
     z = ((None)[@optional ])
   }
 let z name = { name = ((name)[@optional ]); x = 3 }
+let z name = { name = ((name)[@optional ]); x = 3 }
 let z name = { name; x = ((x)[@optional ]) }
 let _ =
   match z with
