@@ -1,8 +1,8 @@
 module Bar = {
   type props<'a, 'b> = {key?: string, a: 'a, b: 'b}
-  let make = ({a, b}: props<'a, 'b>) => {
+  let make = ({a, b, _}: props<'a, 'b>) => {
     Js.log("This function should be named `InnerModule.react$Bar`")
-    ReactDOMRe.createDOMElementVariadic("div", [])
+    Js.React.jsxDom("div", {key: ?None})
   }
   let make = {
     let \"InnerModule$Bar" = (props: props<_>) => make(props)
@@ -10,9 +10,9 @@ module Bar = {
   }
   type props<'a, 'b> = {key?: string, a: 'a, b: 'b}
 
-  let component = ({a, b}: props<'a, 'b>) => {
+  let component = ({a, b, _}: props<'a, 'b>) => {
     Js.log("This function should be named `InnerModule.react$Bar$component`")
-    ReactDOMRe.createDOMElementVariadic("div", [])
+    Js.React.jsxDom("div", {key: ?None})
   }
   let component = {
     let \"InnerModule$Bar$component" = (props: props<_>) => make(props)
