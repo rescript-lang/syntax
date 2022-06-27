@@ -163,6 +163,17 @@ let ternaryAttr = (Location.mknoloc "ns.ternary", Parsetree.PStr [])
 let ifLetAttr = (Location.mknoloc "ns.iflet", Parsetree.PStr [])
 let optionalAttr = (Location.mknoloc "ns.optional", Parsetree.PStr [])
 
+let makeExpressionOptional ~optional (e : Parsetree.expression) =
+  if optional then {e with pexp_attributes = optionalAttr :: e.pexp_attributes}
+  else e
+let makePatternOptional ~optional (p : Parsetree.pattern) =
+  if optional then {p with ppat_attributes = optionalAttr :: p.ppat_attributes}
+  else p
+
+let makeTypeOptional ~optional (t : Parsetree.core_type) =
+  if optional then {t with ptyp_attributes = optionalAttr :: t.ptyp_attributes}
+  else t
+
 let suppressFragileMatchWarningAttr =
   ( Location.mknoloc "warning",
     Parsetree.PStr
@@ -1227,9 +1238,7 @@ and parseRecordPatternRowField ~attrs p =
       Parser.next p;
       let optional = parseOptionalLabel p in
       let pat = parsePattern p in
-      if optional then
-        {pat with ppat_attributes = optionalAttr :: pat.ppat_attributes}
-      else pat
+      makePatternOptional ~optional pat
     | _ ->
       Ast_helper.Pat.var ~loc:label.loc ~attrs
         (Location.mkloc (Longident.last label.txt) label.loc)
@@ -1250,12 +1259,7 @@ and parseRecordPatternRow p =
     match p.token with
     | Uident _ | Lident _ ->
       let lid, pat = parseRecordPatternRowField ~attrs p in
-      Some
-        ( false,
-          PatField
-            ( lid,
-              {pat with ppat_attributes = optionalAttr :: pat.ppat_attributes}
-            ) )
+      Some (false, PatField (lid, makePatternOptional ~optional:true pat))
     | _ -> None)
   | Underscore ->
     Parser.next p;
@@ -2966,14 +2970,7 @@ and parseRecordExprRow p =
       Parser.next p;
       let optional = parseOptionalLabel p in
       let fieldExpr = parseExpr p in
-      let fieldExpr =
-        if optional then
-          {
-            fieldExpr with
-            pexp_attributes = optionalAttr :: fieldExpr.pexp_attributes;
-          }
-        else fieldExpr
-      in
+      let fieldExpr = makeExpressionOptional ~optional fieldExpr in
       Some (field, fieldExpr)
     | _ ->
       let value = Ast_helper.Exp.ident ~loc:field.loc ~attrs field in
@@ -2995,10 +2992,7 @@ and parseRecordExprRow p =
         | Uident _ -> removeModuleNameFromPunnedFieldValue value
         | _ -> value
       in
-      Some
-        ( field,
-          {value with pexp_attributes = optionalAttr :: value.pexp_attributes}
-        )
+      Some (field, makeExpressionOptional ~optional:true value)
     | _ -> None)
   | _ -> None
 
@@ -4296,17 +4290,9 @@ and parseFieldDeclarationRegion p =
       match p.Parser.token with
       | Colon ->
         Parser.next p;
-        let isOptional =
-          match p.token with
-          | Question ->
-            Parser.next p;
-            true
-          | _ -> false
-        in
+        let optional = parseOptionalLabel p in
         let t = parsePolyTypeExpr p in
-        if isOptional then
-          {t with ptyp_attributes = optionalAttr :: t.ptyp_attributes}
-        else t
+        makeTypeOptional ~optional t
       | _ ->
         Ast_helper.Typ.constr ~loc:name.loc {name with txt = Lident name.txt} []
     in
