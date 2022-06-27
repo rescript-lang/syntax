@@ -4658,6 +4658,9 @@ and printExpressionRecordRow (lbl, expr) cmtTbl punningAllowed =
           [
             printLidentPath lbl cmtTbl;
             Doc.text ": ";
+            (if Res_parsetree_viewer.hasOptionalAttribute expr.pexp_attributes
+            then Doc.text "?"
+            else Doc.nil);
             (let doc = printExpressionWithComments expr cmtTbl in
              match Parens.expr expr with
              | Parens.Parenthesized -> addParens doc
