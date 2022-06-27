@@ -2676,6 +2676,7 @@ and parseJsxChildren p =
 and parseBracedOrRecordExpr p =
   let startPos = p.Parser.startPos in
   Parser.expect Lbrace p;
+  let attrsForFields = parseAttributesForFields p in
   match p.Parser.token with
   | Rbrace ->
     Parser.err p (Diagnostics.unexpected Rbrace p.breadcrumbs);
@@ -2752,7 +2753,16 @@ and parseBracedOrRecordExpr p =
           | _ -> valueOrConstructor
         in
         let expr =
-          parseRecordExpr ~startPos [(pathIdent, valueOrConstructor)] p
+          parseRecordExpr ~startPos
+            [
+              ( pathIdent,
+                {
+                  valueOrConstructor with
+                  pexp_attributes =
+                    attrsForFields @ valueOrConstructor.pexp_attributes;
+                } );
+            ]
+            p
         in
         Parser.expect Rbrace p;
         expr
@@ -6253,8 +6263,28 @@ and parseAttribute p =
           ] )
   | _ -> None
 
+and parseAttributeForFields p =
+  let isAttributeForField p =
+    Parser.lookahead p (function state ->
+        (Parser.next state;
+         match state.token with
+         | Lident ident -> ident = "optional"
+         | _ -> false))
+  in
+  match p.Parser.token with
+  | At when isAttributeForField p ->
+    let startPos = p.startPos in
+    Parser.next p;
+    let attrId = parseAttributeId ~startPos p in
+    let payload = parsePayload p in
+    Some (attrId, payload)
+  | _ -> None
+
 and parseAttributes p =
   parseRegion p ~grammar:Grammar.Attribute ~f:parseAttribute
+
+and parseAttributesForFields p =
+  parseRegion p ~grammar:Grammar.Attribute ~f:parseAttributeForFields
 
 (*
  * standalone-attribute ::=
