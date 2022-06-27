@@ -523,6 +523,10 @@ let printConstant ?(templateLiteral = false) c =
     in
     Doc.text ("'" ^ str ^ "'")
 
+let printOptionalLabel attrs =
+  if Res_parsetree_viewer.hasOptionalAttribute attrs then Doc.text "?"
+  else Doc.nil
+
 let rec printStructure (s : Parsetree.structure) t =
   match s with
   | [] -> printCommentsInside t Location.none
@@ -1426,11 +1430,7 @@ and printLabelDeclaration (ld : Parsetree.label_declaration) cmtTbl =
     let doc = printIdentLike ld.pld_name.txt in
     printComments doc cmtTbl ld.pld_name.loc
   in
-  let optional =
-    if Res_parsetree_viewer.hasOptionalAttribute ld.pld_type.ptyp_attributes
-    then Doc.text "?"
-    else Doc.nil
-  in
+  let optional = printOptionalLabel ld.pld_type.ptyp_attributes in
   Doc.group
     (Doc.concat
        [
@@ -2356,9 +2356,7 @@ and printPatternRecordRow row cmtTbl =
     when ident = txt ->
     Doc.concat
       [
-        (if Res_parsetree_viewer.hasOptionalAttribute ppat_attributes then
-         Doc.text "?"
-        else Doc.nil);
+        printOptionalLabel ppat_attributes;
         printAttributes ppat_attributes cmtTbl;
         printLidentPath longident cmtTbl;
       ]
@@ -2371,12 +2369,7 @@ and printPatternRecordRow row cmtTbl =
       let doc =
         if Parens.patternRecordRowRhs pattern then addParens doc else doc
       in
-      let doc =
-        if Res_parsetree_viewer.hasOptionalAttribute pattern.ppat_attributes
-        then Doc.concat [Doc.text "?"; doc]
-        else doc
-      in
-      doc
+      Doc.concat [printOptionalLabel pattern.ppat_attributes; doc]
     in
     let doc =
       Doc.group
@@ -4675,9 +4668,7 @@ and printExpressionRecordRow (lbl, expr) cmtTbl punningAllowed =
         Doc.concat
           [
             printAttributes expr.pexp_attributes cmtTbl;
-            (if Res_parsetree_viewer.hasOptionalAttribute expr.pexp_attributes
-            then Doc.text "?"
-            else Doc.nil);
+            printOptionalLabel expr.pexp_attributes;
             printLidentPath lbl cmtTbl;
           ]
       | _ ->
@@ -4685,9 +4676,7 @@ and printExpressionRecordRow (lbl, expr) cmtTbl punningAllowed =
           [
             printLidentPath lbl cmtTbl;
             Doc.text ": ";
-            (if Res_parsetree_viewer.hasOptionalAttribute expr.pexp_attributes
-            then Doc.text "?"
-            else Doc.nil);
+            printOptionalLabel expr.pexp_attributes;
             (let doc = printExpressionWithComments expr cmtTbl in
              match Parens.expr expr with
              | Parens.Parenthesized -> addParens doc
