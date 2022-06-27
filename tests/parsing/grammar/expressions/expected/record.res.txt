@@ -12,3 +12,15 @@ let r = { expr with pexp_attributes = [||]; pexp_loc = loc }
 let r = { expr with pexp_attributes = [||] }
 let r = { (make () : myRecord) with foo = bar }
 let r = { (make () : myRecord) with foo = bar }
+let r =
+  {
+    x = ((None)[@optional ]);
+    y = ((None)[@optional ]);
+    z = ((None)[@optional ])
+  }
+let z name = { name = ((name)[@optional ]); x = 3 }
+let _ =
+  match z with
+  | { x = ((None)[@optional ]); y = ((None)[@optional ]);
+      z = ((None)[@optional ]) } -> 11
+  | { name = ((name)[@optional ]); x = 3 } -> 42
