@@ -2717,7 +2717,8 @@ and printExpression (e : Parsetree.expression) cmtTbl =
                     Doc.join
                       ~sep:(Doc.concat [Doc.text ","; Doc.line])
                       (List.map
-                         (fun row -> printRecordRow row cmtTbl punningAllowed)
+                         (fun row ->
+                           printExpressionRecordRow row cmtTbl punningAllowed)
                          rows);
                   ]);
              Doc.trailingComma;
@@ -4639,7 +4640,7 @@ and printDirectionFlag flag =
   | Asttypes.Downto -> Doc.text " downto "
   | Asttypes.Upto -> Doc.text " to "
 
-and printRecordRow (lbl, expr) cmtTbl punningAllowed =
+and printExpressionRecordRow (lbl, expr) cmtTbl punningAllowed =
   let cmtLoc = {lbl.loc with loc_end = expr.pexp_loc.loc_end} in
   let doc =
     Doc.group
