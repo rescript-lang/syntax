@@ -23,3 +23,12 @@ let r = {...expr, pexp_attributes: [],} // trailing comma
 // with type constraint on spread
 let r = {...make() : myRecord, foo: bar}
 let r = {...(make() : myRecord), foo: bar} // parens optional
+
+let r = {x: @optional None, y: @optional None, z: @optional None}
+
+let z = name => { name : @optional name, x: 3}
+
+let _ = switch z {
+  | {x: @optional None, y: @optional None, z: @optional None} => 11
+  | {name:  @optional name, x: 3} => 42
+}
