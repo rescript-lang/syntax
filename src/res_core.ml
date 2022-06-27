@@ -1220,7 +1220,7 @@ and parseRecordPatternField p =
   (label, pattern)
 
 (* TODO: there are better representations than PatField|Underscore ? *)
-and parseRecordPatternItem p =
+and parseRecordPatternRow p =
   match p.Parser.token with
   | DotDotDot ->
     Parser.next p;
@@ -1236,7 +1236,7 @@ and parseRecordPattern ~attrs p =
   Parser.expect Lbrace p;
   let rawFields =
     parseCommaDelimitedReversedList p ~grammar:PatternRecord ~closing:Rbrace
-      ~f:parseRecordPatternItem
+      ~f:parseRecordPatternRow
   in
   Parser.expect Rbrace p;
   let fields, closedFlag =
