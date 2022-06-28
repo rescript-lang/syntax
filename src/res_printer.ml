@@ -4180,11 +4180,12 @@ and printArgumentsWithCallbackInFirstPosition ~uncurried ~customLayout args
             printPexpFun ~customLayout ~inCallback:FitsOnOneLine expr cmtTbl;
           ]
       in
-      let callback = printComments callback cmtTbl expr.pexp_loc in
+      let callback = lazy (printComments callback cmtTbl expr.pexp_loc) in
       let printedArgs =
-        Doc.join
-          ~sep:(Doc.concat [Doc.comma; Doc.line])
-          (List.map (fun arg -> printArgument ~customLayout arg cmtTbl) args)
+        lazy
+          (Doc.join
+             ~sep:(Doc.concat [Doc.comma; Doc.line])
+             (List.map (fun arg -> printArgument ~customLayout arg cmtTbl) args))
       in
       (callback, printedArgs)
     | _ -> assert false
@@ -4200,10 +4201,10 @@ and printArgumentsWithCallbackInFirstPosition ~uncurried ~customLayout args
       (Doc.concat
          [
            (if uncurried then Doc.text "(. " else Doc.lparen);
-           callback;
+           Lazy.force callback;
            Doc.comma;
            Doc.line;
-           printedArgs;
+           Lazy.force printedArgs;
            Doc.rparen;
          ])
   in
@@ -4234,8 +4235,8 @@ and printArgumentsWithCallbackInFirstPosition ~uncurried ~customLayout args
    * In this case, we always want the arguments broken over multiple lines,
    * like a normal function call.
    *)
-  if Doc.willBreak printedArgs then Lazy.force breakAllArgs
-  else if customLayout > customLayoutThreshold then Lazy.force fitsOnOneLine
+  if customLayout > customLayoutThreshold then Lazy.force breakAllArgs
+  else if Doc.willBreak (Lazy.force printedArgs) then Lazy.force breakAllArgs
   else Doc.customLayout [Lazy.force fitsOnOneLine; Lazy.force breakAllArgs]
 
 and printArgumentsWithCallbackInLastPosition ~customLayout ~uncurried args
@@ -4248,7 +4249,7 @@ and printArgumentsWithCallbackInLastPosition ~customLayout ~uncurried args
   let cmtTblCopy2 = CommentTable.copy cmtTbl in
   let rec loop acc args =
     match args with
-    | [] -> (Doc.nil, Doc.nil, Doc.nil)
+    | [] -> (lazy Doc.nil, lazy Doc.nil, lazy Doc.nil)
     | [(lbl, expr)] ->
       let lblDoc =
         match lbl with
@@ -4259,21 +4260,23 @@ and printArgumentsWithCallbackInLastPosition ~customLayout ~uncurried args
           Doc.concat [Doc.tilde; printIdentLike txt; Doc.equal; Doc.question]
       in
       let callbackFitsOnOneLine =
-        let pexpFunDoc =
-          printPexpFun ~customLayout ~inCallback:FitsOnOneLine expr cmtTbl
-        in
-        let doc = Doc.concat [lblDoc; pexpFunDoc] in
-        printComments doc cmtTbl expr.pexp_loc
+        lazy
+          (let pexpFunDoc =
+             printPexpFun ~customLayout ~inCallback:FitsOnOneLine expr cmtTbl
+           in
+           let doc = Doc.concat [lblDoc; pexpFunDoc] in
+           printComments doc cmtTbl expr.pexp_loc)
       in
       let callbackArgumentsFitsOnOneLine =
-        let pexpFunDoc =
-          printPexpFun ~customLayout ~inCallback:ArgumentsFitOnOneLine expr
-            cmtTblCopy
-        in
-        let doc = Doc.concat [lblDoc; pexpFunDoc] in
-        printComments doc cmtTblCopy expr.pexp_loc
+        lazy
+          (let pexpFunDoc =
+             printPexpFun ~customLayout ~inCallback:ArgumentsFitOnOneLine expr
+               cmtTblCopy
+           in
+           let doc = Doc.concat [lblDoc; pexpFunDoc] in
+           printComments doc cmtTblCopy expr.pexp_loc)
       in
-      ( Doc.concat (List.rev acc),
+      ( lazy (Doc.concat (List.rev acc)),
         callbackFitsOnOneLine,
         callbackArgumentsFitsOnOneLine )
     | arg :: args ->
@@ -4288,8 +4291,8 @@ and printArgumentsWithCallbackInLastPosition ~customLayout ~uncurried args
       (Doc.concat
          [
            (if uncurried then Doc.text "(." else Doc.lparen);
-           printedArgs;
-           callback;
+           Lazy.force printedArgs;
+           Lazy.force callback;
            Doc.rparen;
          ])
   in
@@ -4303,8 +4306,8 @@ and printArgumentsWithCallbackInLastPosition ~customLayout ~uncurried args
       (Doc.concat
          [
            (if uncurried then Doc.text "(." else Doc.lparen);
-           printedArgs;
-           Doc.breakableGroup ~forceBreak:true callback2;
+           Lazy.force printedArgs;
+           Doc.breakableGroup ~forceBreak:true (Lazy.force callback2);
            Doc.rparen;
          ])
   in
@@ -4335,8 +4338,8 @@ and printArgumentsWithCallbackInLastPosition ~customLayout ~uncurried args
    * In this case, we always want the arguments broken over multiple lines,
    * like a normal function call.
    *)
-  if Doc.willBreak printedArgs then Lazy.force breakAllArgs
-  else if customLayout > customLayoutThreshold then Lazy.force fitsOnOneLine
+  if customLayout > customLayoutThreshold then Lazy.force breakAllArgs
+  else if Doc.willBreak (Lazy.force printedArgs) then Lazy.force breakAllArgs
   else
     Doc.customLayout
       [
