@@ -472,22 +472,18 @@ foo :=
   | _ => 1
   }
 
-<div>
-  {possibleGradeValues
-  |> List.filter(g => g < state.maxGrade)
-  |> List.map(possibleGradeValue =>
+<div> {possibleGradeValues |> List.filter(g =>
+    g < state.maxGrade
+  ) |> List.map(possibleGradeValue =>
     <option key={possibleGradeValue |> string_of_int} value={possibleGradeValue |> string_of_int}>
       {possibleGradeValue |> string_of_int |> str}
     </option>
-  )
-  |> Array.of_list
-  |> ReasonReact.array}
-</div>
+  ) |> Array.of_list |> ReasonReact.array} </div>
 
 let aggregateTotal = (forecast, ~audienceType) =>
-  Js.Nullable.toOption(forecast["audiences"])
-  ->Option.flatMap(item => Js.Dict.get(item, audienceType))
-  ->Option.map(item => {
+  Js.Nullable.toOption(forecast["audiences"])->Option.flatMap(item =>
+    Js.Dict.get(item, audienceType)
+  )->Option.map(item => {
     pages: item["reach"]["pages"],
     views: item["reach"]["views"],
     sample: item["reach"]["sample"],
@@ -495,16 +491,12 @@ let aggregateTotal = (forecast, ~audienceType) =>
 
 React.useEffect4(() => {
   switch (context.library, context.account) {
-  | (Some(library), Some(account)) =>
-    library.getBalance(. account)
-    ->Promise.Js.catch(_ => {Promise.resolved(None)})
-    ->Promise.get(newBalance => {
-      dispatch(
-        LoadAddress(
-          account,
-          newBalance->Belt.Option.flatMap(balance => Eth.make(balance.toString(.))),
-        ),
-      )
+  | (Some(library), Some(account)) => library.getBalance(. account)->Promise.Js.catch(_ => {
+      Promise.resolved(None)
+    })->Promise.get(newBalance => {
+      dispatch(LoadAddress(account, newBalance->Belt.Option.flatMap(balance =>
+            Eth.make(balance.toString(.))
+          )))
     })
 
     None

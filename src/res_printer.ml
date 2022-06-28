@@ -1905,20 +1905,27 @@ and printValueBinding ~recFlag vb cmtTbl i =
     if ParsetreeViewer.isSinglePipeExpr vb.pvb_expr then
       Doc.customLayout
         [
-          Doc.group
-            (Doc.concat
-               [
-                 attrs; header; patternDoc; Doc.text " ="; Doc.space; printedExpr;
-               ]);
-          Doc.group
-            (Doc.concat
-               [
-                 attrs;
-                 header;
-                 patternDoc;
-                 Doc.text " =";
-                 Doc.indent (Doc.concat [Doc.line; printedExpr]);
-               ]);
+          lazy
+            (Doc.group
+               (Doc.concat
+                  [
+                    attrs;
+                    header;
+                    patternDoc;
+                    Doc.text " =";
+                    Doc.space;
+                    printedExpr;
+                  ]));
+          lazy
+            (Doc.group
+               (Doc.concat
+                  [
+                    attrs;
+                    header;
+                    patternDoc;
+                    Doc.text " =";
+                    Doc.indent (Doc.concat [Doc.line; printedExpr]);
+                  ]));
         ]
     else
       let shouldIndent =
@@ -3977,15 +3984,16 @@ and printArgumentsWithCallbackInFirstPosition ~uncurried args cmtTbl =
    * }, longArgumet, veryLooooongArgument)
    *)
   let fitsOnOneLine =
-    Doc.concat
-      [
-        (if uncurried then Doc.text "(. " else Doc.lparen);
-        callback;
-        Doc.comma;
-        Doc.line;
-        printedArgs;
-        Doc.rparen;
-      ]
+    lazy
+      (Doc.concat
+         [
+           (if uncurried then Doc.text "(. " else Doc.lparen);
+           callback;
+           Doc.comma;
+           Doc.line;
+           printedArgs;
+           Doc.rparen;
+         ])
   in
 
   (* Thing.map(
@@ -3995,7 +4003,7 @@ and printArgumentsWithCallbackInFirstPosition ~uncurried args cmtTbl =
    *   arg3,
    * )
    *)
-  let breakAllArgs = printArguments ~uncurried args cmtTblCopy in
+  let breakAllArgs = lazy (printArguments ~uncurried args cmtTblCopy) in
 
   (* Sometimes one of the non-callback arguments will break.
    * There might be a single line comment in there, or a multiline string etc.
@@ -4012,7 +4020,7 @@ and printArgumentsWithCallbackInFirstPosition ~uncurried args cmtTbl =
    * In this case, we always want the arguments broken over multiple lines,
    * like a normal function call.
    *)
-  if Doc.willBreak printedArgs then breakAllArgs
+  if Doc.willBreak printedArgs then Lazy.force breakAllArgs
   else Doc.customLayout [fitsOnOneLine; breakAllArgs]
 
 and printArgumentsWithCallbackInLastPosition ~uncurried args cmtTbl =
@@ -4023,7 +4031,7 @@ and printArgumentsWithCallbackInLastPosition ~uncurried args cmtTbl =
   let cmtTblCopy2 = CommentTable.copy cmtTbl in
   let rec loop acc args =
     match args with
-    | [] -> (Doc.nil, Doc.nil, Doc.nil)
+    | [] -> (lazy Doc.nil, lazy Doc.nil, lazy Doc.nil)
     | [(lbl, expr)] ->
       let lblDoc =
         match lbl with
@@ -4034,18 +4042,22 @@ and printArgumentsWithCallbackInLastPosition ~uncurried args cmtTbl =
           Doc.concat [Doc.tilde; printIdentLike txt; Doc.equal; Doc.question]
       in
       let callbackFitsOnOneLine =
-        let pexpFunDoc = printPexpFun ~inCallback:FitsOnOneLine expr cmtTbl in
-        let doc = Doc.concat [lblDoc; pexpFunDoc] in
-        printComments doc cmtTbl expr.pexp_loc
+        lazy
+          (let pexpFunDoc =
+             printPexpFun ~inCallback:FitsOnOneLine expr cmtTbl
+           in
+           let doc = Doc.concat [lblDoc; pexpFunDoc] in
+           printComments doc cmtTbl expr.pexp_loc)
       in
       let callbackArgumentsFitsOnOneLine =
-        let pexpFunDoc =
-          printPexpFun ~inCallback:ArgumentsFitOnOneLine expr cmtTblCopy
-        in
-        let doc = Doc.concat [lblDoc; pexpFunDoc] in
-        printComments doc cmtTblCopy expr.pexp_loc
+        lazy
+          (let pexpFunDoc =
+             printPexpFun ~inCallback:ArgumentsFitOnOneLine expr cmtTblCopy
+           in
+           let doc = Doc.concat [lblDoc; pexpFunDoc] in
+           printComments doc cmtTblCopy expr.pexp_loc)
       in
-      ( Doc.concat (List.rev acc),
+      ( lazy (Doc.concat (List.rev acc)),
         callbackFitsOnOneLine,
         callbackArgumentsFitsOnOneLine )
     | arg :: args ->
@@ -4056,13 +4068,14 @@ and printArgumentsWithCallbackInLastPosition ~uncurried args cmtTbl =
 
   (* Thing.map(foo, (arg1, arg2) => MyModuleBlah.toList(argument)) *)
   let fitsOnOneLine =
-    Doc.concat
-      [
-        (if uncurried then Doc.text "(." else Doc.lparen);
-        printedArgs;
-        callback;
-        Doc.rparen;
-      ]
+    lazy
+      (Doc.concat
+         [
+           (if uncurried then Doc.text "(." else Doc.lparen);
+           Lazy.force printedArgs;
+           Lazy.force callback;
+           Doc.rparen;
+         ])
   in
 
   (* Thing.map(longArgumet, veryLooooongArgument, (arg1, arg2) =>
@@ -4070,13 +4083,14 @@ and printArgumentsWithCallbackInLastPosition ~uncurried args cmtTbl =
    * )
    *)
   let arugmentsFitOnOneLine =
-    Doc.concat
-      [
-        (if uncurried then Doc.text "(." else Doc.lparen);
-        printedArgs;
-        Doc.breakableGroup ~forceBreak:true callback2;
-        Doc.rparen;
-      ]
+    lazy
+      (Doc.concat
+         [
+           (if uncurried then Doc.text "(." else Doc.lparen);
+           Lazy.force printedArgs;
+           Doc.breakableGroup ~forceBreak:true (Lazy.force callback2);
+           Doc.rparen;
+         ])
   in
 
   (* Thing.map(
@@ -4086,7 +4100,7 @@ and printArgumentsWithCallbackInLastPosition ~uncurried args cmtTbl =
    *   (param1, parm2) => doStuff(param1, parm2)
    * )
    *)
-  let breakAllArgs = printArguments ~uncurried args cmtTblCopy2 in
+  let breakAllArgs = lazy (printArguments ~uncurried args cmtTblCopy2) in
 
   (* Sometimes one of the non-callback arguments will break.
    * There might be a single line comment in there, or a multiline string etc.
@@ -4103,7 +4117,7 @@ and printArgumentsWithCallbackInLastPosition ~uncurried args cmtTbl =
    * In this case, we always want the arguments broken over multiple lines,
    * like a normal function call.
    *)
-  if Doc.willBreak printedArgs then breakAllArgs
+  if Doc.willBreak (Lazy.force printedArgs) then Lazy.force breakAllArgs
   else Doc.customLayout [fitsOnOneLine; arugmentsFitOnOneLine; breakAllArgs]
 
 and printArguments ~uncurried

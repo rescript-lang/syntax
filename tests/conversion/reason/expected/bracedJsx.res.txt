@@ -50,55 +50,45 @@ module Styles = {
 let make = () => {
   let containerRef = React.useRef(Js.Nullable.null)
 
-  let (state, send) = React.useReducer((state, action) =>
-    switch action {
+  let (state, send) = React.useReducer((state, action) => switch action {
     | RunCommand => {
         input: "",
         history: Array.concat(
           state.history,
-          [
-            User(state.input),
-            switch state.input->Js.String.trim {
+          [User(state.input), switch state.input->Js.String.trim {
             | "" => System("")
-            | "help" =>
-              System(`available commands:
+            | "help" => System(`available commands:
 - help
 - ls
 - cat `)
-            | "ls" =>
-              System(`- hack-website.sh
+            | "ls" => System(`- hack-website.sh
 - go-to-home.sh
 - nuclear-codes.txt`)
             | "cat" => System("cat: missing argument")
             | "cat hack-website.sh"
-            | "cat ./hack-website.sh" =>
-              System("# seriously?\necho \"lol\"")
+            | "cat ./hack-website.sh" => System("# seriously?\necho \"lol\"")
             | "hack-website.sh"
-            | "./hack-website.sh" =>
-              System("lol")
+            | "./hack-website.sh" => System("lol")
             | "cat nuclear-codes.txt"
-            | "cat ./nuclear-codes.txt" =>
-              System("000000")
+            | "cat ./nuclear-codes.txt" => System("000000")
             | "go-to-home.sh"
-            | "./go-to-home.sh" =>
-              Js.Global.setTimeout(() => ReasonReact.Router.push("/"), 1_000)->ignore
+            | "./go-to-home.sh" => Js.Global.setTimeout(
+                () => ReasonReact.Router.push("/"),
+                1_000,
+              )->ignore
               System("Redirecting ...")
             | "cat go-to-home.sh"
-            | "cat ./go-to-home.sh" =>
-              System("ReasonReact.Router.push(\"/\")")
+            | "cat ./go-to-home.sh" => System("ReasonReact.Router.push(\"/\")")
             | _ => System("command not found: " ++ (state.input ++ "\ntry command 'help'"))
-            },
-          ],
+            }],
         ),
       }
     | SetValue(input) => {...state, input}
-    }
-  , {history: [], input: ""})
+    }, {history: [], input: ""})
 
   React.useEffect1(() => {
     switch containerRef.current->Js.Nullable.toOption {
-    | Some(containerRef) =>
-      open Webapi.Dom
+    | Some(containerRef) => open Webapi.Dom
       containerRef->Element.setScrollTop(containerRef->Element.scrollHeight->float_of_int)
     | None => ()
     }
@@ -112,18 +102,12 @@ let make = () => {
       className=Styles.terminal
       onClick={event => (event->ReactEvent.Mouse.target)["querySelector"]("input")["focus"]()}
       ref={containerRef->ReactDOMRe.Ref.domRef}>
-      {state.history
-      ->Array.mapWithIndex((index, item) =>
-        <div key={j`$index`} className=Styles.line>
-          {ReasonReact.string(
-            switch item {
+      {state.history->Array.mapWithIndex((index, item) =>
+        <div key={j`$index`} className=Styles.line> {ReasonReact.string(switch item {
             | User(value) => userPrefix ++ value
             | System(value) => value
-            },
-          )}
-        </div>
-      )
-      ->ReasonReact.array}
+            })} </div>
+      )->ReasonReact.array}
       <div>
         {userPrefix->ReasonReact.string}
         {<input

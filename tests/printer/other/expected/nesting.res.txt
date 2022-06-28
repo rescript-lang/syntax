@@ -3,7 +3,7 @@ let unitsCommands = state.units->Js.Array2.mapi((
   i,
 ) => {
   // n^2
-  let res = []
+let res = []
   state.units->Js.Array2.forEachi((
     {unit: unitThatMightBeAttacking, coordinates: unitThatMightBeAttackingCoordinates},
     j,
@@ -13,8 +13,9 @@ let unitsCommands = state.units->Js.Array2.mapi((
         unitThatMightBeAttacking.timeline,
         unitThatMightBeAttacking.currentFrame,
       ).effect {
-      | Some(UnitAttack({damage, hitBox: _})) =>
-        let unitThatMightBeAttackingHitBox_ = Unit.hitBox(unitThatMightBeAttacking)
+      | Some(UnitAttack({damage, hitBox: _})) => let unitThatMightBeAttackingHitBox_ = Unit.hitBox(
+          unitThatMightBeAttacking,
+        )
         let unitThatMightBeAttackingHitBox = {
           ...unitThatMightBeAttackingHitBox_,
           x: unitThatMightBeAttackingCoordinates.x +. unitThatMightBeAttackingHitBox_.x,

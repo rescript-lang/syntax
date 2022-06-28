@@ -47,11 +47,7 @@ let f = x => {
     ->Option.flatMap(Js.Json.decodeString)
     ->Option.map(Js.Date.fromString)
 
-  let b =
-    x
-    ->Js.Dict.get("wm-property")
-    ->Option.flatMap(Js.Json.decodeString)
-    ->Option.flatMap(x =>
+  let b = x->Js.Dict.get("wm-property")->Option.flatMap(Js.Json.decodeString)->Option.flatMap(x =>
       switch x {
       | "like-of" => Some(#like)
       | "repost-of" => Some(#repost)

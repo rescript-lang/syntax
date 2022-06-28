@@ -21,7 +21,7 @@ type t =
   | LineSuffix of t
   | LineBreak of lineStyle
   | Group of {mutable shouldBreak: bool; doc: t}
-  | CustomLayout of t list
+  | CustomLayout of t lazy_t list
   | BreakParent
 
 let nil = Nil
@@ -50,7 +50,7 @@ let ifBreaks t f = IfBreaks {yes = t; no = f; broken = false}
 let lineSuffix d = LineSuffix d
 let group d = Group {shouldBreak = false; doc = d}
 let breakableGroup ~forceBreak d = Group {shouldBreak = forceBreak; doc = d}
-let customLayout gs = CustomLayout gs
+let customLayout lazyDocs = CustomLayout lazyDocs
 let breakParent = BreakParent
 
 let space = Text " "
@@ -102,13 +102,8 @@ let propagateForcedBreaks doc =
           let childForcesBreak = walk child in
           forceBreak || childForcesBreak)
         false children
-    | CustomLayout children ->
-      (* When using CustomLayout, we don't want to propagate forced breaks
-       * from the children up. By definition it picks the first layout that fits
-       * otherwise it takes the last of the list.
-       * However we do want to propagate forced breaks in the sublayouts. They
-       * might need to be broken. We just don't propagate them any higher here *)
-      let _ = walk (Concat children) in
+    | CustomLayout _ ->
+      (* TODO: this should be done lazily *)
       false
   in
   let _ = walk doc in
@@ -119,7 +114,8 @@ let rec willBreak doc =
   match doc with
   | LineBreak (Hard | Literal) | BreakParent | Group {shouldBreak = true} ->
     true
-  | Group {doc} | Indent doc | CustomLayout (doc :: _) -> willBreak doc
+  | Group {doc} | Indent doc -> willBreak doc
+  | CustomLayout (_lazyDoc :: _) -> false (* willBreak (Lazy.force lazyDoc) *)
   | Concat docs -> List.exists willBreak docs
   | IfBreaks {yes; no} -> willBreak yes || willBreak no
   | _ -> false
@@ -155,10 +151,7 @@ let fits w stack =
     | Break, IfBreaks {yes = breakDoc} -> calculate indent mode breakDoc
     | Flat, IfBreaks {no = flatDoc} -> calculate indent mode flatDoc
     | _, Concat docs -> calculateConcat indent mode docs
-    | _, CustomLayout (hd :: _) ->
-      (* TODO: if we have nested custom layouts, what we should do here? *)
-      calculate indent mode hd
-    | _, CustomLayout [] -> ()
+    | _, CustomLayout _ -> ()
   and calculateConcat indent mode docs =
     if result.contents == None then
       match docs with
@@ -234,17 +227,18 @@ let toString ~width doc =
         if shouldBreak || not (fits (width - pos) ((ind, Flat, doc) :: rest))
         then process ~pos lineSuffices ((ind, Break, doc) :: rest)
         else process ~pos lineSuffices ((ind, Flat, doc) :: rest)
-      | CustomLayout docs ->
-        let rec findGroupThatFits groups =
-          match groups with
-          | [] -> Nil
-          | [lastGroup] -> lastGroup
-          | doc :: docs ->
-            if fits (width - pos) ((ind, Flat, doc) :: rest) then doc
-            else findGroupThatFits docs
+      | CustomLayout lazyDocs ->
+        let rec findGroupThatFits lazyDocs =
+          match lazyDocs with
+          | [] -> lazy Nil
+          | [lazyDoc] -> lazyDoc
+          | lazyDoc :: lazyDocs ->
+            if fits (width - pos) ((ind, Flat, Lazy.force lazyDoc) :: rest) then
+              lazyDoc
+            else findGroupThatFits lazyDocs
         in
-        let doc = findGroupThatFits docs in
-        process ~pos lineSuffices ((ind, Flat, doc) :: rest))
+        let lazyDoc = findGroupThatFits lazyDocs in
+        process ~pos lineSuffices ((ind, Flat, Lazy.force lazyDoc) :: rest))
     | [] -> (
       match lineSuffices with
       | [] -> ()
@@ -282,7 +276,7 @@ let debug t =
              line;
              text ")";
            ])
-    | CustomLayout docs ->
+    | CustomLayout lazyDocs ->
       group
         (concat
            [
@@ -291,7 +285,9 @@ let debug t =
                (concat
                   [
                     line;
-                    join ~sep:(concat [text ","; line]) (List.map toDoc docs);
+                    join
+                      ~sep:(concat [text ","; line])
+                      (List.map (fun ld -> toDoc (Lazy.force ld)) lazyDocs);
                   ]);
              line;
              text ")";
