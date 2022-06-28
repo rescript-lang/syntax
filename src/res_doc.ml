@@ -244,12 +244,13 @@ let toString ~width doc =
           | [lastGroup] -> Lazy.force lastGroup
           | doc :: docs ->
             let computedDoc = Lazy.force doc in
-            if fits (width - pos) ((ind, Flat, computedDoc) :: rest) then computedDoc
+            propagateForcedBreaks computedDoc;
+            if fits (width - pos) ((ind, Flat, computedDoc) :: rest) then (
+              computedDoc)
             else findGroupThatFits docs
         in
         let doc = findGroupThatFits docs in
-        (propagateForcedBreaks doc;
-          process ~pos lineSuffices ((ind, Flat, doc) :: rest)))
+        process ~pos lineSuffices ((ind, Flat, doc) :: rest))
     | [] -> (
       match lineSuffices with
       | [] -> ()
