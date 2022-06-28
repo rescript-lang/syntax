@@ -115,7 +115,7 @@ let rec willBreak doc =
   | LineBreak (Hard | Literal) | BreakParent | Group {shouldBreak = true} ->
     true
   | Group {doc} | Indent doc -> willBreak doc
-  | CustomLayout {groups = lazyDoc :: _} -> willBreak (Lazy.force lazyDoc)
+  | CustomLayout {groups = _lazyDoc :: _} -> false
   | Concat docs -> List.exists willBreak docs
   | IfBreaks {yes; no} -> willBreak yes || willBreak no
   | _ -> false

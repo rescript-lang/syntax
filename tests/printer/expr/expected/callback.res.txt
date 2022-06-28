@@ -179,17 +179,13 @@ foo(list => list())
 foo(\"switch" => \"switch"())
 
 // the [] of the array should break
-[
-  fn(x => {
+[fn(x => {
     let _ = x
-  }),
-  fn(y => {
+  }), fn(y => {
     let _ = y
-  }),
-  fn(z => {
+  }), fn(z => {
     let _ = z
-  }),
-]
+  })]
 
 // similar, the jsx tree should be broken over multiple lines
 let f = () => {
@@ -200,13 +196,9 @@ let f = () => {
     | Done(Error(_)) => "Error"->React.string
     | Done(Ok(users)) =>
       <>
-        <ul>
-          {users
-          ->Array.map(user => {
+        <ul> {users->Array.map(user => {
             <li key=user.id> {user.username->React.string} </li>
-          })
-          ->React.array}
-        </ul>
+          })->React.array} </ul>
         {reloadableUser.last->AsyncData.isLoading ? "Loading next page"->React.string : React.null}
         <button onClick={_ => setPage(x => x + 1)}> {"Load next page"->React.string} </button>
       </>
@@ -225,10 +217,9 @@ myPromise->Js.Promise.then_(value => {
   Js.Promise.resolve(-2)
 }, _)
 
-let decoratorTags =
-  items
-  ->Js.Array2.filter(items => {items.category === Decorators})
-  ->Belt.Array.map(item => {
+let decoratorTags = items->Js.Array2.filter(items => {
+    items.category === Decorators
+  })->Belt.Array.map(item => {
     <span className="mr-2" key=item.name>
       <Tag text={item.name} />
     </span>
