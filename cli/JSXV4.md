@@ -70,6 +70,34 @@ React.createElement(Comp.make, {x, y:7, @optional z})
 React.createElement(Comp.make, {x, key: "7"})
 ```
 
+**The new JSX transform**
+
+The JSX PPX V4 supports [the new JSX transform](https://reactjs.org/blog/2020/09/22/introducing-the-new-jsx-transform.html) of React.js.
+
+It affects only the application.
+
+```rescript
+<Comp x>
+// is converted to
+Js.React.jsx(Comp.make, {x})
+```
+
+```rescript
+<div name="div" />
+// is converted to
+Js.React.jsxDom("div", { name: "div" })
+```
+
+The props type of dom elements, e.g. `div`, is inferred to `Js.React.domProps`.
+
+```rescript
+type domProps = {
+  key?: string,
+  id?: string,
+  ...
+}
+```
+
 **Interface And External**
 
 ```rescript
