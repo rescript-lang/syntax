@@ -5096,7 +5096,12 @@ and printAttribute ?(standalone = false) ~customLayout
               Pstr_eval ({pexp_desc = Pexp_constant (Pconst_string (txt, _))}, _);
           };
         ] ) ->
-    Doc.concat [Doc.text "/**"; Doc.text txt; Doc.text "*/"]
+    Doc.concat
+      [
+        Doc.text (if standalone then "/***" else "/**");
+        Doc.text txt;
+        Doc.text "*/";
+      ]
   | _ ->
     Doc.group
       (Doc.concat

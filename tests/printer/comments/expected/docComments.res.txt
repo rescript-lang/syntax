@@ -1,5 +1,11 @@
+/*** This is a module comment */
+
+/*** This is another module comment */
+
 /** This is a doc ✅ comment */
 let z = 34
+
+/***And this is a ns.doc module annotation*/
 
 /**And this is a ns.doc ✅ annotation*/
 let q = 11

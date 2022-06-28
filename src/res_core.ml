@@ -5364,6 +5364,16 @@ and parseStructureItemRegion p =
     let loc = mkLoc startPos p.prevEndPos in
     Parser.endRegion p;
     Some {structureItem with pstr_loc = loc}
+  | ModuleComment (loc, s) ->
+    Parser.next p;
+    Some
+      (Ast_helper.Str.attribute ~loc
+         ( {txt = "ns.doc"; loc},
+           PStr
+             [
+               Ast_helper.Str.eval ~loc
+                 (Ast_helper.Exp.constant ~loc (Pconst_string (s, None)));
+             ] ))
   | AtAt ->
     let attr = parseStandaloneAttribute p in
     parseNewlineOrSemicolonStructure p;
@@ -6088,6 +6098,16 @@ and parseSignatureItemRegion p =
     parseNewlineOrSemicolonSignature p;
     let loc = mkLoc startPos p.prevEndPos in
     Some (Ast_helper.Sig.attribute ~loc attr)
+  | ModuleComment (loc, s) ->
+    Parser.next p;
+    Some
+      (Ast_helper.Sig.attribute ~loc
+         ( {txt = "ns.doc"; loc},
+           PStr
+             [
+               Ast_helper.Str.eval ~loc
+                 (Ast_helper.Exp.constant ~loc (Pconst_string (s, None)));
+             ] ))
   | PercentPercent ->
     let extension = parseExtension ~moduleLanguage:true p in
     parseNewlineOrSemicolonSignature p;
@@ -6318,6 +6338,7 @@ and parseAttributes p =
  *)
 and parseStandaloneAttribute p =
   let startPos = p.startPos in
+  (*  XX *)
   Parser.expect AtAt p;
   let attrId = parseAttributeId ~startPos p in
   let payload = parsePayload p in
