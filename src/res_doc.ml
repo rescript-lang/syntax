@@ -21,7 +21,7 @@ type t =
   | LineSuffix of t
   | LineBreak of lineStyle
   | Group of {mutable shouldBreak: bool; doc: t}
-  | CustomLayout of t lazy_t list
+  | CustomLayout of {groups: t lazy_t list; mutable forceBreak: bool}
   | BreakParent
 
 let nil = Nil
@@ -50,7 +50,7 @@ let ifBreaks t f = IfBreaks {yes = t; no = f; broken = false}
 let lineSuffix d = LineSuffix d
 let group d = Group {shouldBreak = false; doc = d}
 let breakableGroup ~forceBreak d = Group {shouldBreak = forceBreak; doc = d}
-let customLayout lazyDocs = CustomLayout lazyDocs
+let customLayout lazyDocs = CustomLayout {groups = lazyDocs; forceBreak = false}
 let breakParent = BreakParent
 
 let space = Text " "
@@ -102,8 +102,8 @@ let propagateForcedBreaks doc =
           let childForcesBreak = walk child in
           forceBreak || childForcesBreak)
         false children
-    | CustomLayout _ ->
-      (* TODO: this should be done lazily *)
+    | CustomLayout cl ->
+      cl.forceBreak <- true;
       false
   in
   let _ = walk doc in
@@ -115,7 +115,7 @@ let rec willBreak doc =
   | LineBreak (Hard | Literal) | BreakParent | Group {shouldBreak = true} ->
     true
   | Group {doc} | Indent doc -> willBreak doc
-  | CustomLayout (_lazyDoc :: _) -> false (* willBreak (Lazy.force lazyDoc) *)
+  | CustomLayout {groups = _lazyDoc :: _} -> false
   | Concat docs -> List.exists willBreak docs
   | IfBreaks {yes; no} -> willBreak yes || willBreak no
   | _ -> false
@@ -227,7 +227,7 @@ let toString ~width doc =
         if shouldBreak || not (fits (width - pos) ((ind, Flat, doc) :: rest))
         then process ~pos lineSuffices ((ind, Break, doc) :: rest)
         else process ~pos lineSuffices ((ind, Flat, doc) :: rest)
-      | CustomLayout lazyDocs ->
+      | CustomLayout {groups = lazyDocs; forceBreak} ->
         let rec findGroupThatFits lazyDocs =
           match lazyDocs with
           | [] -> lazy Nil
@@ -238,7 +238,9 @@ let toString ~width doc =
             else findGroupThatFits lazyDocs
         in
         let lazyDoc = findGroupThatFits lazyDocs in
-        process ~pos lineSuffices ((ind, Flat, Lazy.force lazyDoc) :: rest))
+        let doc = Lazy.force lazyDoc in
+        if forceBreak then propagateForcedBreaks doc;
+        process ~pos lineSuffices ((ind, Flat, doc) :: rest))
     | [] -> (
       match lineSuffices with
       | [] -> ()
@@ -276,7 +278,7 @@ let debug t =
              line;
              text ")";
            ])
-    | CustomLayout lazyDocs ->
+    | CustomLayout {groups = lazyDocs} ->
       group
         (concat
            [

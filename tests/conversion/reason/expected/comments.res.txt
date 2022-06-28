@@ -646,14 +646,14 @@ while trueThing {
 
 ignore((_really, _long, _printWidth, _exceeded, _here) => {
   // First comment
-let x = 0
+  let x = 0
   x + x
   // Closing comment
 })
 
 ignore((_xxx, _yyy) => {
   // First comment
-let x = 0
+  let x = 0
   x + x
   // Closing comment
 })
