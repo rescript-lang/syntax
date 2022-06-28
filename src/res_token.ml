@@ -96,6 +96,7 @@ type t =
   | Import
   | Export
   | DocComment of Location.t * string
+  | ModuleComment of Location.t * string
 
 let precedence = function
   | HashEqual | ColonEqual -> 1
@@ -207,6 +208,7 @@ let toString = function
   | Import -> "import"
   | Export -> "export"
   | DocComment (_loc, s) -> "DocComment " ^ s
+  | ModuleComment (_loc, s) -> "ModuleComment " ^ s
 
 let keywordTable = function
   | "and" -> And
