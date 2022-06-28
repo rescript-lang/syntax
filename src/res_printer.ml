@@ -1883,20 +1883,27 @@ and printValueBinding ~recFlag vb cmtTbl i =
     if ParsetreeViewer.isSinglePipeExpr vb.pvb_expr then
       Doc.customLayout
         [
-          lazy (Doc.group
-            (Doc.concat
-               [
-                 attrs; header; patternDoc; Doc.text " ="; Doc.space; printedExpr;
-           ]));
-          lazy (Doc.group
-            (Doc.concat
-               [
-                 attrs;
-                 header;
-                 patternDoc;
-                 Doc.text " =";
-                 Doc.indent (Doc.concat [Doc.line; printedExpr]);
-                 ]));
+          lazy
+            (Doc.group
+               (Doc.concat
+                  [
+                    attrs;
+                    header;
+                    patternDoc;
+                    Doc.text " =";
+                    Doc.space;
+                    printedExpr;
+                  ]));
+          lazy
+            (Doc.group
+               (Doc.concat
+                  [
+                    attrs;
+                    header;
+                    patternDoc;
+                    Doc.text " =";
+                    Doc.indent (Doc.concat [Doc.line; printedExpr]);
+                  ]));
         ]
     else
       let shouldIndent =
@@ -3936,15 +3943,16 @@ and printArgumentsWithCallbackInFirstPosition ~uncurried args cmtTbl =
    * }, longArgumet, veryLooooongArgument)
    *)
   let fitsOnOneLine =
-    lazy (Doc.concat
-      [
-        (if uncurried then Doc.text "(. " else Doc.lparen);
-        callback;
-        Doc.comma;
-        Doc.line;
-        printedArgs;
-        Doc.rparen;
-          ])
+    lazy
+      (Doc.concat
+         [
+           (if uncurried then Doc.text "(. " else Doc.lparen);
+           callback;
+           Doc.comma;
+           Doc.line;
+           printedArgs;
+           Doc.rparen;
+         ])
   in
 
   (* Thing.map(
@@ -4015,13 +4023,14 @@ and printArgumentsWithCallbackInLastPosition ~uncurried args cmtTbl =
 
   (* Thing.map(foo, (arg1, arg2) => MyModuleBlah.toList(argument)) *)
   let fitsOnOneLine =
-    lazy (Doc.concat
-      [
-        (if uncurried then Doc.text "(." else Doc.lparen);
-        printedArgs;
-        callback;
-        Doc.rparen;
-  ])
+    lazy
+      (Doc.concat
+         [
+           (if uncurried then Doc.text "(." else Doc.lparen);
+           printedArgs;
+           callback;
+           Doc.rparen;
+         ])
   in
 
   (* Thing.map(longArgumet, veryLooooongArgument, (arg1, arg2) =>
@@ -4029,13 +4038,14 @@ and printArgumentsWithCallbackInLastPosition ~uncurried args cmtTbl =
    * )
    *)
   let arugmentsFitOnOneLine =
-    lazy (Doc.concat
-      [
-        (if uncurried then Doc.text "(." else Doc.lparen);
-        printedArgs;
-        Doc.breakableGroup ~forceBreak:true callback2;
-        Doc.rparen;
-      ])
+    lazy
+      (Doc.concat
+         [
+           (if uncurried then Doc.text "(." else Doc.lparen);
+           printedArgs;
+           Doc.breakableGroup ~forceBreak:true callback2;
+           Doc.rparen;
+         ])
   in
 
   (* Thing.map(

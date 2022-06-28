@@ -21,7 +21,7 @@ type t =
   | LineSuffix of t
   | LineBreak of lineStyle
   | Group of {mutable shouldBreak: bool; doc: t}
-  | CustomLayout of (t Lazy.t) list
+  | CustomLayout of t Lazy.t list
   | BreakParent
 
 let nil = Nil
@@ -116,6 +116,7 @@ let propagateForcedBreaks doc =
   in
   let _ = walk doc in
   ()
+
 (* See documentation in interface file *)
 let rec willBreak doc =
   match doc with
@@ -245,8 +246,8 @@ let toString ~width doc =
           | doc :: docs ->
             let computedDoc = Lazy.force doc in
             propagateForcedBreaks computedDoc;
-            if fits (width - pos) ((ind, Flat, computedDoc) :: rest) then (
-              computedDoc)
+            if fits (width - pos) ((ind, Flat, computedDoc) :: rest) then
+              computedDoc
             else findGroupThatFits docs
         in
         let doc = findGroupThatFits docs in
@@ -297,7 +298,9 @@ let debug t =
                (concat
                   [
                     line;
-                    join ~sep:(concat [text ","; line]) (List.map (fun doc -> toDoc (Lazy.force doc)) docs);
+                    join
+                      ~sep:(concat [text ","; line])
+                      (List.map (fun doc -> toDoc (Lazy.force doc)) docs);
                   ]);
              line;
              text ")";
