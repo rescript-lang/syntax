@@ -112,7 +112,8 @@ let make = () => {
       className=Styles.terminal
       onClick={event => (event->ReactEvent.Mouse.target)["querySelector"]("input")["focus"]()}
       ref={containerRef->ReactDOMRe.Ref.domRef}>
-      {state.history->Array.mapWithIndex((index, item) =>
+      {state.history
+      ->Array.mapWithIndex((index, item) =>
         <div key={j`$index`} className=Styles.line>
           {ReasonReact.string(
             switch item {
@@ -121,7 +122,8 @@ let make = () => {
             },
           )}
         </div>
-      )->ReasonReact.array}
+      )
+      ->ReasonReact.array}
       <div>
         {userPrefix->ReasonReact.string}
         {<input
