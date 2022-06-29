@@ -15,7 +15,7 @@
    }
    ```
 
-   The `react.runtime` affects nothing, no matter of `"classic"` or `"automatic"`.
+   **Note:** When using `jsx` v3, the `runtime` option will be ignored.
 
    b. JSX V4 with classic mode
 
