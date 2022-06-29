@@ -346,7 +346,17 @@ let transformUppercaseCall3 jsxRuntime modulePath mapper loc attrs
       (* this is a hack to support react components that introspect into their children *)
       childrenArg := Some expression;
       match jsxRuntime with
-      | "automatic" -> [(labelled "children", expression)]
+      | "automatic" ->
+        [
+          ( labelled "children",
+            Exp.apply
+              (Exp.ident
+                 {
+                   txt = Ldot (Ldot (Lident "Js", "React"), "array");
+                   loc = Location.none;
+                 })
+              [(Nolabel, expression)] );
+        ]
       | _ ->
         [
           ( labelled "children",
@@ -455,7 +465,16 @@ let transformLowercaseCall3 jsxRuntime mapper loc attrs callExpression
       | ListLiteral expression ->
         (* this is a hack to support react components that introspect into their children *)
         childrenArg := Some expression;
-        [(labelled "children", expression)]
+        [
+          ( labelled "children",
+            Exp.apply
+              (Exp.ident
+                 {
+                   txt = Ldot (Ldot (Lident "Js", "React"), "array");
+                   loc = Location.none;
+                 })
+              [(Nolabel, expression)] );
+        ]
     in
     let isEmptyRecord {pexp_desc} =
       match pexp_desc with
