@@ -12,7 +12,7 @@ module FancyInput = {
     Js.React.jsxsDom(
       "div",
       {
-        children: [
+        children: Js.React.array([
           Js.React.jsxDom(
             "input",
             {
@@ -22,7 +22,7 @@ module FancyInput = {
             },
           ),
           children,
-        ],
+        ]),
       },
     )
   }
