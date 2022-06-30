@@ -1064,7 +1064,8 @@ let transformComponentDefinition nestedModules mapper structure returnStructures
           @
           if hasForwardRef then
             [
-              (Location.mknoloc (Lident "ref"), Pat.var (Location.mknoloc "ref"));
+              ( Location.mknoloc (Lident "ref"),
+                Pat.var ~attrs:optionalAttr (Location.mknoloc "ref") );
             ]
           else []
         in
