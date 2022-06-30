@@ -2,7 +2,7 @@ module Bar = {
   type props<'a, 'b> = {key?: string, a: 'a, b: 'b}
   let make = ({a, b, _}: props<'a, 'b>) => {
     Js.log("This function should be named `InnerModule.react$Bar`")
-    Js.React.jsxDom("div", {key: ?None})
+    JsxDOM.jsx("div", {key: ?None})
   }
   let make = {
     let \"InnerModule$Bar" = (props: props<_>) => make(props)
@@ -12,7 +12,7 @@ module Bar = {
 
   let component = ({a, b, _}: props<'a, 'b>) => {
     Js.log("This function should be named `InnerModule.react$Bar$component`")
-    Js.React.jsxDom("div", {key: ?None})
+    JsxDOM.jsx("div", {key: ?None})
   }
   let component = {
     let \"InnerModule$Bar$component" = (props: props<_>) => make(props)

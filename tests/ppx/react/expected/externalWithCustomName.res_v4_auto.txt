@@ -4,4 +4,4 @@ module Foo = {
   external component: React.componentLike<props<'a, 'b>, React.element> = "component"
 }
 
-let t = Js.React.jsx(Foo.component, {a: 1, b: "1"})
+let t = Jsx.jsx(Foo.component, {a: 1, b: "1"})
