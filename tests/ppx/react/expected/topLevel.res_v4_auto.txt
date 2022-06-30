@@ -1,7 +1,7 @@
 type props<'a, 'b> = {key?: string, a: 'a, b: 'b}
 let make = ({a, b, _}: props<'a, 'b>) => {
   Js.log("This function should be named 'TopLevel.react'")
-  Js.React.jsxDom("div", {key: ?None})
+  JsxDOM.jsx("div", {key: ?None})
 }
 let make = {
   let \"TopLevel" = (props: props<_>) => make(props)
