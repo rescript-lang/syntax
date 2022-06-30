@@ -351,10 +351,7 @@ let transformUppercaseCall3 jsxRuntime modulePath mapper loc attrs
           ( labelled "children",
             Exp.apply
               (Exp.ident
-                 {
-                   txt = Ldot (Ldot (Lident "Js", "React"), "array");
-                   loc = Location.none;
-                 })
+                 {txt = Ldot (Lident "Jsx", "array"); loc = Location.none})
               [(Nolabel, expression)] );
         ]
       | _ ->
@@ -398,19 +395,14 @@ let transformUppercaseCall3 jsxRuntime modulePath mapper loc attrs
     let jsxExpr, key =
       match (!childrenArg, keyProp) with
       | None, (_, keyExpr) :: _ ->
-        ( Exp.ident ~loc
-            {loc; txt = Ldot (Ldot (Lident "Js", "React"), "jsxKeyed")},
+        ( Exp.ident ~loc {loc; txt = Ldot (Lident "Jsx", "jsxKeyed")},
           [(nolabel, keyExpr)] )
-      | None, [] ->
-        ( Exp.ident ~loc {loc; txt = Ldot (Ldot (Lident "Js", "React"), "jsx")},
-          [] )
+      | None, [] -> (Exp.ident ~loc {loc; txt = Ldot (Lident "Jsx", "jsx")}, [])
       | Some _, (_, keyExpr) :: _ ->
-        ( Exp.ident ~loc
-            {loc; txt = Ldot (Ldot (Lident "Js", "React"), "jsxsKeyed")},
+        ( Exp.ident ~loc {loc; txt = Ldot (Lident "Jsx", "jsxsKeyed")},
           [(nolabel, keyExpr)] )
       | Some _, [] ->
-        ( Exp.ident ~loc {loc; txt = Ldot (Ldot (Lident "Js", "React"), "jsxs")},
-          [] )
+        (Exp.ident ~loc {loc; txt = Ldot (Lident "Jsx", "jsxs")}, [])
     in
     Exp.apply ~loc ~attrs jsxExpr
       ([(nolabel, Exp.ident ~loc {txt = ident; loc}); (nolabel, props)] @ key)
@@ -469,10 +461,7 @@ let transformLowercaseCall3 jsxRuntime mapper loc attrs callExpression
           ( labelled "children",
             Exp.apply
               (Exp.ident
-                 {
-                   txt = Ldot (Ldot (Lident "Js", "React"), "array");
-                   loc = Location.none;
-                 })
+                 {txt = Ldot (Lident "Jsx", "array"); loc = Location.none})
               [(Nolabel, expression)] );
         ]
     in
@@ -491,21 +480,15 @@ let transformLowercaseCall3 jsxRuntime mapper loc attrs callExpression
     let jsxExpr, key =
       match (!childrenArg, keyProp) with
       | None, (_, keyExpr) :: _ ->
-        ( Exp.ident ~loc
-            {loc; txt = Ldot (Ldot (Lident "Js", "React"), "jsxKeyedDom")},
+        ( Exp.ident ~loc {loc; txt = Ldot (Lident "JsxDOM", "jsxKeyed")},
           [(nolabel, keyExpr)] )
       | None, [] ->
-        ( Exp.ident ~loc
-            {loc; txt = Ldot (Ldot (Lident "Js", "React"), "jsxDom")},
-          [] )
+        (Exp.ident ~loc {loc; txt = Ldot (Lident "JsxDOM", "jsx")}, [])
       | Some _, (_, keyExpr) :: _ ->
-        ( Exp.ident ~loc
-            {loc; txt = Ldot (Ldot (Lident "Js", "React"), "jsxsKeyedDom")},
+        ( Exp.ident ~loc {loc; txt = Ldot (Lident "JsxDOM", "jsxsKeyed")},
           [(nolabel, keyExpr)] )
       | Some _, [] ->
-        ( Exp.ident ~loc
-            {loc; txt = Ldot (Ldot (Lident "Js", "React"), "jsxsDom")},
-          [] )
+        (Exp.ident ~loc {loc; txt = Ldot (Lident "JsxDOM", "jsxs")}, [])
     in
     Exp.apply ~loc ~attrs jsxExpr
       ([(nolabel, componentNameExpr); (nolabel, props)] @ key)
