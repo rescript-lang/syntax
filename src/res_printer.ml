@@ -5401,6 +5401,7 @@ and printExtensionConstructor ~customLayout
 let printTypeParams = printTypeParams ~customLayout:0
 let printTypExpr = printTypExpr ~customLayout:0
 let printExpression = printExpression ~customLayout:0
+let printPattern = printPattern ~customLayout:0
 
 let printImplementation ~width (s : Parsetree.structure) ~comments =
   let cmtTbl = CommentTable.make () in
