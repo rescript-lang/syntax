@@ -32,6 +32,19 @@ let decl ~attrs ~loc ~name ~alias ~typ =
     jld_type = typ;
   }
 
+let emptyDecl loc =
+  let loc = Location.{loc_start = loc; loc_end = loc; loc_ghost = false} in
+  let emptyCoreType : Parsetree.core_type =
+    {ptyp_desc = Parsetree.Ptyp_any; ptyp_loc = loc; ptyp_attributes = []}
+  in
+  {
+    jld_loc = loc;
+    jld_attributes = [];
+    jld_name = "";
+    jld_alias = "";
+    jld_type = emptyCoreType;
+  }
+
 let importDescr ~attrs ~scope ~importSpec ~loc =
   {
     jid_loc = loc;

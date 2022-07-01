@@ -1,0 +1,10 @@
+
+  Syntax error!
+  tests/parsing/errors/other/import.res:2:1
+
+  1 │ import@
+  2 │ 
+
+  I'm not sure what to parse here when looking at "eof".
+
+include struct external Fatal error: exception Invalid_argument("index out of bounds")

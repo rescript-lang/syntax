@@ -5411,7 +5411,7 @@ and parseJsImport ~startPos ~attrs p =
       let decl =
         match parseJsFfiDeclaration p with
         | Some decl -> decl
-        | None -> assert false
+        | None -> JsFfi.emptyDecl p.startPos
       in
       JsFfi.Default decl
     | _ -> JsFfi.Spec (parseJsFfiDeclarations p)
