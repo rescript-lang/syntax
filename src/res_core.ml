@@ -643,7 +643,7 @@ let parseValuePath p =
       res
     | token ->
       Parser.err p (Diagnostics.unexpected token p.breadcrumbs);
-      Parser.next p;
+      if token <> Eof then Parser.next p;
       Longident.Lident "_"
   in
   Location.mkloc ident (mkLoc startPos p.prevEndPos)
@@ -3258,7 +3258,10 @@ and parseForRest hasOpeningParen pattern startPos p =
       Parser.err p (Diagnostics.unexpected token p.breadcrumbs);
       Asttypes.Upto
   in
-  Parser.next p;
+  if p.Parser.token = Eof then
+    Parser.err ~startPos:p.startPos p
+      (Diagnostics.unexpected p.Parser.token p.breadcrumbs)
+  else Parser.next p;
   let e2 = parseExpr ~context:WhenExpr p in
   if hasOpeningParen then Parser.expect Rparen p;
   Parser.expect Lbrace p;
