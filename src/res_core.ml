@@ -600,7 +600,11 @@ let parseHashIdent ~startPos p =
     in
     Parser.next p;
     (i, mkLoc startPos p.prevEndPos)
-  | _ -> parseIdent ~startPos ~msg:ErrorMessages.variantIdent p
+  | token ->
+    if token = Eof then (
+      Parser.err ~startPos p (Diagnostics.unexpected token p.breadcrumbs);
+      ("", mkLoc startPos p.prevEndPos))
+    else parseIdent ~startPos ~msg:ErrorMessages.variantIdent p
 
 (* Ldot (Ldot (Lident "Foo", "Bar"), "baz") *)
 let parseValuePath p =
@@ -1090,7 +1094,12 @@ let rec parsePattern ?(alias = true) ?(or_ = true) p =
             in
             Parser.next p;
             (i, mkLoc startPos p.prevEndPos)
-          | _ -> parseIdent ~msg:ErrorMessages.variantIdent ~startPos p
+          | token ->
+            if token = Eof then (
+              Parser.err ~startPos p
+                (Diagnostics.unexpected token p.breadcrumbs);
+              ("", mkLoc startPos p.prevEndPos))
+            else parseIdent ~msg:ErrorMessages.variantIdent ~startPos p
         in
         match p.Parser.token with
         | Lparen -> parseVariantPatternArgs p ident startPos attrs
@@ -3808,7 +3817,11 @@ and parseAtomicTypExpr ~attrs p =
     | SingleQuote ->
       Parser.next p;
       let ident, loc =
-        parseIdent ~msg:ErrorMessages.typeVar ~startPos:p.startPos p
+        if p.Parser.token = Eof then (
+          Parser.err ~startPos:p.startPos p
+            (Diagnostics.unexpected p.Parser.token p.breadcrumbs);
+          ("", mkLoc p.startPos p.prevEndPos))
+        else parseIdent ~msg:ErrorMessages.typeVar ~startPos:p.startPos p
       in
       Ast_helper.Typ.var ~loc ~attrs ident
     | Underscore ->
@@ -4596,7 +4609,11 @@ and parseTypeParam p =
   | SingleQuote ->
     Parser.next p;
     let ident, loc =
-      parseIdent ~msg:ErrorMessages.typeParam ~startPos:p.startPos p
+      if p.Parser.token = Eof then (
+        Parser.err ~startPos:p.startPos p
+          (Diagnostics.unexpected p.Parser.token p.breadcrumbs);
+        ("", mkLoc p.startPos p.prevEndPos))
+      else parseIdent ~msg:ErrorMessages.typeParam ~startPos:p.startPos p
     in
     Some (Ast_helper.Typ.var ~loc ident, variance)
   | Underscore ->
