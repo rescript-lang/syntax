@@ -5408,11 +5408,15 @@ and parseJsImport ~startPos ~attrs p =
   let importSpec =
     match p.Parser.token with
     | Token.Lident _ | Token.At ->
+      Parser.leaveBreadcrumb p Grammar.JsFfiImport;
       let decl =
         match parseJsFfiDeclaration p with
         | Some decl -> decl
-        | None -> JsFfi.emptyDecl p.startPos
+        | None ->
+          Parser.err p (Diagnostics.unexpected p.Parser.token p.breadcrumbs);
+          JsFfi.emptyDecl p.startPos
       in
+      Parser.eatBreadcrumb p;
       JsFfi.Default decl
     | _ -> JsFfi.Spec (parseJsFfiDeclarations p)
   in
