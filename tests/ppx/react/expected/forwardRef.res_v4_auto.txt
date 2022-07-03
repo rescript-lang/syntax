@@ -9,11 +9,11 @@ module FancyInput = {
     let ref = Js.Nullable.fromOption(ref)
     let _ = ref
 
-    JsxDOM.jsxs(
+    ReactDOM.jsxs(
       "div",
       {
-        children: Jsx.array([
-          JsxDOM.jsx(
+        children: React.array([
+          ReactDOM.jsx(
             "input",
             {
               type_: "text",
@@ -37,9 +37,14 @@ type props = {key?: string}
 let make = (_: props) => {
   let input = React.useRef(Js.Nullable.null)
 
-  JsxDOM.jsx(
+  ReactDOM.jsx(
     "div",
-    {children: Jsx.jsx(FancyInput.make, {ref: input, children: {React.string("Click to focus")}})},
+    {
+      children: React.jsx(
+        FancyInput.make,
+        {ref: input, children: {React.string("Click to focus")}},
+      ),
+    },
   )
 }
 let make = {
