@@ -93,7 +93,6 @@ type t =
   | Backtick
   | BarGreater
   | Try
-  | Import
   | Export
   | DocComment of Location.t * string
   | ModuleComment of Location.t * string
@@ -205,7 +204,6 @@ let toString = function
   | Backtick -> "`"
   | BarGreater -> "|>"
   | Try -> "try"
-  | Import -> "import"
   | Export -> "export"
   | DocComment (_loc, s) -> "DocComment " ^ s
   | ModuleComment (_loc, s) -> "ModuleComment " ^ s
@@ -222,7 +220,6 @@ let keywordTable = function
   | "false" -> False
   | "for" -> For
   | "if" -> If
-  | "import" -> Import
   | "in" -> In
   | "include" -> Include
   | "lazy" -> Lazy
@@ -245,9 +242,9 @@ let keywordTable = function
 
 let isKeyword = function
   | And | As | Assert | Constraint | Else | Exception | Export | External
-  | False | For | If | Import | In | Include | Land | Lazy | Let | List | Lor
-  | Module | Mutable | Of | Open | Private | Rec | Switch | True | Try | Typ
-  | When | While ->
+  | False | For | If | In | Include | Land | Lazy | Let | List | Lor | Module
+  | Mutable | Of | Open | Private | Rec | Switch | True | Try | Typ | When
+  | While ->
     true
   | _ -> false
 

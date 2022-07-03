@@ -5,7 +5,6 @@ module Diagnostics = Res_diagnostics
 module CommentTable = Res_comments_table
 module ResPrinter = Res_printer
 module Scanner = Res_scanner
-module JsFfi = Res_js_ffi
 module Parser = Res_parser
 
 let mkLoc startLoc endLoc =
@@ -720,30 +719,6 @@ let parseModuleLongIdent ~lowercase p =
   in
   (* Parser.eatBreadcrumb p; *)
   moduleIdent
-
-(* `window.location` or `Math` or `Foo.Bar` *)
-let parseIdentPath p =
-  let rec loop p acc =
-    match p.Parser.token with
-    | Uident ident | Lident ident -> (
-      Parser.next p;
-      let lident = Longident.Ldot (acc, ident) in
-      match p.Parser.token with
-      | Dot ->
-        Parser.next p;
-        loop p lident
-      | _ -> lident)
-    | _t -> acc
-  in
-  match p.Parser.token with
-  | Lident ident | Uident ident -> (
-    Parser.next p;
-    match p.Parser.token with
-    | Dot ->
-      Parser.next p;
-      loop p (Longident.Lident ident)
-    | _ -> Longident.Lident ident)
-  | _ -> Longident.Lident "_"
 
 let verifyJsxOpeningClosingName p nameExpr =
   let closing =
@@ -5336,12 +5311,6 @@ and parseStructureItemRegion p =
     parseNewlineOrSemicolonStructure p;
     let loc = mkLoc startPos p.prevEndPos in
     Some (Ast_helper.Str.primitive ~loc externalDef)
-  | Import ->
-    let importDescr = parseJsImport ~startPos ~attrs p in
-    parseNewlineOrSemicolonStructure p;
-    let loc = mkLoc startPos p.prevEndPos in
-    let structureItem = JsFfi.toParsetree importDescr in
-    Some {structureItem with pstr_loc = loc}
   | Exception ->
     let exceptionDef = parseExceptionDef ~attrs p in
     parseNewlineOrSemicolonStructure p;
@@ -5403,23 +5372,6 @@ and parseStructureItemRegion p =
     | _ -> None)
   [@@progress Parser.next, Parser.expect]
 
-and parseJsImport ~startPos ~attrs p =
-  Parser.expect Token.Import p;
-  let importSpec =
-    match p.Parser.token with
-    | Token.Lident _ | Token.At ->
-      let decl =
-        match parseJsFfiDeclaration p with
-        | Some decl -> decl
-        | None -> assert false
-      in
-      JsFfi.Default decl
-    | _ -> JsFfi.Spec (parseJsFfiDeclarations p)
-  in
-  let scope = parseJsFfiScope p in
-  let loc = mkLoc startPos p.prevEndPos in
-  JsFfi.importDescr ~attrs ~importSpec ~scope ~loc
-
 and parseJsExport ~attrs p =
   let exportStart = p.Parser.startPos in
   Parser.expect Token.Export p;
@@ -5456,49 +5408,6 @@ and parseSignJsExport ~attrs p =
     let valueDesc = parseSignLetDesc ~attrs p in
     let loc = mkLoc exportStart p.prevEndPos in
     Ast_helper.Sig.value valueDesc ~loc
-
-and parseJsFfiScope p =
-  match p.Parser.token with
-  | Token.Lident "from" -> (
-    Parser.next p;
-    match p.token with
-    | String s ->
-      Parser.next p;
-      JsFfi.Module s
-    | Uident _ | Lident _ ->
-      let value = parseIdentPath p in
-      JsFfi.Scope value
-    | _ -> JsFfi.Global)
-  | _ -> JsFfi.Global
-
-and parseJsFfiDeclarations p =
-  Parser.expect Token.Lbrace p;
-  let decls =
-    parseCommaDelimitedRegion ~grammar:Grammar.JsFfiImport ~closing:Rbrace
-      ~f:parseJsFfiDeclaration p
-  in
-  Parser.expect Rbrace p;
-  decls
-
-and parseJsFfiDeclaration p =
-  let startPos = p.Parser.startPos in
-  let attrs = parseAttributes p in
-  match p.Parser.token with
-  | Lident _ ->
-    let ident, _ = parseLident p in
-    let alias =
-      match p.token with
-      | As ->
-        Parser.next p;
-        let ident, _ = parseLident p in
-        ident
-      | _ -> ident
-    in
-    Parser.expect Token.Colon p;
-    let typ = parseTypExpr p in
-    let loc = mkLoc startPos p.prevEndPos in
-    Some (JsFfi.decl ~loc ~alias ~attrs ~name:ident ~typ)
-  | _ -> None
 
 (* include-statement ::= include module-expr *)
 and parseIncludeStatement ~attrs p =
@@ -6113,9 +6022,6 @@ and parseSignatureItemRegion p =
     parseNewlineOrSemicolonSignature p;
     let loc = mkLoc startPos p.prevEndPos in
     Some (Ast_helper.Sig.extension ~attrs ~loc extension)
-  | Import ->
-    Parser.next p;
-    parseSignatureItemRegion p
   | _ -> (
     match attrs with
     | (({Asttypes.loc = attrLoc}, _) as attr) :: _ ->

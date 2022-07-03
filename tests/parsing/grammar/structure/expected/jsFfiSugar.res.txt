@@ -1,27 +1,10 @@
-include
-  struct
-    external setTimeout : (unit -> unit) -> unit -> float = "setTimeout"
-    [@@val ]
-  end[@@ns.jsFfi ]
-include
-  struct
-    external timeout : (unit -> unit) -> unit -> float = "setTimeout"[@@val ]
-  end[@@ns.jsFfi ]
-include
-  struct
-    external setTimeout : (unit -> unit) -> unit -> float = "setTimeout"
-    [@@val ]
-    external clearTimeout : float -> unit = "clearTimeout"[@@val ]
-  end[@@ns.jsFfi ]
-include
-  struct
-    external random : unit -> float = "random"[@@val ][@@scope "Math"]
-  end[@@ns.jsFfi ]
-include
-  struct
-    external href : string = "href"[@@val ][@@scope ("window", "location")]
-  end[@@ns.jsFfi ]
-include
-  struct
-    external dirname : string -> string = "dirname"[@@genType.import "path"]
-  end[@@ns.jsFfi ]
+
+  Syntax error!
+  tests/parsing/grammar/structure/jsFfiSugar.res:1:7-17
+
+  1 │ import setTimeout: (unit => unit, unit) => float
+  2 │ 
+  3 │ import setTimeout as timeout: (unit => unit, unit) => float
+
+  consecutive statements on a line must be separated by ';' or a newline
+
