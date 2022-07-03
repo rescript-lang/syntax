@@ -11,7 +11,8 @@
    ```json
    "jsx": {
      "version": 3,
-     "runtime": "classic"
+     "module": "react",
+     "mode": "classic"
    }
    ```
 
@@ -22,7 +23,8 @@
    ```json
    "jsx": {
      "version": 4,
-     "runtime": "classic"
+     "module": "react",
+     "mode": "classic"
    }
    ```
 
@@ -31,7 +33,8 @@
    ```json
    "jsx": {
      "version": 4,
-     "runtime": "automatic"
+     "module": "react",
+     "mode": "automatic"
    }
    ```
 
