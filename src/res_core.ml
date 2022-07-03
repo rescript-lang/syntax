@@ -556,10 +556,14 @@ let rec parseLident p =
     Parser.next p;
     let loc = mkLoc startPos p.prevEndPos in
     (ident, loc)
-  | _ -> (
-    match recoverLident p with
-    | Some () -> parseLident p
-    | None -> ("_", mkLoc startPos p.prevEndPos))
+  | token -> (
+    if token = Eof then (
+      Parser.err ~startPos p (Diagnostics.unexpected token p.breadcrumbs);
+      ("_", mkLoc startPos p.prevEndPos))
+    else
+      match recoverLident p with
+      | Some () -> parseLident p
+      | None -> ("_", mkLoc startPos p.prevEndPos))
 
 let parseIdent ~msg ~startPos p =
   match p.Parser.token with
@@ -639,11 +643,11 @@ let parseValuePath p =
           Parser.err p (Diagnostics.unexpected p.Parser.token p.breadcrumbs);
           Longident.Lident ident)
       in
-      if p.token <> Eof then Parser.next p;
+      Parser.nextUnsafe p;
       res
     | token ->
       Parser.err p (Diagnostics.unexpected token p.breadcrumbs);
-      if token <> Eof then Parser.next p;
+      Parser.nextUnsafe p;
       Longident.Lident "_"
   in
   Location.mkloc ident (mkLoc startPos p.prevEndPos)
@@ -830,7 +834,7 @@ let parseConstant p =
       Parser.err p (Diagnostics.unexpected token p.breadcrumbs);
       Pconst_string ("", None)
   in
-  Parser.next p;
+  Parser.nextUnsafe p;
   constant
 
 let parseTemplateConstant ~prefix (p : Parser.t) =
@@ -1124,11 +1128,14 @@ let rec parsePattern ?(alias = true) ?(or_ = true) p =
       Ast_helper.Pat.extension ~loc ~attrs extension
     | token -> (
       Parser.err p (Diagnostics.unexpected token p.breadcrumbs);
-      match
-        skipTokensAndMaybeRetry p ~isStartOfGrammar:Grammar.isAtomicPatternStart
-      with
-      | None -> Recover.defaultPattern ()
-      | Some () -> parsePattern p)
+      if p.Parser.token = Eof then Recover.defaultPattern ()
+      else
+        match
+          skipTokensAndMaybeRetry p
+            ~isStartOfGrammar:Grammar.isAtomicPatternStart
+        with
+        | None -> Recover.defaultPattern ()
+        | Some () -> parsePattern p)
   in
   let pat = if alias then parseAliasPattern ~attrs pat p else pat in
   if or_ then parseOrPattern pat p else pat
@@ -1871,11 +1878,13 @@ and parseAtomicExpr p =
     | token -> (
       let errPos = p.prevEndPos in
       Parser.err ~startPos:errPos p (Diagnostics.unexpected token p.breadcrumbs);
-      match
-        skipTokensAndMaybeRetry p ~isStartOfGrammar:Grammar.isAtomicExprStart
-      with
-      | None -> Recover.defaultExpr ()
-      | Some () -> parseAtomicExpr p)
+      if p.Parser.token = Eof then Recover.defaultExpr ()
+      else
+        match
+          skipTokensAndMaybeRetry p ~isStartOfGrammar:Grammar.isAtomicExprStart
+        with
+        | None -> Recover.defaultExpr ()
+        | Some () -> parseAtomicExpr p)
   in
   Parser.eatBreadcrumb p;
   expr
@@ -1906,7 +1915,7 @@ and parseFirstClassModuleExpr ~startPos p =
 and parseBracketAccess p expr startPos =
   Parser.leaveBreadcrumb p Grammar.ExprArrayAccess;
   let lbracket = p.startPos in
-  Parser.next p;
+  Parser.expect Lbracket p;
   let stringStart = p.startPos in
   match p.Parser.token with
   | String s -> (
@@ -3619,7 +3628,7 @@ and parseValueOrConstructor p =
       Ast_helper.Exp.ident ~loc (Location.mkloc lident loc)
     | token ->
       if acc = [] then (
-        Parser.next p;
+        Parser.nextUnsafe p;
         Parser.err p (Diagnostics.unexpected token p.breadcrumbs);
         Recover.defaultExpr ())
       else
@@ -3872,14 +3881,17 @@ and parseAtomicTypExpr ~attrs p =
     | Lbrace -> parseRecordOrObjectType ~attrs p
     | token -> (
       Parser.err p (Diagnostics.unexpected token p.breadcrumbs);
-      match
-        skipTokensAndMaybeRetry p ~isStartOfGrammar:Grammar.isAtomicTypExprStart
-      with
-      | Some () -> parseAtomicTypExpr ~attrs p
-      | None ->
-        Parser.err ~startPos:p.prevEndPos p
-          (Diagnostics.unexpected token p.breadcrumbs);
-        Recover.defaultType ())
+      if p.Parser.token = Eof then Recover.defaultType ()
+      else
+        match
+          skipTokensAndMaybeRetry p
+            ~isStartOfGrammar:Grammar.isAtomicTypExprStart
+        with
+        | Some () -> parseAtomicTypExpr ~attrs p
+        | None ->
+          Parser.err ~startPos:p.prevEndPos p
+            (Diagnostics.unexpected token p.breadcrumbs);
+          Recover.defaultType ())
   in
   Parser.eatBreadcrumb p;
   typ
