@@ -2403,17 +2403,6 @@ and parseLetBindings ~attrs p =
     match p.Parser.token with
     | And ->
       Parser.next p;
-      let attrs =
-        match p.token with
-        | Export ->
-          let exportLoc = mkLoc p.startPos p.endPos in
-          Parser.next p;
-          let genTypeAttr =
-            (Location.mkloc "genType" exportLoc, Parsetree.PStr [])
-          in
-          genTypeAttr :: attrs
-        | _ -> attrs
-      in
       ignore (Parser.optional p Let);
       (* overparse for fault tolerance *)
       let letBinding = parseLetBindingBody ~startPos ~attrs p in
@@ -5138,17 +5127,6 @@ and parseTypeDefinitions ~attrs ~name ~params ~startPos p =
     match p.Parser.token with
     | And ->
       Parser.next p;
-      let attrs =
-        match p.token with
-        | Export ->
-          let exportLoc = mkLoc p.startPos p.endPos in
-          Parser.next p;
-          let genTypeAttr =
-            (Location.mkloc "genType" exportLoc, Parsetree.PStr [])
-          in
-          genTypeAttr :: attrs
-        | _ -> attrs
-      in
       let typeDef = parseTypeDef ~attrs ~startPos p in
       loop p (typeDef :: defs)
     | _ -> List.rev defs
@@ -5321,11 +5299,6 @@ and parseStructureItemRegion p =
     parseNewlineOrSemicolonStructure p;
     let loc = mkLoc startPos p.prevEndPos in
     Some (Ast_helper.Str.include_ ~loc includeStatement)
-  | Export ->
-    let structureItem = parseJsExport ~attrs p in
-    parseNewlineOrSemicolonStructure p;
-    let loc = mkLoc startPos p.prevEndPos in
-    Some {structureItem with pstr_loc = loc}
   | Module ->
     Parser.beginRegion p;
     let structureItem = parseModuleOrModuleTypeImplOrPackExpr ~attrs p in
@@ -5371,43 +5344,6 @@ and parseStructureItemRegion p =
         (Ast_helper.Str.eval ~loc:(mkLoc p.startPos p.prevEndPos) ~attrs expr)
     | _ -> None)
   [@@progress Parser.next, Parser.expect]
-
-and parseJsExport ~attrs p =
-  let exportStart = p.Parser.startPos in
-  Parser.expect Token.Export p;
-  let exportLoc = mkLoc exportStart p.prevEndPos in
-  let genTypeAttr = (Location.mkloc "genType" exportLoc, Parsetree.PStr []) in
-  let attrs = genTypeAttr :: attrs in
-  match p.Parser.token with
-  | Typ -> (
-    match parseTypeDefinitionOrExtension ~attrs p with
-    | TypeDef {recFlag; types} -> Ast_helper.Str.type_ recFlag types
-    | TypeExt ext -> Ast_helper.Str.type_extension ext)
-  (* Let *)
-  | _ ->
-    let recFlag, letBindings = parseLetBindings ~attrs p in
-    Ast_helper.Str.value recFlag letBindings
-
-and parseSignJsExport ~attrs p =
-  let exportStart = p.Parser.startPos in
-  Parser.expect Token.Export p;
-  let exportLoc = mkLoc exportStart p.prevEndPos in
-  let genTypeAttr = (Location.mkloc "genType" exportLoc, Parsetree.PStr []) in
-  let attrs = genTypeAttr :: attrs in
-  match p.Parser.token with
-  | Typ -> (
-    match parseTypeDefinitionOrExtension ~attrs p with
-    | TypeDef {recFlag; types} ->
-      let loc = mkLoc exportStart p.prevEndPos in
-      Ast_helper.Sig.type_ recFlag types ~loc
-    | TypeExt ext ->
-      let loc = mkLoc exportStart p.prevEndPos in
-      Ast_helper.Sig.type_extension ext ~loc)
-  (* Let *)
-  | _ ->
-    let valueDesc = parseSignLetDesc ~attrs p in
-    let loc = mkLoc exportStart p.prevEndPos in
-    Ast_helper.Sig.value valueDesc ~loc
 
 (* include-statement ::= include module-expr *)
 and parseIncludeStatement ~attrs p =
@@ -5952,11 +5888,6 @@ and parseSignatureItemRegion p =
     parseNewlineOrSemicolonSignature p;
     let loc = mkLoc startPos p.prevEndPos in
     Some (Ast_helper.Sig.value ~loc externalDef)
-  | Export ->
-    let signatureItem = parseSignJsExport ~attrs p in
-    parseNewlineOrSemicolonSignature p;
-    let loc = mkLoc startPos p.prevEndPos in
-    Some {signatureItem with psig_loc = loc}
   | Exception ->
     let exceptionDef = parseExceptionDef ~attrs p in
     parseNewlineOrSemicolonSignature p;

@@ -123,7 +123,7 @@ let toString = function
 
 let isSignatureItemStart = function
   | Token.At | Let | Typ | External | Exception | Open | Include | Module | AtAt
-  | Export | PercentPercent ->
+  | PercentPercent ->
     true
   | _ -> false
 
@@ -160,8 +160,8 @@ let isJsxAttributeStart = function
   | _ -> false
 
 let isStructureItemStart = function
-  | Token.Open | Let | Typ | External | Export | Exception | Include | Module
-  | AtAt | PercentPercent | At ->
+  | Token.Open | Let | Typ | External | Exception | Include | Module | AtAt
+  | PercentPercent | At ->
     true
   | t when isExprStart t -> true
   | _ -> false
