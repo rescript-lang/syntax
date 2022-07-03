@@ -5,6 +5,7 @@
 * Implement syntax for arity zero vs arity one in uncurried application in [#139](https://github.com/rescript-lang/syntax/pull/139)
 * Fix parsing of first class module exprs as part of binary/ternary expr in [#256](https://github.com/rescript-lang/syntax/pull/256)
 * Fix formatter hanging on deeply nested function calls [#261](https://github.com/rescript-lang/syntax/issues/261)
+* Remove parsing of "import" and "export" which was never officially supported.
 
 ## ReScript 9.0.0
 
