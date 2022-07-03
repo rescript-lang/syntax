@@ -47,13 +47,13 @@ done <temp/files.txt
 # printing with ppx v4 classic
 find tests/ppx/react -name "*.res" -o -name "*.resi" >temp/files.txt
 while read file; do
-  rescript -ppx jsx4 -jsx-runtime classic $file &> $(exp2 $file "_v4_cls") & maybeWait
+  rescript -ppx jsx4 -jsx-mode classic $file &> $(exp2 $file "_v4_cls") & maybeWait
 done <temp/files.txt
 
 # printing with ppx v4 automatic
 find tests/ppx/react -name "*.res" -o -name "*.resi" >temp/files.txt
 while read file; do
-  rescript -ppx jsx4 -jsx-runtime automatic $file &> $(exp2 $file "_v4_auto") & maybeWait
+  rescript -ppx jsx4 -jsx-mode automatic $file &> $(exp2 $file "_v4_auto") & maybeWait
 done <temp/files.txt
 
 wait
