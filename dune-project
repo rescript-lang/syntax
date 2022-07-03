@@ -19,7 +19,7 @@
  (synopsis "ReScript parser/printer")
  (depends
   (ocaml
-   (>= 4.08))
+   (>= 4.10))
   (ocamlformat
    (= 0.22.4))
   (reanalyze
