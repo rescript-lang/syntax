@@ -555,6 +555,9 @@ let rec parseLident p =
     Parser.next p;
     let loc = mkLoc startPos p.prevEndPos in
     (ident, loc)
+  | Eof ->
+    Parser.err ~startPos p (Diagnostics.unexpected p.Parser.token p.breadcrumbs);
+    ("_", mkLoc startPos p.prevEndPos)
   | _ -> (
     match recoverLident p with
     | Some () -> parseLident p
@@ -599,6 +602,9 @@ let parseHashIdent ~startPos p =
     in
     Parser.next p;
     (i, mkLoc startPos p.prevEndPos)
+  | Eof ->
+    Parser.err ~startPos p (Diagnostics.unexpected p.token p.breadcrumbs);
+    ("", mkLoc startPos p.prevEndPos)
   | _ -> parseIdent ~startPos ~msg:ErrorMessages.variantIdent p
 
 (* Ldot (Ldot (Lident "Foo", "Bar"), "baz") *)
@@ -634,11 +640,11 @@ let parseValuePath p =
           Parser.err p (Diagnostics.unexpected p.Parser.token p.breadcrumbs);
           Longident.Lident ident)
       in
-      if p.token <> Eof then Parser.next p;
+      Parser.nextUnsafe p;
       res
     | token ->
       Parser.err p (Diagnostics.unexpected token p.breadcrumbs);
-      Parser.next p;
+      Parser.nextUnsafe p;
       Longident.Lident "_"
   in
   Location.mkloc ident (mkLoc startPos p.prevEndPos)
@@ -801,7 +807,7 @@ let parseConstant p =
       Parser.err p (Diagnostics.unexpected token p.breadcrumbs);
       Pconst_string ("", None)
   in
-  Parser.next p;
+  Parser.nextUnsafe p;
   constant
 
 let parseTemplateConstant ~prefix (p : Parser.t) =
@@ -1065,6 +1071,10 @@ let rec parsePattern ?(alias = true) ?(or_ = true) p =
             in
             Parser.next p;
             (i, mkLoc startPos p.prevEndPos)
+          | Eof ->
+            Parser.err ~startPos p
+              (Diagnostics.unexpected p.token p.breadcrumbs);
+            ("", mkLoc startPos p.prevEndPos)
           | _ -> parseIdent ~msg:ErrorMessages.variantIdent ~startPos p
         in
         match p.Parser.token with
@@ -1088,6 +1098,9 @@ let rec parsePattern ?(alias = true) ?(or_ = true) p =
       let extension = parseExtension p in
       let loc = mkLoc startPos p.prevEndPos in
       Ast_helper.Pat.extension ~loc ~attrs extension
+    | Eof ->
+      Parser.err p (Diagnostics.unexpected p.Parser.token p.breadcrumbs);
+      Recover.defaultPattern ()
     | token -> (
       Parser.err p (Diagnostics.unexpected token p.breadcrumbs);
       match
@@ -1834,6 +1847,10 @@ and parseAtomicExpr p =
       Parser.err p (Diagnostics.lident token);
       Parser.next p;
       Recover.defaultExpr ()
+    | Eof ->
+      Parser.err ~startPos:p.prevEndPos p
+        (Diagnostics.unexpected p.Parser.token p.breadcrumbs);
+      Recover.defaultExpr ()
     | token -> (
       let errPos = p.prevEndPos in
       Parser.err ~startPos:errPos p (Diagnostics.unexpected token p.breadcrumbs);
@@ -1872,7 +1889,7 @@ and parseFirstClassModuleExpr ~startPos p =
 and parseBracketAccess p expr startPos =
   Parser.leaveBreadcrumb p Grammar.ExprArrayAccess;
   let lbracket = p.startPos in
-  Parser.next p;
+  Parser.expect Lbracket p;
   let stringStart = p.startPos in
   match p.Parser.token with
   | String s -> (
@@ -3213,7 +3230,10 @@ and parseForRest hasOpeningParen pattern startPos p =
       Parser.err p (Diagnostics.unexpected token p.breadcrumbs);
       Asttypes.Upto
   in
-  Parser.next p;
+  if p.Parser.token = Eof then
+    Parser.err ~startPos:p.startPos p
+      (Diagnostics.unexpected p.Parser.token p.breadcrumbs)
+  else Parser.next p;
   let e2 = parseExpr ~context:WhenExpr p in
   if hasOpeningParen then Parser.expect Rparen p;
   Parser.expect Lbrace p;
@@ -3571,7 +3591,7 @@ and parseValueOrConstructor p =
       Ast_helper.Exp.ident ~loc (Location.mkloc lident loc)
     | token ->
       if acc = [] then (
-        Parser.next p;
+        Parser.nextUnsafe p;
         Parser.err p (Diagnostics.unexpected token p.breadcrumbs);
         Recover.defaultExpr ())
       else
@@ -3772,7 +3792,11 @@ and parseAtomicTypExpr ~attrs p =
     | SingleQuote ->
       Parser.next p;
       let ident, loc =
-        parseIdent ~msg:ErrorMessages.typeVar ~startPos:p.startPos p
+        if p.Parser.token = Eof then (
+          Parser.err ~startPos:p.startPos p
+            (Diagnostics.unexpected p.Parser.token p.breadcrumbs);
+          ("", mkLoc p.startPos p.prevEndPos))
+        else parseIdent ~msg:ErrorMessages.typeVar ~startPos:p.startPos p
       in
       Ast_helper.Typ.var ~loc ~attrs ident
     | Underscore ->
@@ -3818,6 +3842,9 @@ and parseAtomicTypExpr ~attrs p =
       let loc = mkLoc startPos p.prevEndPos in
       Ast_helper.Typ.extension ~attrs ~loc extension
     | Lbrace -> parseRecordOrObjectType ~attrs p
+    | Eof ->
+      Parser.err p (Diagnostics.unexpected p.Parser.token p.breadcrumbs);
+      Recover.defaultType ()
     | token -> (
       Parser.err p (Diagnostics.unexpected token p.breadcrumbs);
       match
@@ -4560,7 +4587,11 @@ and parseTypeParam p =
   | SingleQuote ->
     Parser.next p;
     let ident, loc =
-      parseIdent ~msg:ErrorMessages.typeParam ~startPos:p.startPos p
+      if p.Parser.token = Eof then (
+        Parser.err ~startPos:p.startPos p
+          (Diagnostics.unexpected p.Parser.token p.breadcrumbs);
+        ("", mkLoc p.startPos p.prevEndPos))
+      else parseIdent ~msg:ErrorMessages.typeParam ~startPos:p.startPos p
     in
     Some (Ast_helper.Typ.var ~loc ident, variance)
   | Underscore ->
