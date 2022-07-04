@@ -237,6 +237,11 @@ let rec goToClosing closingToken state =
 (* Madness *)
 let isEs6ArrowExpression ~inTernary p =
   Parser.lookahead p (fun state ->
+      let () =
+        match state.Parser.token with
+        | Lident "async" -> Parser.next state
+        | _ -> ()
+      in
       match state.Parser.token with
       | Lident _ | Underscore -> (
         Parser.next state;
@@ -2031,7 +2036,10 @@ and parseOperandExpr ~context p =
       let expr = parseUnaryExpr p in
       let loc = mkLoc startPos p.prevEndPos in
       Ast_helper.Exp.assert_ ~loc expr
-    | Lident "async" -> parseAsyncExpression p
+    | Lident "async"
+      when isEs6ArrowExpression ~inTernary:(context = TernaryTrueBranchExpr) p
+      ->
+      parseAsyncArrowExpression p
     | Lident "await" -> parseAwaitExpression p
     | Lazy ->
       Parser.next p;
@@ -2746,8 +2754,8 @@ and parseBracedOrRecordExpr p =
     let expr = parseRecordExpr ~startPos [] p in
     Parser.expect Rbrace p;
     expr
-  | Lident "async" ->
-    let expr = parseAsyncExpression p in
+  | Lident "async" when isEs6ArrowExpression ~inTernary:false p ->
+    let expr = parseAsyncArrowExpression p in
     let expr = parseExprBlock ~first:expr p in
     Parser.expect Rbrace p;
     let loc = mkLoc startPos p.prevEndPos in
@@ -3115,7 +3123,7 @@ and parseExprBlock ?first p =
   Parser.eatBreadcrumb p;
   overParseConstrainedOrCoercedOrArrowExpression p blockExpr
 
-and parseAsyncExpression p =
+and parseAsyncArrowExpression p =
   let startPos = p.Parser.startPos in
   match p.token with
   | Lident "async" ->

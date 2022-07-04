@@ -13,3 +13,11 @@ let fetch2 =
     (((fun url -> ((browserFetch2 url)[@bs ])))
     [@async ][@bs ]))
   [@ns.braces ])
+let async =
+  ((let f = async () in
+    () |. async;
+    async ();
+    async.async;
+    { async = (async.(async)) };
+    (result |. async) |. (mapAsync (fun a -> doStuff a)))
+  [@ns.braces ])
