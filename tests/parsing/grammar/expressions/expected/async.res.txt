@@ -1,0 +1,9 @@
+let greetUser =
+  ((fun userId ->
+      ((let name = ((getUserName userId)[@await ][@bs ]) in
+        ({js|Hello |js} ^ name) ^ {js|!|js})
+      [@ns.braces ]))
+  [@async ])
+;;((fun () -> 123)[@async ])
+let fetch = ((fun url -> ((browserFetch url)[@bs ]))
+  [@ns.braces ][@async ][@bs ])

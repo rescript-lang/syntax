@@ -2031,6 +2031,17 @@ and parseOperandExpr ~context p =
       let expr = parseUnaryExpr p in
       let loc = mkLoc startPos p.prevEndPos in
       Ast_helper.Exp.assert_ ~loc expr
+    | Async ->
+      let asyncAttr =
+        (Location.mkloc "async" (mkLoc startPos p.endPos), Parsetree.PStr [])
+      in
+      Parser.next p;
+      let expr = parseEs6ArrowExpression p in
+      {
+        expr with
+        pexp_attributes = asyncAttr :: expr.pexp_attributes;
+        pexp_loc = {expr.pexp_loc with loc_start = startPos};
+      }
     | Await ->
       let awaitLoc = mkLoc startPos p.endPos in
       let awaitAttr = (Location.mkloc "await" awaitLoc, Parsetree.PStr []) in
