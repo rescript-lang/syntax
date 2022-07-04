@@ -17,3 +17,16 @@ let maybeSomeValue = switch await fetchData(url) {
 | data => Some(data)
 | exception JsError(_) => None
 }
+
+(await f)(a, b) 
+-(await f)
+await 1 + await 2
+
+lazy (await f())
+assert (await f())
+
+(await f).json()
+
+user.data = await fetch()
+
+<Navbar promise={await gc()}>{await weirdReactSuspenseApi}</Navbar>
