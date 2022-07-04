@@ -65,6 +65,13 @@ let processFunctionAttributes attrs =
   in
   process false false [] attrs
 
+let hasAwaitAttribute attrs =
+  List.exists
+    (function
+      | {Location.txt = "await"}, _ -> true
+      | _ -> false)
+    attrs
+
 let collectListExpressions expr =
   let rec collect acc expr =
     match expr.pexp_desc with
@@ -178,8 +185,8 @@ let filterParsingAttrs attrs =
       match attr with
       | ( {
             Location.txt =
-              ( "ns.ternary" | "ns.braces" | "res.template" | "bs" | "ns.iflet"
-              | "ns.namedArgLoc" | "ns.optional" );
+              ( "ns.ternary" | "ns.braces" | "res.template" | "await" | "bs"
+              | "ns.iflet" | "ns.namedArgLoc" | "ns.optional" );
           },
           _ ) ->
         false

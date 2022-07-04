@@ -3278,6 +3278,11 @@ and printExpression ~customLayout (e : Parsetree.expression) cmtTbl =
     | Pexp_poly _ -> Doc.text "Pexp_poly not impemented in printer"
     | Pexp_object _ -> Doc.text "Pexp_object not impemented in printer"
   in
+  let exprWithAwait =
+    if ParsetreeViewer.hasAwaitAttribute e.pexp_attributes then
+      Doc.concat [Doc.text "await "; printedExpression]
+    else printedExpression
+  in
   let shouldPrintItsOwnAttributes =
     match e.pexp_desc with
     | Pexp_apply _ | Pexp_fun _ | Pexp_newtype _ | Pexp_setfield _
@@ -3289,12 +3294,11 @@ and printExpression ~customLayout (e : Parsetree.expression) cmtTbl =
     | _ -> false
   in
   match e.pexp_attributes with
-  | [] -> printedExpression
+  | [] -> exprWithAwait
   | attrs when not shouldPrintItsOwnAttributes ->
     Doc.group
-      (Doc.concat
-         [printAttributes ~customLayout attrs cmtTbl; printedExpression])
-  | _ -> printedExpression
+      (Doc.concat [printAttributes ~customLayout attrs cmtTbl; exprWithAwait])
+  | _ -> exprWithAwait
 
 and printPexpFun ~customLayout ~inCallback e cmtTbl =
   let attrsOnArrow, parameters, returnExpr = ParsetreeViewer.funExpr e in
