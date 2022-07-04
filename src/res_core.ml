@@ -556,8 +556,8 @@ let rec parseLident p =
     Parser.next p;
     let loc = mkLoc startPos p.prevEndPos in
     (ident, loc)
-  | token when token = Eof ->
-    Parser.err ~startPos p (Diagnostics.unexpected token p.breadcrumbs);
+  | Eof ->
+    Parser.err ~startPos p (Diagnostics.unexpected p.Parser.token p.breadcrumbs);
     ("_", mkLoc startPos p.prevEndPos)
   | _ -> (
     match recoverLident p with
@@ -603,8 +603,8 @@ let parseHashIdent ~startPos p =
     in
     Parser.next p;
     (i, mkLoc startPos p.prevEndPos)
-  | token when token = Eof ->
-    Parser.err ~startPos p (Diagnostics.unexpected token p.breadcrumbs);
+  | Eof ->
+    Parser.err ~startPos p (Diagnostics.unexpected p.token p.breadcrumbs);
     ("", mkLoc startPos p.prevEndPos)
   | _ -> parseIdent ~startPos ~msg:ErrorMessages.variantIdent p
 
@@ -1096,8 +1096,9 @@ let rec parsePattern ?(alias = true) ?(or_ = true) p =
             in
             Parser.next p;
             (i, mkLoc startPos p.prevEndPos)
-          | token when token = Eof ->
-            Parser.err ~startPos p (Diagnostics.unexpected token p.breadcrumbs);
+          | Eof ->
+            Parser.err ~startPos p
+              (Diagnostics.unexpected p.token p.breadcrumbs);
             ("", mkLoc startPos p.prevEndPos)
           | _ -> parseIdent ~msg:ErrorMessages.variantIdent ~startPos p
         in
@@ -1122,8 +1123,8 @@ let rec parsePattern ?(alias = true) ?(or_ = true) p =
       let extension = parseExtension p in
       let loc = mkLoc startPos p.prevEndPos in
       Ast_helper.Pat.extension ~loc ~attrs extension
-    | token when token = Eof ->
-      Parser.err p (Diagnostics.unexpected token p.breadcrumbs);
+    | Eof ->
+      Parser.err p (Diagnostics.unexpected p.Parser.token p.breadcrumbs);
       Recover.defaultPattern ()
     | token -> (
       Parser.err p (Diagnostics.unexpected token p.breadcrumbs);
@@ -1871,9 +1872,9 @@ and parseAtomicExpr p =
       Parser.err p (Diagnostics.lident token);
       Parser.next p;
       Recover.defaultExpr ()
-    | token when token = Eof ->
+    | Eof ->
       Parser.err ~startPos:p.prevEndPos p
-        (Diagnostics.unexpected token p.breadcrumbs);
+        (Diagnostics.unexpected p.Parser.token p.breadcrumbs);
       Recover.defaultExpr ()
     | token -> (
       let errPos = p.prevEndPos in
@@ -3877,8 +3878,8 @@ and parseAtomicTypExpr ~attrs p =
       let loc = mkLoc startPos p.prevEndPos in
       Ast_helper.Typ.extension ~attrs ~loc extension
     | Lbrace -> parseRecordOrObjectType ~attrs p
-    | token when token = Eof ->
-      Parser.err p (Diagnostics.unexpected token p.breadcrumbs);
+    | Eof ->
+      Parser.err p (Diagnostics.unexpected p.Parser.token p.breadcrumbs);
       Recover.defaultType ()
     | token -> (
       Parser.err p (Diagnostics.unexpected token p.breadcrumbs);
