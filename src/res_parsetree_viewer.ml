@@ -11,7 +11,7 @@ let arrowType ct =
       process attrsBefore (arg :: acc) typ2
     | {
      ptyp_desc = Ptyp_arrow ((Nolabel as lbl), typ1, typ2);
-     ptyp_attributes = [({txt = "bs"}, _)] as attrs;
+     ptyp_attributes = [({txt = "bs" | "async"}, _)] as attrs;
     } ->
       let arg = (attrs, lbl, typ1) in
       process attrsBefore (arg :: acc) typ2
@@ -54,6 +54,16 @@ let processUncurriedAttribute attrs =
     | attr :: rest -> process uncurriedSpotted (attr :: acc) rest
   in
   process false [] attrs
+
+let processFunctionAttributes attrs =
+  let rec process async uncurried acc attrs =
+    match attrs with
+    | [] -> (async, uncurried, List.rev acc)
+    | ({Location.txt = "bs"}, _) :: rest -> process async true acc rest
+    | ({Location.txt = "async"}, _) :: rest -> process true uncurried acc rest
+    | attr :: rest -> process async uncurried (attr :: acc) rest
+  in
+  process false false [] attrs
 
 let collectListExpressions expr =
   let rec collect acc expr =
@@ -316,7 +326,8 @@ let hasAttributes attrs =
       match attr with
       | ( {
             Location.txt =
-              "bs" | "res.template" | "ns.ternary" | "ns.braces" | "ns.iflet";
+              ( "bs" | "async" | "res.template" | "ns.ternary" | "ns.braces"
+              | "ns.iflet" );
           },
           _ ) ->
         false

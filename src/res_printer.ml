@@ -3135,8 +3135,8 @@ and printExpression ~customLayout (e : Parsetree.expression) cmtTbl =
         cmtTbl
     | Pexp_fun _ | Pexp_newtype _ ->
       let attrsOnArrow, parameters, returnExpr = ParsetreeViewer.funExpr e in
-      let uncurried, attrs =
-        ParsetreeViewer.processUncurriedAttribute attrsOnArrow
+      let async, uncurried, attrs =
+        ParsetreeViewer.processFunctionAttributes attrsOnArrow
       in
       let returnExpr, typConstraint =
         match returnExpr.pexp_desc with
@@ -3156,7 +3156,7 @@ and printExpression ~customLayout (e : Parsetree.expression) cmtTbl =
       in
       let parametersDoc =
         printExprFunParameters ~customLayout ~inCallback:NoCallback ~uncurried
-          ~hasConstraint parameters cmtTbl
+          ~async ~hasConstraint parameters cmtTbl
       in
       let returnExprDoc =
         let optBraces, _ = ParsetreeViewer.processBracesAttr returnExpr in
@@ -3298,8 +3298,8 @@ and printExpression ~customLayout (e : Parsetree.expression) cmtTbl =
 
 and printPexpFun ~customLayout ~inCallback e cmtTbl =
   let attrsOnArrow, parameters, returnExpr = ParsetreeViewer.funExpr e in
-  let uncurried, attrs =
-    ParsetreeViewer.processUncurriedAttribute attrsOnArrow
+  let async, uncurried, attrs =
+    ParsetreeViewer.processFunctionAttributes attrsOnArrow
   in
   let returnExpr, typConstraint =
     match returnExpr.pexp_desc with
@@ -3313,7 +3313,7 @@ and printPexpFun ~customLayout ~inCallback e cmtTbl =
     | _ -> (returnExpr, None)
   in
   let parametersDoc =
-    printExprFunParameters ~customLayout ~inCallback ~uncurried
+    printExprFunParameters ~customLayout ~inCallback ~async ~uncurried
       ~hasConstraint:
         (match typConstraint with
         | Some _ -> true
@@ -4575,8 +4575,8 @@ and printCase ~customLayout (case : Parsetree.case) cmtTbl =
   in
   Doc.group (Doc.concat [Doc.text "| "; content])
 
-and printExprFunParameters ~customLayout ~inCallback ~uncurried ~hasConstraint
-    parameters cmtTbl =
+and printExprFunParameters ~customLayout ~inCallback ~async ~uncurried
+    ~hasConstraint parameters cmtTbl =
   match parameters with
   (* let f = _ => () *)
   | [
@@ -4589,8 +4589,11 @@ and printExprFunParameters ~customLayout ~inCallback ~uncurried ~hasConstraint
      };
   ]
     when not uncurried ->
-    let doc = if hasConstraint then Doc.text "(_)" else Doc.text "_" in
-    printComments doc cmtTbl ppat_loc
+    let any =
+      let doc = if hasConstraint then Doc.text "(_)" else Doc.text "_" in
+      printComments doc cmtTbl ppat_loc
+    in
+    if async then Doc.concat [Doc.text "async "; any] else any
   (* let f = a => () *)
   | [
    ParsetreeViewer.Parameter
@@ -4604,7 +4607,8 @@ and printExprFunParameters ~customLayout ~inCallback ~uncurried ~hasConstraint
     when not uncurried ->
     let txtDoc =
       let var = printIdentLike stringLoc.txt in
-      if hasConstraint then addParens var else var
+      let var = if hasConstraint then addParens var else var in
+      if async then Doc.concat [Doc.text "async ("; var; Doc.rparen] else var
     in
     printComments txtDoc cmtTbl stringLoc.loc
   (* let f = () => () *)
@@ -4619,7 +4623,7 @@ and printExprFunParameters ~customLayout ~inCallback ~uncurried ~hasConstraint
      };
   ]
     when not uncurried ->
-    let doc = Doc.text "()" in
+    let doc = if async then Doc.text "async ()" else Doc.text "()" in
     printComments doc cmtTbl loc
   (* let f = (~greeting, ~from as hometown, ~x=?) => () *)
   | parameters ->
@@ -4628,7 +4632,13 @@ and printExprFunParameters ~customLayout ~inCallback ~uncurried ~hasConstraint
       | FitsOnOneLine -> true
       | _ -> false
     in
-    let lparen = if uncurried then Doc.text "(. " else Doc.lparen in
+    let maybeAsyncLparen =
+      match (async, uncurried) with
+      | true, true -> Doc.text "async (. "
+      | true, false -> Doc.text "async ("
+      | false, true -> Doc.text "(. "
+      | false, false -> Doc.lparen
+    in
     let shouldHug = ParsetreeViewer.parametersShouldHug parameters in
     let printedParamaters =
       Doc.concat
@@ -4644,7 +4654,7 @@ and printExprFunParameters ~customLayout ~inCallback ~uncurried ~hasConstraint
     Doc.group
       (Doc.concat
          [
-           lparen;
+           maybeAsyncLparen;
            (if shouldHug || inCallback then printedParamaters
            else
              Doc.concat
