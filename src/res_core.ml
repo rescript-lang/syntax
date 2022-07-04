@@ -2031,27 +2031,8 @@ and parseOperandExpr ~context p =
       let expr = parseUnaryExpr p in
       let loc = mkLoc startPos p.prevEndPos in
       Ast_helper.Exp.assert_ ~loc expr
-    | Async ->
-      let asyncAttr =
-        (Location.mkloc "async" (mkLoc startPos p.endPos), Parsetree.PStr [])
-      in
-      Parser.next p;
-      let expr = parseEs6ArrowExpression p in
-      {
-        expr with
-        pexp_attributes = asyncAttr :: expr.pexp_attributes;
-        pexp_loc = {expr.pexp_loc with loc_start = startPos};
-      }
-    | Await ->
-      let awaitLoc = mkLoc startPos p.endPos in
-      let awaitAttr = (Location.mkloc "await" awaitLoc, Parsetree.PStr []) in
-      Parser.next p;
-      let expr = parseUnaryExpr p in
-      {
-        expr with
-        pexp_attributes = awaitAttr :: expr.pexp_attributes;
-        pexp_loc = {expr.pexp_loc with loc_start = awaitLoc.loc_start};
-      }
+    | Lident "async" -> parseAsyncExpression p
+    | Lident "await" -> parseAwaitExpression p
     | Lazy ->
       Parser.next p;
       let expr = parseUnaryExpr p in
@@ -2765,6 +2746,20 @@ and parseBracedOrRecordExpr p =
     let expr = parseRecordExpr ~startPos [] p in
     Parser.expect Rbrace p;
     expr
+  | Lident "async" ->
+    let expr = parseAsyncExpression p in
+    let expr = parseExprBlock ~first:expr p in
+    Parser.expect Rbrace p;
+    let loc = mkLoc startPos p.prevEndPos in
+    let braces = makeBracesAttr loc in
+    {expr with pexp_attributes = braces :: expr.pexp_attributes}
+  | Lident "await" ->
+    let expr = parseAwaitExpression p in
+    let expr = parseExprBlock ~first:expr p in
+    Parser.expect Rbrace p;
+    let loc = mkLoc startPos p.prevEndPos in
+    let braces = makeBracesAttr loc in
+    {expr with pexp_attributes = braces :: expr.pexp_attributes}
   | Uident _ | Lident _ -> (
     let startToken = p.token in
     let valueOrConstructor = parseValueOrConstructor p in
@@ -3119,6 +3114,37 @@ and parseExprBlock ?first p =
   in
   Parser.eatBreadcrumb p;
   overParseConstrainedOrCoercedOrArrowExpression p blockExpr
+
+and parseAsyncExpression p =
+  let startPos = p.Parser.startPos in
+  match p.token with
+  | Lident "async" ->
+    let asyncAttr =
+      (Location.mkloc "async" (mkLoc startPos p.endPos), Parsetree.PStr [])
+    in
+    Parser.next p;
+    let expr = parseEs6ArrowExpression p in
+    {
+      expr with
+      pexp_attributes = asyncAttr :: expr.pexp_attributes;
+      pexp_loc = {expr.pexp_loc with loc_start = startPos};
+    }
+  | _ -> assert false
+
+and parseAwaitExpression p =
+  let startPos = p.Parser.startPos in
+  match p.token with
+  | Lident "await" ->
+    let awaitLoc = mkLoc startPos p.endPos in
+    let awaitAttr = (Location.mkloc "await" awaitLoc, Parsetree.PStr []) in
+    Parser.next p;
+    let expr = parseUnaryExpr p in
+    {
+      expr with
+      pexp_attributes = awaitAttr :: expr.pexp_attributes;
+      pexp_loc = {expr.pexp_loc with loc_start = awaitLoc.loc_start};
+    }
+  | _ -> assert false
 
 and parseTryExpression p =
   let startPos = p.Parser.startPos in
