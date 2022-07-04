@@ -1,6 +1,7 @@
 module Comment = Res_comment
 
 type t =
+  | Await
   | Open
   | True
   | False
@@ -111,6 +112,7 @@ let precedence = function
   | _ -> 0
 
 let toString = function
+  | Await -> "await"
   | Open -> "open"
   | True -> "true"
   | False -> "false"
@@ -207,6 +209,7 @@ let toString = function
   | ModuleComment (_loc, s) -> "ModuleComment " ^ s
 
 let keywordTable = function
+  | "await" -> Await
   | "and" -> And
   | "as" -> As
   | "assert" -> Assert
@@ -238,9 +241,9 @@ let keywordTable = function
   [@@raises Not_found]
 
 let isKeyword = function
-  | And | As | Assert | Constraint | Else | Exception | External | False | For
-  | If | In | Include | Land | Lazy | Let | List | Lor | Module | Mutable | Of
-  | Open | Private | Rec | Switch | True | Try | Typ | When | While ->
+  | Await | And | As | Assert | Constraint | Else | Exception | External | False
+  | For | If | In | Include | Land | Lazy | Let | List | Lor | Module | Mutable
+  | Of | Open | Private | Rec | Switch | True | Try | Typ | When | While ->
     true
   | _ -> false
 
