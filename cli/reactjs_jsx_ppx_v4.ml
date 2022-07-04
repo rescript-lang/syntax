@@ -979,8 +979,8 @@ let transformComponentDefinition nestedModules mapper structure returnStructures
           makePropsRecordType "props" emptyLoc
             (((true, "key", [], keyType emptyLoc) :: namedTypeList)
             @
-            if hasForwardRef then [(true, "ref", [], refType pstr_loc)] else []
-            )
+            if hasForwardRef then [(true, "ref", [], refType Location.none)]
+            else [])
         in
         let innerExpression =
           if hasForwardRef then
@@ -1047,7 +1047,7 @@ let transformComponentDefinition nestedModules mapper structure returnStructures
                 {ppat_desc = Ppat_construct ({txt = Lident "()"}, _) | Ppat_any},
                 expr ) ->
             (patterns, expr)
-          | Pexp_fun (arg_label, _default, {ppat_loc}, expr) ->
+          | Pexp_fun (arg_label, _default, {ppat_loc; ppat_desc}, expr) -> (
             if isLabelled arg_label || isOptional arg_label then
               returnedExpression
                 (( {loc = ppat_loc; txt = Lident (getLabel arg_label)},
@@ -1056,24 +1056,26 @@ let transformComponentDefinition nestedModules mapper structure returnStructures
                      {txt = getLabel arg_label; loc = ppat_loc} )
                 :: patterns)
                 expr
-            else returnedExpression patterns expr
+            else
+              (* Special case of nolabel arg "ref" in forwardRef fn *)
+              (* let make = React.forwardRef(ref => body) *)
+              match ppat_desc with
+              | Ppat_var {txt}
+              | Ppat_constraint ({ppat_desc = Ppat_var {txt}}, _)
+                when txt = "ref" ->
+                returnedExpression
+                  (( {loc = ppat_loc; txt = Lident txt},
+                     Pat.var ~attrs:optionalAttr {txt; loc = ppat_loc} )
+                  :: patterns)
+                  expr
+              | _ -> returnedExpression patterns expr)
           | _ -> (patterns, expr)
         in
         let patternsWithLid, expression = returnedExpression [] expression in
-        let patternsWithLid =
-          List.rev patternsWithLid
-          @
-          if hasForwardRef then
-            [
-              ( Location.mknoloc (Lident "ref"),
-                Pat.var ~attrs:optionalAttr (Location.mknoloc "ref") );
-            ]
-          else []
-        in
         let pattern =
           match patternsWithLid with
           | [] -> Pat.any ()
-          | _ -> Pat.record patternsWithLid Open
+          | _ -> Pat.record (List.rev patternsWithLid) Open
         in
         (* add patttern matching for optional prop value *)
         let expression =
