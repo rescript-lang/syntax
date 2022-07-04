@@ -12,3 +12,5 @@ let () =
       ((((fetch {js|comment.json|js})[@await ]).json ())[@await ]).(0) in
     Js.log2 users comments)
   [@ns.braces ])
+let () = ((delay 10)[@ns.braces ][@await ])
+let () = ((((delay 10)[@await ]); ((delay 20)[@await ]))[@ns.braces ])

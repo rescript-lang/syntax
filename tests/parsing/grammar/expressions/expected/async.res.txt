@@ -7,3 +7,9 @@ let greetUser =
 ;;((fun () -> 123)[@async ])
 let fetch = ((fun url -> ((browserFetch url)[@bs ]))
   [@ns.braces ][@async ][@bs ])
+let fetch2 =
+  (((((fun url -> ((browserFetch url)[@bs ])))
+    [@async ][@bs ]);
+    (((fun url -> ((browserFetch2 url)[@bs ])))
+    [@async ][@bs ]))
+  [@ns.braces ])

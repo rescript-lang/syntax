@@ -15,3 +15,12 @@ let () = {
   let comments = (await (await fetch("comment.json")).json())[0];
   Js.log2(users, comments)
 }
+
+let () = {
+    await delay(10)
+}
+
+let () = {
+    await delay(10)
+    await delay(20)
+}
