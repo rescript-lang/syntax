@@ -11,3 +11,9 @@ let f = async (.) => ()
 let f = async f => f()
 let f = async (a, b) => a + b
 let f = async (. a, b) => a + b
+
+
+let maybeSomeValue = switch await fetchData(url) {    
+| data => Some(data)
+| exception JsError(_) => None
+}

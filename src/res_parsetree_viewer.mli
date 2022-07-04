@@ -22,6 +22,8 @@ val processFunctionAttributes :
   Parsetree.attributes ->
   bool (* async *) * bool (* uncurried *) * Parsetree.attributes
 
+val hasAwaitAttribute : Parsetree.attributes -> bool
+
 type ifConditionKind =
   | If of Parsetree.expression
   | IfLet of Parsetree.pattern * Parsetree.expression
