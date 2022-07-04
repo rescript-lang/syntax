@@ -151,7 +151,7 @@ let isExprStart = function
   | Underscore (* _ => doThings() *)
   | Uident _ | Lident _ | Hash | Lparen | List | Module | Lbracket | Lbrace
   | LessThan | Minus | MinusDot | Plus | PlusDot | Bang | Percent | At | If
-  | Switch | While | For | Assert | Lazy | Try ->
+  | Switch | While | For | Assert | Lazy | Try | Await ->
     true
   | _ -> false
 
