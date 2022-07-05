@@ -323,8 +323,8 @@ let makePropsRecordTypeSig propsName loc namedTypeList =
         ~kind:(Ptype_record labelDeclList);
     ]
 
-let transformUppercaseCall3 jsxRuntime modulePath mapper loc attrs
-    callExpression callArguments =
+let transformUppercaseCall3 ~jsxMode modulePath mapper loc attrs callExpression
+    callArguments =
   let children, argsWithLabels =
     extractChildren ~loc ~removeLastPositionUnit:true callArguments
   in
@@ -345,7 +345,7 @@ let transformUppercaseCall3 jsxRuntime modulePath mapper loc attrs
     | ListLiteral expression -> (
       (* this is a hack to support react components that introspect into their children *)
       childrenArg := Some expression;
-      match jsxRuntime with
+      match jsxMode with
       | "automatic" ->
         [
           ( labelled "children",
@@ -382,7 +382,7 @@ let transformUppercaseCall3 jsxRuntime modulePath mapper loc attrs
 
   (* handle key, ref, children *)
   (* React.createElement(Component.make, props, ...children) *)
-  match jsxRuntime with
+  match jsxMode with
   (* The new jsx transform *)
   | "automatic" ->
     let record = recordFromProps ~removeKey:true callExpression args in
@@ -432,10 +432,10 @@ let transformUppercaseCall3 jsxRuntime modulePath mapper loc attrs
         ])
   [@@raises Invalid_argument]
 
-let transformLowercaseCall3 jsxRuntime mapper loc attrs callExpression
+let transformLowercaseCall3 ~jsxMode mapper loc attrs callExpression
     callArguments id =
   let componentNameExpr = constantString ~loc id in
-  match jsxRuntime with
+  match jsxMode with
   (* the new jsx transform *)
   | "automatic" ->
     let children, nonChildrenProps =
@@ -1221,7 +1221,7 @@ let reactComponentSignatureTransform mapper signatures =
   List.fold_right (transformComponentSignature mapper) signatures []
   [@@raises Invalid_argument]
 
-let transformJsxCall jsxRuntime mapper callExpression callArguments attrs =
+let transformJsxCall ~jsxMode mapper callExpression callArguments attrs =
   match callExpression.pexp_desc with
   | Pexp_ident caller -> (
     match caller with
@@ -1231,13 +1231,13 @@ let transformJsxCall jsxRuntime mapper callExpression callArguments attrs =
            "JSX: `createElement` should be preceeded by a module name.")
     (* Foo.createElement(~prop1=foo, ~prop2=bar, ~children=[], ()) *)
     | {loc; txt = Ldot (modulePath, ("createElement" | "make"))} ->
-      transformUppercaseCall3 jsxRuntime modulePath mapper loc attrs
+      transformUppercaseCall3 ~jsxMode modulePath mapper loc attrs
         callExpression callArguments
     (* div(~prop1=foo, ~prop2=bar, ~children=[bla], ()) *)
     (* turn that into
        ReactDOMRe.createElement(~props=ReactDOMRe.props(~props1=foo, ~props2=bar, ()), [|bla|]) *)
     | {loc; txt = Lident id} ->
-      transformLowercaseCall3 jsxRuntime mapper loc attrs callExpression
+      transformLowercaseCall3 ~jsxMode mapper loc attrs callExpression
         callArguments id
     | {txt = Ldot (_, anythingNotCreateElementOrMake)} ->
       raise
@@ -1270,7 +1270,7 @@ let structure nestedModules mapper structure =
     @@ reactComponentTransform nestedModules mapper structures
   [@@raises Invalid_argument]
 
-let expr jsxRuntime mapper expression =
+let expr ~jsxMode mapper expression =
   match expression with
   (* Does the function application have the @JSX attribute? *)
   | {pexp_desc = Pexp_apply (callExpression, callArguments); pexp_attributes}
@@ -1284,7 +1284,7 @@ let expr jsxRuntime mapper expression =
     (* no JSX attribute *)
     | [], _ -> default_mapper.expr mapper expression
     | _, nonJSXAttributes ->
-      transformJsxCall jsxRuntime mapper callExpression callArguments
+      transformJsxCall ~jsxMode mapper callExpression callArguments
         nonJSXAttributes)
   (* is it a list with jsx attribute? Reason <>foo</> desugars to [@JSX][foo]*)
   | {
@@ -1305,7 +1305,7 @@ let expr jsxRuntime mapper expression =
     | _, nonJSXAttributes ->
       let loc = {loc with loc_ghost = true} in
       let fragment =
-        match jsxRuntime with
+        match jsxMode with
         | "automatic" ->
           Exp.ident ~loc {loc; txt = Ldot (Lident "React", "jsxFragment")}
         | "classic" | _ ->
@@ -1315,7 +1315,7 @@ let expr jsxRuntime mapper expression =
       let args =
         [
           (nolabel, fragment);
-          (match jsxRuntime with
+          (match jsxMode with
           | "automatic" ->
             ( nolabel,
               Exp.record
@@ -1341,7 +1341,7 @@ let expr jsxRuntime mapper expression =
         ~loc (* throw away the [@JSX] attribute and keep the others, if any *)
         ~attrs:nonJSXAttributes
         (* ReactDOMRe.createElement *)
-        (match jsxRuntime with
+        (match jsxMode with
         | "automatic" ->
           if countOfChildren childrenExpr > 1 then
             Exp.ident ~loc {loc; txt = Ldot (Lident "React", "jsxs")}
@@ -1362,23 +1362,23 @@ let module_binding nestedModules mapper module_binding =
   [@@raises Failure]
 
 (* TODO: some line number might still be wrong *)
-let jsxMapper jsxRuntime nestedModules =
+let jsxMapper ~jsxMode nestedModules =
   let structure = structure nestedModules in
   let module_binding = module_binding nestedModules in
-  let expr = expr jsxRuntime in
+  let expr = expr ~jsxMode in
   {default_mapper with structure; expr; signature; module_binding}
   [@@raises Invalid_argument, Failure]
 
-let rewrite_implementation jsxRuntime (code : Parsetree.structure) :
+let rewrite_implementation ~jsx_mode (code : Parsetree.structure) :
     Parsetree.structure =
   let nestedModules = ref [] in
-  let mapper = jsxMapper jsxRuntime nestedModules in
+  let mapper = jsxMapper ~jsxMode:jsx_mode nestedModules in
   mapper.structure mapper code
   [@@raises Invalid_argument, Failure]
 
-let rewrite_signature jsxRuntime (code : Parsetree.signature) :
+let rewrite_signature ~jsx_mode (code : Parsetree.signature) :
     Parsetree.signature =
   let nestedModules = ref [] in
-  let mapper = jsxMapper jsxRuntime nestedModules in
+  let mapper = jsxMapper ~jsxMode:jsx_mode nestedModules in
   mapper.signature mapper code
   [@@raises Invalid_argument, Failure]
