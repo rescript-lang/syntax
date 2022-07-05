@@ -289,7 +289,8 @@ module CliArgProcessor = struct
           match ppx with
           | "jsx3" -> Reactjs_jsx_ppx_v3.rewrite_signature parseResult.parsetree
           | "jsx4" ->
-            Reactjs_jsx_ppx_v4.rewrite_signature jsxMode parseResult.parsetree
+            Reactjs_jsx_ppx_v4.rewrite_signature ~jsx_mode:jsxMode
+              parseResult.parsetree
           | _ -> parseResult.parsetree
         in
         printEngine.printInterface ~width ~filename
@@ -309,7 +310,7 @@ module CliArgProcessor = struct
           | "jsx3" ->
             Reactjs_jsx_ppx_v3.rewrite_implementation parseResult.parsetree
           | "jsx4" ->
-            Reactjs_jsx_ppx_v4.rewrite_implementation jsxMode
+            Reactjs_jsx_ppx_v4.rewrite_implementation ~jsx_mode:jsxMode
               parseResult.parsetree
           | _ -> parseResult.parsetree
         in
