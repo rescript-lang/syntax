@@ -1305,23 +1305,50 @@ let expr jsxRuntime mapper expression =
     | _, nonJSXAttributes ->
       let loc = {loc with loc_ghost = true} in
       let fragment =
-        Exp.ident ~loc {loc; txt = Ldot (Lident "ReasonReact", "fragment")}
+        match jsxRuntime with
+        | "automatic" ->
+          Exp.ident ~loc {loc; txt = Ldot (Lident "React", "jsxFragment")}
+        | "classic" | _ ->
+          Exp.ident ~loc {loc; txt = Ldot (Lident "ReasonReact", "fragment")}
       in
       let childrenExpr = transformChildrenIfList ~loc ~mapper listItems in
       let args =
         [
-          (* "div" *)
           (nolabel, fragment);
-          (* [|moreCreateElementCallsHere|] *)
-          (nolabel, childrenExpr);
+          (match jsxRuntime with
+          | "automatic" ->
+            ( nolabel,
+              Exp.record
+                [
+                  ( Location.mknoloc @@ Lident "children",
+                    match childrenExpr with
+                    | {pexp_desc = Pexp_array children} -> (
+                      match children with
+                      | [] -> recordWithOnlyKey ~loc:Location.none
+                      | [child] -> child
+                      | _ -> childrenExpr)
+                    | _ -> childrenExpr );
+                ]
+                None )
+          | "classic" | _ -> (nolabel, childrenExpr));
         ]
+      in
+      let countOfChildren = function
+        | {pexp_desc = Pexp_array children} -> List.length children
+        | _ -> 0
       in
       Exp.apply
         ~loc (* throw away the [@JSX] attribute and keep the others, if any *)
         ~attrs:nonJSXAttributes
         (* ReactDOMRe.createElement *)
-        (Exp.ident ~loc
-           {loc; txt = Ldot (Lident "ReactDOMRe", "createElement")})
+        (match jsxRuntime with
+        | "automatic" ->
+          if countOfChildren childrenExpr > 1 then
+            Exp.ident ~loc {loc; txt = Ldot (Lident "React", "jsxs")}
+          else Exp.ident ~loc {loc; txt = Ldot (Lident "React", "jsx")}
+        | "classic" | _ ->
+          Exp.ident ~loc
+            {loc; txt = Ldot (Lident "ReactDOMRe", "createElement")})
         args)
   (* Delegate to the default mapper, a deep identity traversal *)
   | e -> default_mapper.expr mapper e
