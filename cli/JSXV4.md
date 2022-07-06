@@ -126,3 +126,15 @@ function has the name of the enclosing module/file.
 
 ReactDOMRe.createElement(ReasonReact.fragment, [comp1, comp2, comp3])
 ```
+
+**File-level config**
+
+The top-level attribute `@@jsxConfig` set the jsx config in the file-level. The jsx config of the project is ignored.
+
+```rescript
+@@jsxConfig({version: 4, mode: "automatic"})
+// The jsx config in bsconfig is ignored.
+
+@react.component
+let make = () => body
+```
