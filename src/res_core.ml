@@ -3118,19 +3118,16 @@ and parseExprBlock ?first p =
 
 and parseAsyncArrowExpression p =
   let startPos = p.Parser.startPos in
-  match p.token with
-  | Lident "async" ->
-    let asyncAttr =
-      (Location.mkloc "async" (mkLoc startPos p.endPos), Parsetree.PStr [])
-    in
-    Parser.next p;
-    let expr = parseEs6ArrowExpression p in
-    {
-      expr with
-      pexp_attributes = asyncAttr :: expr.pexp_attributes;
-      pexp_loc = {expr.pexp_loc with loc_start = startPos};
-    }
-  | _ -> assert false
+  Parser.expect (Lident "async") p;
+  let asyncAttr =
+    (Location.mkloc "async" (mkLoc startPos p.prevEndPos), Parsetree.PStr [])
+  in
+  let expr = parseEs6ArrowExpression p in
+  {
+    expr with
+    pexp_attributes = asyncAttr :: expr.pexp_attributes;
+    pexp_loc = {expr.pexp_loc with loc_start = startPos};
+  }
 
 and parseAwaitExpression p =
   let awaitLoc = mkLoc p.Parser.startPos p.endPos in
