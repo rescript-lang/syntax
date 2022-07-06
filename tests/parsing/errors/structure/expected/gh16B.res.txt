@@ -15,9 +15,7 @@ open Ws
 let wss = Server.make { port = 82 }
 let address = wss |. Server.address
 let log msg =
-  Js.log
-    (((((({js|> Server: |js})[@res.template ]) ^ msg)[@res.template ]) ^
-        (({js||js})[@res.template ]))[@res.template ])
+  Js.log (((({js|> Server: |js})[@res.template ]) ^ msg)[@res.template ])
 ;;log
     (((((((((((({js|Running on: |js})[@res.template ]) ^ address.address)
               [@res.template ]) ^ (({js|:|js})[@res.template ]))

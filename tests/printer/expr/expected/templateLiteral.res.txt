@@ -13,7 +13,7 @@ let s = `a \ b`
 let s = `a \\ b`
 let s = `a \\\ b`
 
-let s = `${foo}`
+let s = foo
 
 let s = `before${foo}`
 let s = `before ${foo}`
@@ -23,11 +23,11 @@ let s = `${foo}after`
 let s = `${foo} after`
 let s = `${foo}  after`
 
-let s = `${foo}${bar}`
-let s = `${foo}${bar}${baz}`
+let s = \"^"(`${foo}`, bar)
+let s = \"^"(`${foo}${bar}`, baz)
 
-let s = `${foo} ${bar}`
-let s = `${foo} ${bar} ${baz}`
+let s = \"^"(`${foo} `, bar)
+let s = \"^"(`${foo} ${bar} `, baz)
 
 let s = ` before ${foo} ${bar} after `
 let s = `before ${foo} middle ${bar} ${baz} wow `
@@ -63,7 +63,7 @@ a ++ (` x ` ++ b)
 
 let x = json`null`
 
-let x = sql`select ${column} from ${table}`
+let x = \"^"(sql`select ${column} from `, table)
 
 module X = %graphql("
   query 123456789 {

@@ -2158,8 +2158,10 @@ and parseTemplateExpr ?(prefix = "js") p =
         Ast_helper.Exp.constant ~attrs:[templateLiteralAttr] ~loc
           (Pconst_string (txt, Some prefix))
       in
-      Ast_helper.Exp.apply ~attrs:[templateLiteralAttr] ~loc hiddenOperator
-        [(Nolabel, acc); (Nolabel, str)]
+      if txt = "" then acc
+      else
+        Ast_helper.Exp.apply ~attrs:[templateLiteralAttr] ~loc hiddenOperator
+          [(Nolabel, acc); (Nolabel, str)]
     | TemplatePart txt ->
       Parser.next p;
       let loc = mkLoc startPos p.prevEndPos in
@@ -2201,9 +2203,11 @@ and parseTemplateExpr ?(prefix = "js") p =
         (Pconst_string (txt, Some prefix))
     in
     let next =
-      Ast_helper.Exp.apply ~attrs:[templateLiteralAttr] ~loc:fullLoc
-        hiddenOperator
-        [(Nolabel, str); (Nolabel, expr)]
+      if txt = "" then expr
+      else
+        Ast_helper.Exp.apply ~attrs:[templateLiteralAttr] ~loc:fullLoc
+          hiddenOperator
+          [(Nolabel, str); (Nolabel, expr)]
     in
     parseParts next
   | token ->
