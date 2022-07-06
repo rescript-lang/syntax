@@ -151,7 +151,7 @@ let isExprStart = function
   | Underscore (* _ => doThings() *)
   | Uident _ | Lident _ | Hash | Lparen | List | Module | Lbracket | Lbrace
   | LessThan | Minus | MinusDot | Plus | PlusDot | Bang | Percent | At | If
-  | Switch | While | For | Assert | Lazy | Try ->
+  | Switch | While | For | Assert | Await | Lazy | Try ->
     true
   | _ -> false
 
@@ -257,9 +257,9 @@ let isJsxChildStart = isAtomicExprStart
 let isBlockExprStart = function
   | Token.At | Hash | Percent | Minus | MinusDot | Plus | PlusDot | Bang | True
   | False | Float _ | Int _ | String _ | Codepoint _ | Lident _ | Uident _
-  | Lparen | List | Lbracket | Lbrace | Forwardslash | Assert | Lazy | If | For
-  | While | Switch | Open | Module | Exception | Let | LessThan | Backtick | Try
-  | Underscore ->
+  | Lparen | List | Lbracket | Lbrace | Forwardslash | Assert | Await | Lazy
+  | If | For | While | Switch | Open | Module | Exception | Let | LessThan
+  | Backtick | Try | Underscore ->
     true
   | _ -> false
 
