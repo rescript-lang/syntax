@@ -55,10 +55,16 @@ let processUncurriedAttribute attrs =
   in
   process false [] attrs
 
+type functionAttributesInfo = {
+  async: bool;
+  uncurried: bool;
+  attributes: Parsetree.attributes;
+}
+
 let processFunctionAttributes attrs =
   let rec process async uncurried acc attrs =
     match attrs with
-    | [] -> (async, uncurried, List.rev acc)
+    | [] -> {async; uncurried; attributes = List.rev acc}
     | ({Location.txt = "bs"}, _) :: rest -> process async true acc rest
     | ({Location.txt = "async"}, _) :: rest -> process true uncurried acc rest
     | attr :: rest -> process async uncurried (attr :: acc) rest

@@ -17,10 +17,14 @@ val functorType :
 val processUncurriedAttribute :
   Parsetree.attributes -> bool * Parsetree.attributes
 
+type functionAttributesInfo = {
+  async: bool;
+  uncurried: bool;
+  attributes: Parsetree.attributes;
+}
+
 (* determines whether a function is async and/or uncurried based on the given attributes *)
-val processFunctionAttributes :
-  Parsetree.attributes ->
-  bool (* async *) * bool (* uncurried *) * Parsetree.attributes
+val processFunctionAttributes : Parsetree.attributes -> functionAttributesInfo
 
 val hasAwaitAttribute : Parsetree.attributes -> bool
 

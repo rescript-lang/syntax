@@ -3135,7 +3135,7 @@ and printExpression ~customLayout (e : Parsetree.expression) cmtTbl =
         cmtTbl
     | Pexp_fun _ | Pexp_newtype _ ->
       let attrsOnArrow, parameters, returnExpr = ParsetreeViewer.funExpr e in
-      let async, uncurried, attrs =
+      let ParsetreeViewer.{async; uncurried; attributes = attrs} =
         ParsetreeViewer.processFunctionAttributes attrsOnArrow
       in
       let returnExpr, typConstraint =
@@ -3302,7 +3302,7 @@ and printExpression ~customLayout (e : Parsetree.expression) cmtTbl =
 
 and printPexpFun ~customLayout ~inCallback e cmtTbl =
   let attrsOnArrow, parameters, returnExpr = ParsetreeViewer.funExpr e in
-  let async, uncurried, attrs =
+  let ParsetreeViewer.{async; uncurried; attributes = attrs} =
     ParsetreeViewer.processFunctionAttributes attrsOnArrow
   in
   let returnExpr, typConstraint =
