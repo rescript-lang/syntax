@@ -2040,7 +2040,7 @@ and parseOperandExpr ~context p =
       when isEs6ArrowExpression ~inTernary:(context = TernaryTrueBranchExpr) p
       ->
       parseAsyncArrowExpression p
-    | Lident "await" -> parseAwaitExpression p
+    | Await -> parseAwaitExpression p
     | Lazy ->
       Parser.next p;
       let expr = parseUnaryExpr p in
@@ -2761,13 +2761,6 @@ and parseBracedOrRecordExpr p =
     let loc = mkLoc startPos p.prevEndPos in
     let braces = makeBracesAttr loc in
     {expr with pexp_attributes = braces :: expr.pexp_attributes}
-  | Lident "await" ->
-    let expr = parseAwaitExpression p in
-    let expr = parseExprBlock ~first:expr p in
-    Parser.expect Rbrace p;
-    let loc = mkLoc startPos p.prevEndPos in
-    let braces = makeBracesAttr loc in
-    {expr with pexp_attributes = braces :: expr.pexp_attributes}
   | Uident _ | Lident _ -> (
     let startToken = p.token in
     let valueOrConstructor = parseValueOrConstructor p in
@@ -3140,19 +3133,15 @@ and parseAsyncArrowExpression p =
   | _ -> assert false
 
 and parseAwaitExpression p =
-  let startPos = p.Parser.startPos in
-  match p.token with
-  | Lident "await" ->
-    let awaitLoc = mkLoc startPos p.endPos in
-    let awaitAttr = (Location.mkloc "await" awaitLoc, Parsetree.PStr []) in
-    Parser.next p;
-    let expr = parseUnaryExpr p in
-    {
-      expr with
-      pexp_attributes = awaitAttr :: expr.pexp_attributes;
-      pexp_loc = {expr.pexp_loc with loc_start = awaitLoc.loc_start};
-    }
-  | _ -> assert false
+  let awaitLoc = mkLoc p.Parser.startPos p.endPos in
+  let awaitAttr = (Location.mkloc "await" awaitLoc, Parsetree.PStr []) in
+  Parser.expect Await p;
+  let expr = parseUnaryExpr p in
+  {
+    expr with
+    pexp_attributes = awaitAttr :: expr.pexp_attributes;
+    pexp_loc = {expr.pexp_loc with loc_start = awaitLoc.loc_start};
+  }
 
 and parseTryExpression p =
   let startPos = p.Parser.startPos in
