@@ -3519,13 +3519,13 @@ and printBinaryExpression ~customLayout (expr : Parsetree.expression) cmtTbl =
           then
             let leftPrinted = flatten ~isLhs:true left operator in
             let rightPrinted =
-              let _, rightAttrs =
+              let rightPrinteableAttrs, rightInternalAttrs =
                 ParsetreeViewer.partitionPrintableAttributes
                   right.pexp_attributes
               in
               let doc =
                 printExpressionWithComments ~customLayout
-                  {right with pexp_attributes = rightAttrs}
+                  {right with pexp_attributes = rightInternalAttrs}
                   cmtTbl
               in
               let doc =
@@ -3533,14 +3533,14 @@ and printBinaryExpression ~customLayout (expr : Parsetree.expression) cmtTbl =
                   Doc.concat [Doc.lparen; doc; Doc.rparen]
                 else doc
               in
-              let printableAttrs =
-                ParsetreeViewer.filterPrintableAttributes right.pexp_attributes
-              in
               let doc =
                 Doc.concat
-                  [printAttributes ~customLayout printableAttrs cmtTbl; doc]
+                  [
+                    printAttributes ~customLayout rightPrinteableAttrs cmtTbl;
+                    doc;
+                  ]
               in
-              match printableAttrs with
+              match rightPrinteableAttrs with
               | [] -> doc
               | _ -> addParens doc
             in
@@ -3559,22 +3559,25 @@ and printBinaryExpression ~customLayout (expr : Parsetree.expression) cmtTbl =
             in
             printComments doc cmtTbl expr.pexp_loc
           else
+            let printeableAttrs, internalAttrs =
+              ParsetreeViewer.partitionPrintableAttributes expr.pexp_attributes
+            in
             let doc =
               printExpressionWithComments ~customLayout
-                {expr with pexp_attributes = []}
+                {expr with pexp_attributes = internalAttrs}
                 cmtTbl
             in
             let doc =
               if
                 Parens.subBinaryExprOperand parentOperator operator
-                || expr.pexp_attributes <> []
+                || printeableAttrs <> []
                    && (ParsetreeViewer.isBinaryExpression expr
                       || ParsetreeViewer.isTernaryExpr expr)
               then Doc.concat [Doc.lparen; doc; Doc.rparen]
               else doc
             in
             Doc.concat
-              [printAttributes ~customLayout expr.pexp_attributes cmtTbl; doc]
+              [printAttributes ~customLayout printeableAttrs cmtTbl; doc]
         | _ -> assert false
       else
         match expr.pexp_desc with
