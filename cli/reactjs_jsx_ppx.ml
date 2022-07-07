@@ -2616,13 +2616,13 @@ module V4 = struct
     [@@raises Invalid_argument]
 
   let signature mapper items =
-    default_mapper.signature mapper
-    @@ (List.map (transformSignatureItem mapper) items |> List.flatten)
+    let items = default_mapper.signature mapper items in
+    List.map (transformSignatureItem mapper) items |> List.flatten
     [@@raises Invalid_argument]
 
   let structure ~config mapper items =
-    default_mapper.structure mapper
-    @@ (List.map (transformStructureItem ~config mapper) items |> List.flatten)
+    let items = default_mapper.structure mapper items in
+    List.map (transformStructureItem ~config mapper) items |> List.flatten
     [@@raises Invalid_argument]
 
   let expr ~config mapper expression =
