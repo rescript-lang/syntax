@@ -1302,16 +1302,6 @@ module V3 = struct
     {default_mapper with structure; expr; signature; module_binding}
     [@@raises Invalid_argument, Failure]
 end
-let rewrite_implementationV3 (code : Parsetree.structure) : Parsetree.structure
-    =
-  let mapper = V3.jsxMapper () in
-  mapper.structure mapper code
-  [@@raises Invalid_argument, Failure]
-
-let rewrite_signatureV3 (code : Parsetree.signature) : Parsetree.signature =
-  let mapper = V3.jsxMapper () in
-  mapper.signature mapper code
-  [@@raises Invalid_argument, Failure]
 
 module V4 = struct
   let getJsxConfig payload =
@@ -2771,32 +2761,26 @@ module V4 = struct
     [@@raises Invalid_argument, Failure]
 end
 
-let rewrite_signatureV4 ~config (code : Parsetree.signature) :
-    Parsetree.signature =
-  let nestedModules = ref [] in
-  let mapper = V4.jsxMapper ~config nestedModules in
-  mapper.signature mapper code
-  [@@raises Invalid_argument, Failure]
-
-let rewrite_implementationV4 ~config (code : Parsetree.structure) :
-    Parsetree.structure =
-  let nestedModules = ref [] in
-  let mapper = V4.jsxMapper ~config nestedModules in
-  mapper.structure mapper code
-  [@@raises Invalid_argument, Failure]
-
 let rewrite_implementation ~config (code : Parsetree.structure) :
     Parsetree.structure =
-  match config.version with
-  | 3 -> rewrite_implementationV3 code
-  | 4 -> rewrite_implementationV4 ~config code
-  | _ -> code
+  let nestedModules = ref [] in
+  let mapper =
+    match config.version with
+    | 3 -> V3.jsxMapper ()
+    | 4 -> V4.jsxMapper ~config nestedModules
+    | _ -> default_mapper
+  in
+  mapper.structure mapper code
   [@@raises Invalid_argument, Failure]
 
 let rewrite_signature ~config (code : Parsetree.signature) : Parsetree.signature
     =
-  match config.version with
-  | 3 -> rewrite_signatureV3 code
-  | 4 -> rewrite_signatureV4 ~config code
-  | _ -> code
+  let mapper =
+    let nestedModules = ref [] in
+    match config.version with
+    | 3 -> V3.jsxMapper ()
+    | 4 -> V4.jsxMapper ~config nestedModules
+    | _ -> default_mapper
+  in
+  mapper.signature mapper code
   [@@raises Invalid_argument, Failure]
