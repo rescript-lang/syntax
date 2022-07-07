@@ -2615,14 +2615,24 @@ module V4 = struct
             module name.")
     [@@raises Invalid_argument]
 
-  let signature mapper items =
+  let signature ~config mapper items =
     let items = default_mapper.signature mapper items in
-    List.map (transformSignatureItem mapper) items |> List.flatten
+    List.map
+      (fun item ->
+        if config.version = 4 then transformSignatureItem mapper item
+        else [item])
+      items
+    |> List.flatten
     [@@raises Invalid_argument]
 
   let structure ~config mapper items =
     let items = default_mapper.structure mapper items in
-    List.map (transformStructureItem ~config mapper) items |> List.flatten
+    List.map
+      (fun item ->
+        if config.version = 4 then transformStructureItem ~config mapper item
+        else [item])
+      items
+    |> List.flatten
     [@@raises Invalid_argument]
 
   let expr ~config mapper expression =
@@ -2718,6 +2728,7 @@ module V4 = struct
 
   (* TODO: some line number might still be wrong *)
   let jsxMapper ~config =
+    let signature = signature ~config in
     let structure = structure ~config in
     let module_binding = module_binding ~config in
     let expr = expr ~config in
