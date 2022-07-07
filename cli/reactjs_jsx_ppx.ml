@@ -2726,33 +2726,56 @@ let getMapper ~config =
     | 4 -> module_binding4 mapper mb
     | _ -> default_mapper.module_binding mapper mb
   in
+  let saveConfig () =
+    {
+      config with
+      version = config.version;
+      module_ = config.module_;
+      mode = config.mode;
+    }
+  in
+  let restoreConfig oldConfig =
+    config.version <- oldConfig.version;
+    config.module_ <- oldConfig.module_;
+    config.mode <- oldConfig.mode
+  in
   let signature mapper items =
-    List.map
-      (fun item ->
-        (match item.psig_desc with
-        | Psig_attribute attr -> processConfigAttribute attr config
-        | _ -> ());
-        let item = default_mapper.signature_item mapper item in
-        if config.version = 3 then transformSignatureItem3 mapper item
-        else if config.version = 4 then transformSignatureItem4 mapper item
-        else [item])
-      items
-    |> List.flatten
+    let oldConfig = saveConfig () in
+    let result =
+      List.map
+        (fun item ->
+          (match item.psig_desc with
+          | Psig_attribute attr -> processConfigAttribute attr config
+          | _ -> ());
+          let item = default_mapper.signature_item mapper item in
+          if config.version = 3 then transformSignatureItem3 mapper item
+          else if config.version = 4 then transformSignatureItem4 mapper item
+          else [item])
+        items
+      |> List.flatten
+    in
+    restoreConfig oldConfig;
+    result
     [@@raises Invalid_argument]
   in
   let structure mapper items =
-    List.map
-      (fun item ->
-        (match item.pstr_desc with
-        | Pstr_attribute attr -> processConfigAttribute attr config
-        | _ -> ());
-        let item = default_mapper.structure_item mapper item in
-        if config.version = 3 then transformStructureItem3 mapper item
-        else if config.version = 4 then
-          transformStructureItem4 ~config mapper item
-        else [item])
-      items
-    |> List.flatten
+    let oldConfig = saveConfig () in
+    let result =
+      List.map
+        (fun item ->
+          (match item.pstr_desc with
+          | Pstr_attribute attr -> processConfigAttribute attr config
+          | _ -> ());
+          let item = default_mapper.structure_item mapper item in
+          if config.version = 3 then transformStructureItem3 mapper item
+          else if config.version = 4 then
+            transformStructureItem4 ~config mapper item
+          else [item])
+        items
+      |> List.flatten
+    in
+    restoreConfig oldConfig;
+    result
     [@@raises Invalid_argument]
   in
 
