@@ -2055,7 +2055,7 @@ module V4 = struct
     | name when isOptional name -> (true, getLabel name, [], type_) :: types
     | _ -> types
 
-  let transformComponentDefinition ~config mapper structure returnStructures =
+  let transformStructureItem ~config mapper structure returnStructures =
     match structure with
     (* external *)
     | {
@@ -2520,11 +2520,11 @@ module V4 = struct
     | structure -> structure :: returnStructures
     [@@raises Invalid_argument]
 
-  let reactComponentTransform ~config mapper structures =
-    List.fold_right (transformComponentDefinition ~config mapper) structures []
+  let transformStructure ~config mapper structures =
+    List.fold_right (transformStructureItem ~config mapper) structures []
     [@@raises Invalid_argument]
 
-  let transformComponentSignature _mapper signature returnSignatures =
+  let transformSignatureItem _mapper signature returnSignatures =
     match signature with
     | {
         psig_loc;
@@ -2582,10 +2582,6 @@ module V4 = struct
     | signature -> signature :: returnSignatures
     [@@raises Invalid_argument]
 
-  let reactComponentSignatureTransform mapper signatures =
-    List.fold_right (transformComponentSignature mapper) signatures []
-    [@@raises Invalid_argument]
-
   let transformJsxCall ~config mapper callExpression callArguments attrs =
     match callExpression.pexp_desc with
     | Pexp_ident caller -> (
@@ -2623,14 +2619,16 @@ module V4 = struct
             module name.")
     [@@raises Invalid_argument]
 
+  let transformSignature mapper signatures =
+    List.fold_right (transformSignatureItem mapper) signatures []
+    [@@raises Invalid_argument]
+
   let signature mapper signature =
-    default_mapper.signature mapper
-    @@ reactComponentSignatureTransform mapper signature
+    default_mapper.signature mapper @@ transformSignature mapper signature
     [@@raises Invalid_argument]
 
   let structure ~config mapper items =
-    default_mapper.structure mapper
-    @@ reactComponentTransform ~config mapper items
+    default_mapper.structure mapper @@ transformStructure ~config mapper items
     [@@raises Invalid_argument]
 
   let expr ~config mapper expression =
