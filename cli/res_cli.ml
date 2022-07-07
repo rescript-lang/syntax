@@ -276,7 +276,12 @@ module CliArgProcessor = struct
     (* This is the whole purpose of the Color module above *)
     Color.setup None;
     let config : Reactjs_jsx_ppx.jsxConfig =
-      {version = jsxVersion; module_ = jsxModule; mode = jsxMode}
+      {
+        version = jsxVersion;
+        module_ = jsxModule;
+        mode = jsxMode;
+        nestedModules = [];
+      }
     in
     if processInterface then
       let parseResult = backend.parseInterface ~forPrinter ~filename in
