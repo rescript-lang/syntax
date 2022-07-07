@@ -2769,14 +2769,6 @@ module V4 = struct
       structure_item;
     }
     [@@raises Invalid_argument, Failure]
-
-  let rewrite_implementationV4 ~jsxMode (code : Parsetree.structure) :
-      Parsetree.structure =
-    let nestedModules = ref [] in
-    let config = {mode = jsxMode; module_ = ""; version = 4} in
-    let mapper = jsxMapper ~config nestedModules in
-    mapper.structure mapper code
-    [@@raises Invalid_argument, Failure]
 end
 
 let rewrite_signatureV4 ~jsxMode (code : Parsetree.signature) :
@@ -2787,12 +2779,20 @@ let rewrite_signatureV4 ~jsxMode (code : Parsetree.signature) :
   mapper.signature mapper code
   [@@raises Invalid_argument, Failure]
 
+let rewrite_implementationV4 ~jsxMode (code : Parsetree.structure) :
+    Parsetree.structure =
+  let nestedModules = ref [] in
+  let config = {mode = jsxMode; module_ = ""; version = 4} in
+  let mapper = V4.jsxMapper ~config nestedModules in
+  mapper.structure mapper code
+  [@@raises Invalid_argument, Failure]
+
 let rewrite_implementation ~jsxVersion ~jsxModule ~jsxMode
     (code : Parsetree.structure) : Parsetree.structure =
   match (jsxVersion, jsxModule, jsxMode) with
   | 3, _, _ -> rewrite_implementationV3 code
-  | 4, _, "classic" -> V4.rewrite_implementationV4 ~jsxMode code
-  | 4, _, "automatic" -> V4.rewrite_implementationV4 ~jsxMode code
+  | 4, _, "classic" -> rewrite_implementationV4 ~jsxMode code
+  | 4, _, "automatic" -> rewrite_implementationV4 ~jsxMode code
   | _ -> code
   [@@raises Invalid_argument, Failure]
 
