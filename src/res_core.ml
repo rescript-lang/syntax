@@ -161,6 +161,8 @@ let uncurryAttr = (Location.mknoloc "bs", Parsetree.PStr [])
 let ternaryAttr = (Location.mknoloc "ns.ternary", Parsetree.PStr [])
 let ifLetAttr = (Location.mknoloc "ns.iflet", Parsetree.PStr [])
 let optionalAttr = (Location.mknoloc "ns.optional", Parsetree.PStr [])
+let makeAwaitAttr loc = (Location.mkloc "res.await" loc, Parsetree.PStr [])
+let makeAsyncAttr loc = (Location.mkloc "res.async" loc, Parsetree.PStr [])
 
 let makeExpressionOptional ~optional (e : Parsetree.expression) =
   if optional then {e with pexp_attributes = optionalAttr :: e.pexp_attributes}
@@ -3117,9 +3119,7 @@ and parseExprBlock ?first p =
 and parseAsyncArrowExpression p =
   let startPos = p.Parser.startPos in
   Parser.expect (Lident "async") p;
-  let asyncAttr =
-    (Location.mkloc "async" (mkLoc startPos p.prevEndPos), Parsetree.PStr [])
-  in
+  let asyncAttr = makeAsyncAttr (mkLoc startPos p.prevEndPos) in
   let expr = parseEs6ArrowExpression p in
   {
     expr with
@@ -3129,7 +3129,7 @@ and parseAsyncArrowExpression p =
 
 and parseAwaitExpression p =
   let awaitLoc = mkLoc p.Parser.startPos p.endPos in
-  let awaitAttr = (Location.mkloc "await" awaitLoc, Parsetree.PStr []) in
+  let awaitAttr = makeAwaitAttr awaitLoc in
   Parser.expect Await p;
   let expr = parseUnaryExpr p in
   {
