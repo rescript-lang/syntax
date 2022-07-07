@@ -1203,13 +1203,23 @@ module V3 = struct
 
     let signature mapper items =
       let items = default_mapper.signature mapper items in
-      List.map (transformSignatureItem mapper) items |> List.flatten
+      List.map
+        (fun item ->
+          if config.version = 3 then transformSignatureItem mapper item
+          else [item])
+        items
+      |> List.flatten
       [@@raises Invalid_argument]
     in
 
     let structure mapper items =
       let items = default_mapper.structure mapper items in
-      List.map (transformStructureItem mapper) items |> List.flatten
+      List.map
+        (fun item ->
+          if config.version = 3 then transformStructureItem mapper item
+          else [item])
+        items
+      |> List.flatten
       [@@raises Invalid_argument]
     in
 
