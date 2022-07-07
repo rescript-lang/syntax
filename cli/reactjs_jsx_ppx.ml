@@ -2757,24 +2757,20 @@ module V4 = struct
     [@@raises Invalid_argument, Failure]
 end
 
+let getMapper ~config =
+  match config.version with
+  | 3 -> V3.jsxMapper ~config
+  | 4 -> V4.jsxMapper ~config
+  | _ -> default_mapper
+
 let rewrite_implementation ~config (code : Parsetree.structure) :
     Parsetree.structure =
-  let mapper =
-    match config.version with
-    | 3 -> V3.jsxMapper ~config
-    | 4 -> V4.jsxMapper ~config
-    | _ -> default_mapper
-  in
+  let mapper = getMapper ~config in
   mapper.structure mapper code
   [@@raises Invalid_argument, Failure]
 
 let rewrite_signature ~config (code : Parsetree.signature) : Parsetree.signature
     =
-  let mapper =
-    match config.version with
-    | 3 -> V3.jsxMapper ~config
-    | 4 -> V4.jsxMapper ~config
-    | _ -> default_mapper
-  in
+  let mapper = getMapper ~config in
   mapper.signature mapper code
   [@@raises Invalid_argument, Failure]
