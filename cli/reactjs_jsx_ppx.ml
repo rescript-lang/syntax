@@ -11,6 +11,65 @@ type jsxConfig = {
   mutable nestedModules: string list;
 }
 
+let getPayloadFields payload =
+  match payload with
+  | PStr
+      ({
+         pstr_desc =
+           Pstr_eval ({pexp_desc = Pexp_record (recordFields, None)}, _);
+       }
+      :: _rest) ->
+    recordFields
+  | _ -> []
+
+type configKey = Int | String
+
+let getJsxConfigByKey ~key ~type_ recordFields =
+  let values =
+    List.filter_map
+      (fun ((lid, expr) : Longident.t Location.loc * expression) ->
+        match (type_, lid, expr) with
+        | ( Int,
+            {txt = Lident k},
+            {pexp_desc = Pexp_constant (Pconst_integer (value, None))} )
+          when k = key ->
+          Some value
+        | ( String,
+            {txt = Lident k},
+            {pexp_desc = Pexp_constant (Pconst_string (value, None))} )
+          when k = key ->
+          Some value
+        | _ -> None)
+      recordFields
+  in
+  match values with
+  | [] -> None
+  | [v] | v :: _ -> Some v
+
+let getInt ~key fields =
+  match fields |> getJsxConfigByKey ~key ~type_:Int with
+  | None -> None
+  | Some s -> int_of_string_opt s
+
+let getString ~key fields = fields |> getJsxConfigByKey ~key ~type_:String
+
+let updateConfig config payload =
+  let fields = getPayloadFields payload in
+  (match getInt ~key:"version" fields with
+  | None -> ()
+  | Some i -> config.version <- i);
+  (match getString ~key:"module" fields with
+  | None -> ()
+  | Some s -> config.module_ <- s);
+  match getString ~key:"mode" fields with
+  | None -> ()
+  | Some s -> config.mode <- s
+
+let isJsxConfigAttr ((loc, _) : attribute) = loc.txt = "jsxConfig"
+
+let processConfigAttribute attribute config =
+  if isJsxConfigAttr attribute then updateConfig config (snd attribute)
+
 module V3 = struct
   let rec find_opt p = function
     | [] -> None
@@ -1273,65 +1332,6 @@ module V3 = struct
 end
 
 module V4 = struct
-  let getJsxConfig payload =
-    match payload with
-    | PStr
-        ({
-           pstr_desc =
-             Pstr_eval ({pexp_desc = Pexp_record (recordFields, None)}, _);
-         }
-        :: _rest) ->
-      recordFields
-    | _ -> []
-
-  type configKey = Int | String
-
-  let getJsxConfigByKey ~key ~type_ recordFields =
-    let values =
-      List.filter_map
-        (fun ((lid, expr) : Longident.t Location.loc * expression) ->
-          match (type_, lid, expr) with
-          | ( Int,
-              {txt = Lident k},
-              {pexp_desc = Pexp_constant (Pconst_integer (value, None))} )
-            when k = key ->
-            Some value
-          | ( String,
-              {txt = Lident k},
-              {pexp_desc = Pexp_constant (Pconst_string (value, None))} )
-            when k = key ->
-            Some value
-          | _ -> None)
-        recordFields
-    in
-    match values with
-    | [] -> None
-    | [v] | v :: _ -> Some v
-
-  let getInt ~key fields =
-    match fields |> getJsxConfigByKey ~key ~type_:Int with
-    | None -> None
-    | Some s -> int_of_string_opt s
-
-  let getString ~key fields = fields |> getJsxConfigByKey ~key ~type_:String
-
-  let updateConfig config payload =
-    let fields = getJsxConfig payload in
-    (match getInt ~key:"version" fields with
-    | None -> ()
-    | Some i -> config.version <- i);
-    (match getString ~key:"module" fields with
-    | None -> ()
-    | Some s -> config.module_ <- s);
-    match getString ~key:"mode" fields with
-    | None -> ()
-    | Some s -> config.mode <- s
-
-  let isJsxConfigAttr ((loc, _) : attribute) = loc.txt = "jsxConfig"
-
-  let processConfigAttribute attribute config =
-    if isJsxConfigAttr attribute then updateConfig config (snd attribute)
-
   let rec find_opt p = function
     | [] -> None
     | x :: l -> if p x then Some x else find_opt p l
@@ -2730,7 +2730,7 @@ let getMapper ~config =
     List.map
       (fun item ->
         (match item.psig_desc with
-        | Psig_attribute attr -> V4.processConfigAttribute attr config
+        | Psig_attribute attr -> processConfigAttribute attr config
         | _ -> ());
         let item = default_mapper.signature_item mapper item in
         if config.version = 3 then transformSignatureItem3 mapper item
@@ -2744,7 +2744,7 @@ let getMapper ~config =
     List.map
       (fun item ->
         (match item.pstr_desc with
-        | Pstr_attribute attr -> V4.processConfigAttribute attr config
+        | Pstr_attribute attr -> processConfigAttribute attr config
         | _ -> ());
         let item = default_mapper.structure_item mapper item in
         if config.version = 3 then transformStructureItem3 mapper item
