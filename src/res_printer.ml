@@ -79,6 +79,8 @@ let addBraces doc =
          Doc.rbrace;
        ])
 
+let addAsync doc = Doc.concat [Doc.text "async "; doc]
+
 let getFirstLeadingComment tbl loc =
   match Hashtbl.find tbl.CommentTable.leading loc with
   | comment :: _ -> Some comment
@@ -4597,7 +4599,7 @@ and printExprFunParameters ~customLayout ~inCallback ~async ~uncurried
       let doc = if hasConstraint then Doc.text "(_)" else Doc.text "_" in
       printComments doc cmtTbl ppat_loc
     in
-    if async then Doc.concat [Doc.text "async "; any] else any
+    if async then addAsync any else any
   (* let f = a => () *)
   | [
    ParsetreeViewer.Parameter
@@ -4612,7 +4614,7 @@ and printExprFunParameters ~customLayout ~inCallback ~async ~uncurried
     let txtDoc =
       let var = printIdentLike stringLoc.txt in
       let var = if hasConstraint then addParens var else var in
-      if async then Doc.concat [Doc.text "async ("; var; Doc.rparen] else var
+      if async then addAsync (Doc.concat [Doc.lparen; var; Doc.rparen]) else var
     in
     printComments txtDoc cmtTbl stringLoc.loc
   (* let f = () => () *)
@@ -4627,7 +4629,10 @@ and printExprFunParameters ~customLayout ~inCallback ~async ~uncurried
      };
   ]
     when not uncurried ->
-    let doc = if async then Doc.text "async ()" else Doc.text "()" in
+    let doc =
+      let lparenRparen = Doc.text "()" in
+      if async then addAsync lparenRparen else lparenRparen
+    in
     printComments doc cmtTbl loc
   (* let f = (~greeting, ~from as hometown, ~x=?) => () *)
   | parameters ->
@@ -4637,11 +4642,8 @@ and printExprFunParameters ~customLayout ~inCallback ~async ~uncurried
       | _ -> false
     in
     let maybeAsyncLparen =
-      match (async, uncurried) with
-      | true, true -> Doc.text "async (. "
-      | true, false -> Doc.text "async ("
-      | false, true -> Doc.text "(. "
-      | false, false -> Doc.lparen
+      let lparen = if uncurried then Doc.text "(. " else Doc.lparen in
+      if async then addAsync lparen else lparen
     in
     let shouldHug = ParsetreeViewer.parametersShouldHug parameters in
     let printedParamaters =
