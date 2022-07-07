@@ -1323,31 +1323,19 @@ let transformJsxCall ~config mapper callExpression callArguments attrs =
           name.")
   [@@raises Invalid_argument]
 
-let signature mapper signature =
+let signatureV4 mapper signature =
   default_mapper.signature mapper
   @@ reactComponentSignatureTransform mapper signature
   [@@raises Invalid_argument]
 
-let signature_item ~config mapper item =
-  (match item.psig_desc with
-  | Psig_attribute attr -> processConfigAttribute attr config
-  | _ -> ());
-  default_mapper.signature_item mapper item
-
-let structure nestedModules mapper items =
+let structureV4 nestedModules mapper items =
   match items with
   | items ->
     default_mapper.structure mapper
     @@ reactComponentTransform nestedModules mapper items
   [@@raises Invalid_argument]
 
-let structure_item ~config mapper item =
-  (match item.pstr_desc with
-  | Pstr_attribute attr -> processConfigAttribute attr config
-  | _ -> ());
-  default_mapper.structure_item mapper item
-
-let expr ~config mapper expression =
+let exprV4 ~config mapper expression =
   match expression with
   (* Does the function application have the @JSX attribute? *)
   | {pexp_desc = Pexp_apply (callExpression, callArguments); pexp_attributes}
@@ -1431,7 +1419,7 @@ let expr ~config mapper expression =
   | e -> default_mapper.expr mapper e
   [@@raises Invalid_argument]
 
-let module_binding nestedModules mapper module_binding =
+let module_bindingV4 nestedModules mapper module_binding =
   let _ = nestedModules := module_binding.pmb_name.txt :: !nestedModules in
   let mapped = default_mapper.module_binding mapper module_binding in
   let _ = nestedModules := List.tl !nestedModules in
@@ -1440,11 +1428,22 @@ let module_binding nestedModules mapper module_binding =
 
 (* TODO: some line number might still be wrong *)
 let jsxMapper ~config nestedModules =
-  let structure = structure nestedModules in
-  let structure_item = structure_item ~config in
-  let signature_item = signature_item ~config in
-  let module_binding = module_binding nestedModules in
-  let expr = expr ~config in
+  let structure_item mapper item =
+    (match item.pstr_desc with
+    | Pstr_attribute attr -> processConfigAttribute attr config
+    | _ -> ());
+    default_mapper.structure_item mapper item
+  in
+  let signature_item mapper item =
+    (match item.psig_desc with
+    | Psig_attribute attr -> processConfigAttribute attr config
+    | _ -> ());
+    default_mapper.signature_item mapper item
+  in
+
+  let structure = structureV4 nestedModules in
+  let module_binding = module_bindingV4 nestedModules in
+  let expr = exprV4 ~config in
   {
     default_mapper with
     expr;
