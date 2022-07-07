@@ -48,7 +48,11 @@ let getOrDefaultInt ~key ~default fields =
 let getOrDefaultString ~key ~default fields =
   fields |> getJsxConfigByKey ~key ~type_:String |> Option.value ~default
 
-type jsxConfig = {version: int; module_: string; mode: string}
+type jsxConfig = {
+  mutable version: int;
+  mutable module_: string;
+  mutable mode: string;
+}
 
 let updateConfig {version; module_; mode} payload =
   let fields = getJsxConfig payload in
@@ -1292,8 +1296,8 @@ let transformJsxCall ~config mapper callExpression callArguments attrs =
            "JSX: `createElement` should be preceeded by a module name.")
     (* Foo.createElement(~prop1=foo, ~prop2=bar, ~children=[], ()) *)
     | {loc; txt = Ldot (modulePath, ("createElement" | "make"))} ->
-      transformUppercaseCall3 ~config modulePath mapper loc attrs
-        callExpression callArguments
+      transformUppercaseCall3 ~config modulePath mapper loc attrs callExpression
+        callArguments
     (* div(~prop1=foo, ~prop2=bar, ~children=[bla], ()) *)
     (* turn that into
        ReactDOMRe.createElement(~props=ReactDOMRe.props(~props1=foo, ~props2=bar, ()), [|bla|]) *)
