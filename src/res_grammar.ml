@@ -255,11 +255,11 @@ let isAttributeStart = function
 let isJsxChildStart = isAtomicExprStart
 
 let isBlockExprStart = function
-  | Token.At | Hash | Percent | Minus | MinusDot | Plus | PlusDot | Bang | True
-  | False | Float _ | Int _ | String _ | Codepoint _ | Lident _ | Uident _
-  | Lparen | List | Lbracket | Lbrace | Forwardslash | Assert | Await | Lazy
-  | If | For | While | Switch | Open | Module | Exception | Let | LessThan
-  | Backtick | Try | Underscore ->
+  | Token.Assert | At | Await | Backtick | Bang | Codepoint _ | Exception
+  | False | Float _ | For | Forwardslash | Hash | If | Int _ | Lazy | Lbrace
+  | Lbracket | LessThan | Let | Lident _ | List | Lparen | Minus | MinusDot
+  | Module | Open | Percent | Plus | PlusDot | String _ | Switch | True | Try
+  | Uident _ | Underscore | While ->
     true
   | _ -> false
 
