@@ -2773,14 +2773,30 @@ let getMapper ~config =
     structure_item;
   }
 
-let rewrite_implementation ~config (code : Parsetree.structure) :
-    Parsetree.structure =
+let rewrite_implementation ~jsxVersion ~jsxModule ~jsxMode
+    (code : Parsetree.structure) : Parsetree.structure =
+  let config =
+    {
+      version = jsxVersion;
+      module_ = jsxModule;
+      mode = jsxMode;
+      nestedModules = [];
+    }
+  in
   let mapper = getMapper ~config in
   mapper.structure mapper code
   [@@raises Invalid_argument, Failure]
 
-let rewrite_signature ~config (code : Parsetree.signature) : Parsetree.signature
-    =
+let rewrite_signature ~jsxVersion ~jsxModule ~jsxMode
+    (code : Parsetree.signature) : Parsetree.signature =
+  let config =
+    {
+      version = jsxVersion;
+      module_ = jsxModule;
+      mode = jsxMode;
+      nestedModules = [];
+    }
+  in
   let mapper = getMapper ~config in
   mapper.signature mapper code
   [@@raises Invalid_argument, Failure]

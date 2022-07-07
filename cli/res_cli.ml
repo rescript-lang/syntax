@@ -275,14 +275,6 @@ module CliArgProcessor = struct
     let (Parser backend) = parsingEngine in
     (* This is the whole purpose of the Color module above *)
     Color.setup None;
-    let config : Reactjs_jsx_ppx.jsxConfig =
-      {
-        version = jsxVersion;
-        module_ = jsxModule;
-        mode = jsxMode;
-        nestedModules = [];
-      }
-    in
     if processInterface then
       let parseResult = backend.parseInterface ~forPrinter ~filename in
       if parseResult.invalid then (
@@ -294,7 +286,8 @@ module CliArgProcessor = struct
         else exit 1)
       else
         let parsetree =
-          Reactjs_jsx_ppx.rewrite_signature ~config parseResult.parsetree
+          Reactjs_jsx_ppx.rewrite_signature ~jsxVersion ~jsxModule ~jsxMode
+            parseResult.parsetree
         in
         printEngine.printInterface ~width ~filename
           ~comments:parseResult.comments parsetree
@@ -309,7 +302,8 @@ module CliArgProcessor = struct
         else exit 1)
       else
         let parsetree =
-          Reactjs_jsx_ppx.rewrite_implementation ~config parseResult.parsetree
+          Reactjs_jsx_ppx.rewrite_implementation ~jsxVersion ~jsxModule ~jsxMode
+            parseResult.parsetree
         in
         printEngine.printImplementation ~width ~filename
           ~comments:parseResult.comments parsetree

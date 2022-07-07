@@ -8,15 +8,16 @@
   field `reason`, which enables this ppx through some internal call in bsb
 *)
 
-type jsxConfig = {
-  mutable version: int;
-  mutable module_: string;
-  mutable mode: string;
-  mutable nestedModules: string list;
-}
-
 val rewrite_implementation :
-  config:jsxConfig -> Parsetree.structure -> Parsetree.structure
+  jsxVersion:int ->
+  jsxModule:string ->
+  jsxMode:string ->
+  Parsetree.structure ->
+  Parsetree.structure
 
 val rewrite_signature :
-  config:jsxConfig -> Parsetree.signature -> Parsetree.signature
+  jsxVersion:int ->
+  jsxModule:string ->
+  jsxMode:string ->
+  Parsetree.signature ->
+  Parsetree.signature
