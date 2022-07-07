@@ -1201,28 +1201,6 @@ module V3 = struct
       [@@raises Invalid_argument]
     in
 
-    let signature mapper items =
-      let items = default_mapper.signature mapper items in
-      List.map
-        (fun item ->
-          if config.version = 3 then transformSignatureItem mapper item
-          else [item])
-        items
-      |> List.flatten
-      [@@raises Invalid_argument]
-    in
-
-    let structure mapper items =
-      let items = default_mapper.structure mapper items in
-      List.map
-        (fun item ->
-          if config.version = 3 then transformStructureItem mapper item
-          else [item])
-        items
-      |> List.flatten
-      [@@raises Invalid_argument]
-    in
-
     let expr mapper expression =
       match expression with
       (* Does the function application have the @JSX attribute? *)
@@ -1290,7 +1268,7 @@ module V3 = struct
       mapped
       [@@raises Failure]
     in
-    (expr, module_binding, signature, structure)
+    (expr, module_binding, transformSignatureItem, transformStructureItem)
     [@@raises Invalid_argument, Failure]
 end
 
@@ -2722,11 +2700,9 @@ module V4 = struct
 
   (* TODO: some line number might still be wrong *)
   let jsxMapper ~config =
-    let signature = signature ~config in
-    let structure = structure ~config in
     let module_binding = module_binding ~config in
     let expr = expr ~config in
-    (expr, module_binding, signature, structure)
+    (expr, module_binding, transformSignatureItem, transformStructureItem)
     [@@raises Invalid_argument, Failure]
 end
 
@@ -2744,8 +2720,12 @@ let getMapper ~config =
     default_mapper.signature_item mapper item
   in
 
-  let expr3, module_binding3, signature3, structure3 = V3.jsxMapper ~config in
-  let expr4, module_binding4, signature4, structure4 = V4.jsxMapper ~config in
+  let expr3, module_binding3, transformSignatureItem3, transformStructureItem3 =
+    V3.jsxMapper ~config
+  in
+  let expr4, module_binding4, transformSignatureItem4, transformStructureItem4 =
+    V4.jsxMapper ~config
+  in
 
   let expr mapper e =
     match config.version with
@@ -2759,8 +2739,30 @@ let getMapper ~config =
     | 4 -> module_binding4 mapper mb
     | _ -> default_mapper.module_binding mapper mb
   in
-  let signature mapper s = signature4 mapper (signature3 mapper s) in
-  let structure mapper s = structure4 mapper (structure3 mapper s) in
+  let signature mapper items =
+    let items = default_mapper.signature mapper items in
+    List.map
+      (fun item ->
+        if config.version = 3 then transformSignatureItem3 mapper item
+        else if config.version = 4 then transformSignatureItem4 mapper item
+        else [item])
+      items
+    |> List.flatten
+    [@@raises Invalid_argument]
+  in
+  let structure mapper items =
+    let items = default_mapper.structure mapper items in
+    List.map
+      (fun item ->
+        if config.version = 3 then transformStructureItem3 mapper item
+        else if config.version = 4 then
+          transformStructureItem4 ~config mapper item
+        else [item])
+      items
+    |> List.flatten
+    [@@raises Invalid_argument]
+  in
+
   {
     default_mapper with
     expr;
