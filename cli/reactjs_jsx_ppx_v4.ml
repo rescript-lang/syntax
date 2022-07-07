@@ -1328,12 +1328,16 @@ let signature mapper signature =
   @@ reactComponentSignatureTransform mapper signature
   [@@raises Invalid_argument]
 
-let structure nestedModules mapper structure =
-  match structure with
-  | structures ->
+let signature_item mapper item = default_mapper.signature_item mapper item
+
+let structure nestedModules mapper items =
+  match items with
+  | items ->
     default_mapper.structure mapper
-    @@ reactComponentTransform nestedModules mapper structures
+    @@ reactComponentTransform nestedModules mapper items
   [@@raises Invalid_argument]
+
+let structure_item mapper item = default_mapper.structure_item mapper item
 
 let expr ~config mapper expression =
   match expression with
@@ -1431,7 +1435,15 @@ let jsxMapper ~config nestedModules =
   let structure = structure nestedModules in
   let module_binding = module_binding nestedModules in
   let expr = expr ~config in
-  {default_mapper with structure; expr; signature; module_binding}
+  {
+    default_mapper with
+    expr;
+    module_binding;
+    signature;
+    signature_item;
+    structure;
+    structure_item;
+  }
   [@@raises Invalid_argument, Failure]
 
 let rewrite_implementation ~jsxMode (code : Parsetree.structure) :
