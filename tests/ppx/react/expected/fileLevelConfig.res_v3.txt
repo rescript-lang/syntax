@@ -3,7 +3,7 @@
 
 let make =
   (@warning("-16") ~msg) => {
-    ReactDOM.jsx("div", {children: {msg->React.string}})
+    ReactDOMRe.createDOMElementVariadic("div", [{msg->React.string}])
   }
 let make = {
   let \"FileLevelConfig" = (\"Props": {"msg": 'msg}) => make(~msg=\"Props"["msg"])
