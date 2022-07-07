@@ -1215,13 +1215,13 @@ module V3 = struct
       [@@raises Invalid_argument]
     in
 
-    let signature mapper signature =
+    let signatureV3 mapper signature =
       default_mapper.signature mapper
       @@ reactComponentSignatureTransform mapper signature
       [@@raises Invalid_argument]
     in
 
-    let structure mapper structure =
+    let structureV3 mapper structure =
       match structure with
       | structures ->
         default_mapper.structure mapper
@@ -1229,7 +1229,7 @@ module V3 = struct
       [@@raises Invalid_argument]
     in
 
-    let expr mapper expression =
+    let exprV3 mapper expression =
       match expression with
       (* Does the function application have the @JSX attribute? *)
       | {
@@ -1289,14 +1289,14 @@ module V3 = struct
       [@@raises Invalid_argument]
     in
 
-    let module_binding mapper module_binding =
+    let module_bindingV3 mapper module_binding =
       let _ = nestedModules := module_binding.pmb_name.txt :: !nestedModules in
       let mapped = default_mapper.module_binding mapper module_binding in
       let _ = nestedModules := List.tl !nestedModules in
       mapped
       [@@raises Failure]
     in
-    {default_mapper with structure; expr; signature; module_binding}
+    (exprV3, module_bindingV3, signatureV3, structureV3)
     [@@raises Invalid_argument, Failure]
 end
 
@@ -2728,23 +2728,34 @@ module V4 = struct
 
   (* TODO: some line number might still be wrong *)
   let jsxMapper ~config =
-    let structure_item mapper item =
-      (match item.pstr_desc with
-      | Pstr_attribute attr -> processConfigAttribute attr config
-      | _ -> ());
-      default_mapper.structure_item mapper item
-    in
-    let signature_item mapper item =
-      (match item.psig_desc with
-      | Psig_attribute attr -> processConfigAttribute attr config
-      | _ -> ());
-      default_mapper.signature_item mapper item
-    in
-
     let structure = structureV4 ~config in
     let signature = signatureV4 in
     let module_binding = module_bindingV4 ~config in
     let expr = exprV4 ~config in
+    (expr, module_binding, signature, structure)
+    [@@raises Invalid_argument, Failure]
+end
+
+let getMapper ~config =
+  let structure_item mapper item =
+    (match item.pstr_desc with
+    | Pstr_attribute attr -> V4.processConfigAttribute attr config
+    | _ -> ());
+    default_mapper.structure_item mapper item
+  in
+  let signature_item mapper item =
+    (match item.psig_desc with
+    | Psig_attribute attr -> V4.processConfigAttribute attr config
+    | _ -> ());
+    default_mapper.signature_item mapper item
+  in
+
+  match config.version with
+  | 3 ->
+    let expr, module_binding, signature, structure = V3.jsxMapper ~config in
+    {default_mapper with expr; module_binding; signature; structure}
+  | 4 ->
+    let expr, module_binding, signature, structure = V4.jsxMapper ~config in
     {
       default_mapper with
       expr;
@@ -2754,13 +2765,6 @@ module V4 = struct
       structure;
       structure_item;
     }
-    [@@raises Invalid_argument, Failure]
-end
-
-let getMapper ~config =
-  match config.version with
-  | 3 -> V3.jsxMapper ~config
-  | 4 -> V4.jsxMapper ~config
   | _ -> default_mapper
 
 let rewrite_implementation ~config (code : Parsetree.structure) :
