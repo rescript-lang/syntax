@@ -523,16 +523,14 @@ let isPrintableAttribute attr =
   match attr with
   | ( {
         Location.txt =
-          ( "bs" | "res.template" | "ns.ternary" | "ns.braces" | "ns.iflet"
-          | "JSX" );
+          ( "bs" | "ns.iflet" | "ns.braces" | "JSX" | "res.async" | "res.await"
+          | "res.template" | "ns.ternary" );
       },
       _ ) ->
     false
   | _ -> true
 
 let hasPrintableAttributes attrs = List.exists isPrintableAttribute attrs
-
-let filterPrintableAttributes attrs = List.filter isPrintableAttribute attrs
 
 let partitionPrintableAttributes attrs =
   List.partition isPrintableAttribute attrs
