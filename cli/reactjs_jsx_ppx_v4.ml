@@ -39,14 +39,12 @@ let getJsxConfigByKey ~key ~type_ recordFields =
   | [] -> None
   | [v] | v :: _ -> Some v
 
-let getOrDefaultInt ~key ~default fields =
-  fields
-  |> getJsxConfigByKey ~key ~type_:Int
-  |> Option.map int_of_string_opt
-  |> Option.join |> Option.value ~default
+let getInt ~key fields =
+  match fields |> getJsxConfigByKey ~key ~type_:Int with
+  | None -> None
+  | Some s -> int_of_string_opt s
 
-let getOrDefaultString ~key ~default fields =
-  fields |> getJsxConfigByKey ~key ~type_:String |> Option.value ~default
+let getString ~key fields = fields |> getJsxConfigByKey ~key ~type_:String
 
 type jsxConfig = {
   mutable version: int;
@@ -54,20 +52,22 @@ type jsxConfig = {
   mutable mode: string;
 }
 
-let updateConfig {version; module_; mode} payload =
+let updateConfig config payload =
   let fields = getJsxConfig payload in
-  let version = getOrDefaultInt ~key:"version" ~default:version fields in
-  let module_ = getOrDefaultString ~key:"module" ~default:module_ fields in
-  let mode = getOrDefaultString ~key:"mode" ~default:mode fields in
-  {version; module_; mode}
+  (match getInt ~key:"version" fields with
+  | None -> ()
+  | Some i -> config.version <- i);
+  (match getString ~key:"module" fields with
+  | None -> ()
+  | Some s -> config.module_ <- s);
+  match getString ~key:"mode" fields with
+  | None -> ()
+  | Some s -> config.mode <- s
 
 let isJsxConfigAttr ((loc, _) : attribute) = loc.txt = "jsxConfig"
 
-let processJsxConfgUpdate attribute config =
-  if isJsxConfigAttr attribute then
-    let _, payload = attribute in
-    updateConfig config payload
-  else config
+let processConfigAttribute attribute config =
+  if isJsxConfigAttr attribute then updateConfig config (snd attribute)
 
 let rec find_opt p = function
   | [] -> None
