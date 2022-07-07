@@ -2520,18 +2520,14 @@ module V4 = struct
     | _ -> [item]
     [@@raises Invalid_argument]
 
-  let transformStructure ~config mapper items =
-    List.map (transformStructureItem ~config mapper) items |> List.flatten
-    [@@raises Invalid_argument]
-
-  let transformSignatureItem _mapper signature returnSignatures =
-    match signature with
+  let transformSignatureItem _mapper item =
+    match item with
     | {
         psig_loc;
         psig_desc = Psig_value ({pval_attributes; pval_type} as psig_desc);
       } as psig -> (
       match List.filter hasAttr pval_attributes with
-      | [] -> signature :: returnSignatures
+      | [] -> [item]
       | [_] ->
         let rec getPropTypes types ({ptyp_loc; ptyp_desc} as fullType) =
           match ptyp_desc with
@@ -2573,13 +2569,13 @@ module V4 = struct
                 };
           }
         in
-        propsRecordType :: newStructure :: returnSignatures
+        [propsRecordType; newStructure]
       | _ ->
         raise
           (Invalid_argument
              "Only one react.component call can exist on a component at one \
               time"))
-    | signature -> signature :: returnSignatures
+    | _ -> [item]
     [@@raises Invalid_argument]
 
   let transformJsxCall ~config mapper callExpression callArguments attrs =
@@ -2619,16 +2615,14 @@ module V4 = struct
             module name.")
     [@@raises Invalid_argument]
 
-  let transformSignature mapper signatures =
-    List.fold_right (transformSignatureItem mapper) signatures []
-    [@@raises Invalid_argument]
-
-  let signature mapper signature =
-    default_mapper.signature mapper @@ transformSignature mapper signature
+  let signature mapper items =
+    default_mapper.signature mapper
+    @@ (List.map (transformSignatureItem mapper) items |> List.flatten)
     [@@raises Invalid_argument]
 
   let structure ~config mapper items =
-    default_mapper.structure mapper @@ transformStructure ~config mapper items
+    default_mapper.structure mapper
+    @@ (List.map (transformStructureItem ~config mapper) items |> List.flatten)
     [@@raises Invalid_argument]
 
   let expr ~config mapper expression =
