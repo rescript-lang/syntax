@@ -2623,19 +2623,19 @@ module V4 = struct
             module name.")
     [@@raises Invalid_argument]
 
-  let signatureV4 mapper signature =
+  let signature mapper signature =
     default_mapper.signature mapper
     @@ reactComponentSignatureTransform mapper signature
     [@@raises Invalid_argument]
 
-  let structureV4 ~config mapper items =
+  let structure ~config mapper items =
     match items with
     | items ->
       default_mapper.structure mapper
       @@ reactComponentTransform ~config mapper items
     [@@raises Invalid_argument]
 
-  let exprV4 ~config mapper expression =
+  let expr ~config mapper expression =
     match expression with
     (* Does the function application have the @JSX attribute? *)
     | {pexp_desc = Pexp_apply (callExpression, callArguments); pexp_attributes}
@@ -2719,7 +2719,7 @@ module V4 = struct
     | e -> default_mapper.expr mapper e
     [@@raises Invalid_argument]
 
-  let module_bindingV4 ~config mapper module_binding =
+  let module_binding ~config mapper module_binding =
     config.nestedModules <- module_binding.pmb_name.txt :: config.nestedModules;
     let mapped = default_mapper.module_binding mapper module_binding in
     config.nestedModules <- List.tl config.nestedModules;
@@ -2728,10 +2728,9 @@ module V4 = struct
 
   (* TODO: some line number might still be wrong *)
   let jsxMapper ~config =
-    let structure = structureV4 ~config in
-    let signature = signatureV4 in
-    let module_binding = module_bindingV4 ~config in
-    let expr = exprV4 ~config in
+    let structure = structure ~config in
+    let module_binding = module_binding ~config in
+    let expr = expr ~config in
     (expr, module_binding, signature, structure)
     [@@raises Invalid_argument, Failure]
 end
