@@ -129,7 +129,7 @@ ReactDOMRe.createElement(ReasonReact.fragment, [comp1, comp2, comp3])
 
 **File-level config**
 
-The top-level attribute `@@jsxConfig` is used to update the jsx config for the rest of the file. Only the values mentioned are updated, the others are left unchanged.
+The top-level attribute `@@jsxConfig` is used to update the jsx config for the rest of the file (or until the next config update). Only the values mentioned are updated, the others are left unchanged.
 
 ```rescript
 @@jsxConfig({version: 4, mode: "automatic"})
