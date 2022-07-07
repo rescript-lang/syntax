@@ -1,12 +1,16 @@
+open Ast_helper
+open Ast_mapper
+open Asttypes
 open Parsetree
+open Longident
+
+type jsxConfig = {
+  mutable version: int;
+  mutable module_: string;
+  mutable mode: string;
+}
 
 module V3 = struct
-  open Ast_helper
-  open Ast_mapper
-  open Asttypes
-  open Parsetree
-  open Longident
-
   let rec find_opt p = function
     | [] -> None
     | x :: l -> if p x then Some x else find_opt p l
@@ -1297,26 +1301,19 @@ module V3 = struct
     in
     {default_mapper with structure; expr; signature; module_binding}
     [@@raises Invalid_argument, Failure]
-
-  let rewrite_implementationV3 (code : Parsetree.structure) :
-      Parsetree.structure =
-    let mapper = jsxMapper () in
-    mapper.structure mapper code
-    [@@raises Invalid_argument, Failure]
-
-  let rewrite_signatureV3 (code : Parsetree.signature) : Parsetree.signature =
-    let mapper = jsxMapper () in
-    mapper.signature mapper code
-    [@@raises Invalid_argument, Failure]
 end
+let rewrite_implementationV3 (code : Parsetree.structure) : Parsetree.structure
+    =
+  let mapper = V3.jsxMapper () in
+  mapper.structure mapper code
+  [@@raises Invalid_argument, Failure]
+
+let rewrite_signatureV3 (code : Parsetree.signature) : Parsetree.signature =
+  let mapper = V3.jsxMapper () in
+  mapper.signature mapper code
+  [@@raises Invalid_argument, Failure]
 
 module V4 = struct
-  open Ast_helper
-  open Ast_mapper
-  open Asttypes
-  open Parsetree
-  open Longident
-
   let getJsxConfig payload =
     match payload with
     | PStr
@@ -1358,12 +1355,6 @@ module V4 = struct
     | Some s -> int_of_string_opt s
 
   let getString ~key fields = fields |> getJsxConfigByKey ~key ~type_:String
-
-  type jsxConfig = {
-    mutable version: int;
-    mutable module_: string;
-    mutable mode: string;
-  }
 
   let updateConfig config payload =
     let fields = getJsxConfig payload in
@@ -2786,20 +2777,20 @@ module V4 = struct
     let mapper = jsxMapper ~config nestedModules in
     mapper.structure mapper code
     [@@raises Invalid_argument, Failure]
-
-  let rewrite_signatureV4 ~jsxMode (code : Parsetree.signature) :
-      Parsetree.signature =
-    let nestedModules = ref [] in
-    let config = {mode = jsxMode; module_ = ""; version = 4} in
-    let mapper = jsxMapper ~config nestedModules in
-    mapper.signature mapper code
-    [@@raises Invalid_argument, Failure]
 end
+
+let rewrite_signatureV4 ~jsxMode (code : Parsetree.signature) :
+    Parsetree.signature =
+  let nestedModules = ref [] in
+  let config = {mode = jsxMode; module_ = ""; version = 4} in
+  let mapper = V4.jsxMapper ~config nestedModules in
+  mapper.signature mapper code
+  [@@raises Invalid_argument, Failure]
 
 let rewrite_implementation ~jsxVersion ~jsxModule ~jsxMode
     (code : Parsetree.structure) : Parsetree.structure =
   match (jsxVersion, jsxModule, jsxMode) with
-  | 3, _, _ -> V3.rewrite_implementationV3 code
+  | 3, _, _ -> rewrite_implementationV3 code
   | 4, _, "classic" -> V4.rewrite_implementationV4 ~jsxMode code
   | 4, _, "automatic" -> V4.rewrite_implementationV4 ~jsxMode code
   | _ -> code
@@ -2808,8 +2799,8 @@ let rewrite_implementation ~jsxVersion ~jsxModule ~jsxMode
 let rewrite_signature ~jsxVersion ~jsxModule ~jsxMode
     (code : Parsetree.signature) : Parsetree.signature =
   match (jsxVersion, jsxModule, jsxMode) with
-  | 3, _, _ -> V3.rewrite_signatureV3 code
-  | 4, _, "classic" -> V4.rewrite_signatureV4 ~jsxMode code
-  | 4, _, "automatic" -> V4.rewrite_signatureV4 ~jsxMode code
+  | 3, _, _ -> rewrite_signatureV3 code
+  | 4, _, "classic" -> rewrite_signatureV4 ~jsxMode code
+  | 4, _, "automatic" -> rewrite_signatureV4 ~jsxMode code
   | _ -> code
   [@@raises Invalid_argument, Failure]
