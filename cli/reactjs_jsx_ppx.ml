@@ -2707,19 +2707,6 @@ module V4 = struct
 end
 
 let getMapper ~config =
-  let structure_item mapper item =
-    (match item.pstr_desc with
-    | Pstr_attribute attr -> V4.processConfigAttribute attr config
-    | _ -> ());
-    default_mapper.structure_item mapper item
-  in
-  let signature_item mapper item =
-    (match item.psig_desc with
-    | Psig_attribute attr -> V4.processConfigAttribute attr config
-    | _ -> ());
-    default_mapper.signature_item mapper item
-  in
-
   let expr3, module_binding3, transformSignatureItem3, transformStructureItem3 =
     V3.jsxMapper ~config
   in
@@ -2742,6 +2729,9 @@ let getMapper ~config =
   let signature mapper items =
     List.map
       (fun item ->
+        (match item.psig_desc with
+        | Psig_attribute attr -> V4.processConfigAttribute attr config
+        | _ -> ());
         let item = default_mapper.signature_item mapper item in
         if config.version = 3 then transformSignatureItem3 mapper item
         else if config.version = 4 then transformSignatureItem4 mapper item
@@ -2753,6 +2743,9 @@ let getMapper ~config =
   let structure mapper items =
     List.map
       (fun item ->
+        (match item.pstr_desc with
+        | Pstr_attribute attr -> V4.processConfigAttribute attr config
+        | _ -> ());
         let item = default_mapper.structure_item mapper item in
         if config.version = 3 then transformStructureItem3 mapper item
         else if config.version = 4 then
@@ -2763,15 +2756,7 @@ let getMapper ~config =
     [@@raises Invalid_argument]
   in
 
-  {
-    default_mapper with
-    expr;
-    module_binding;
-    signature;
-    signature_item;
-    structure;
-    structure_item;
-  }
+  {default_mapper with expr; module_binding; signature; structure}
 
 let rewrite_implementation ~jsxVersion ~jsxModule ~jsxMode
     (code : Parsetree.structure) : Parsetree.structure =
