@@ -2629,10 +2629,8 @@ module V4 = struct
     [@@raises Invalid_argument]
 
   let structure ~config mapper items =
-    match items with
-    | items ->
-      default_mapper.structure mapper
-      @@ reactComponentTransform ~config mapper items
+    default_mapper.structure mapper
+    @@ reactComponentTransform ~config mapper items
     [@@raises Invalid_argument]
 
   let expr ~config mapper expression =
