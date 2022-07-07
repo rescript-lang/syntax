@@ -2,7 +2,7 @@
 type props<'msg> = {key?: string, msg: 'msg}
 
 let make = ({msg, _}: props<'msg>) => {
-  ReactDOM.jsx("div", {children: {msg->React.string}})
+  ReactDOMRe.createDOMElementVariadic("div", [{msg->React.string}])
 }
 let make = {
   let \"FileLevelConfig" = (props: props<_>) => make(props)
