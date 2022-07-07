@@ -175,7 +175,7 @@ let flattenOperandRhs parentOperator rhs =
   | _ when ParsetreeViewer.isTernaryExpr rhs -> true
   | _ -> false
 
-let lazyOrAssertExprRhs expr =
+let lazyOrAssertOrAwaitExprRhs expr =
   let optBraces, _ = ParsetreeViewer.processBracesAttr expr in
   match optBraces with
   | Some ({Location.loc = bracesLoc}, _) -> Braced bracesLoc

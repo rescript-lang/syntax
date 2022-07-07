@@ -532,6 +532,8 @@ let isPrintableAttribute attr =
 
 let hasPrintableAttributes attrs = List.exists isPrintableAttribute attrs
 
+let filterPrintableAttributes attrs = List.filter isPrintableAttribute attrs
+
 let partitionPrintableAttributes attrs =
   List.partition isPrintableAttribute attrs
 

@@ -3095,7 +3095,7 @@ and printExpression ~customLayout (e : Parsetree.expression) cmtTbl =
     | Pexp_assert expr ->
       let rhs =
         let doc = printExpressionWithComments ~customLayout expr cmtTbl in
-        match Parens.lazyOrAssertExprRhs expr with
+        match Parens.lazyOrAssertOrAwaitExprRhs expr with
         | Parens.Parenthesized -> addParens doc
         | Braced braces -> printBraces doc expr braces
         | Nothing -> doc
@@ -3104,7 +3104,7 @@ and printExpression ~customLayout (e : Parsetree.expression) cmtTbl =
     | Pexp_lazy expr ->
       let rhs =
         let doc = printExpressionWithComments ~customLayout expr cmtTbl in
-        match Parens.lazyOrAssertExprRhs expr with
+        match Parens.lazyOrAssertOrAwaitExprRhs expr with
         | Parens.Parenthesized -> addParens doc
         | Braced braces -> printBraces doc expr braces
         | Nothing -> doc
@@ -3282,7 +3282,24 @@ and printExpression ~customLayout (e : Parsetree.expression) cmtTbl =
   in
   let exprWithAwait =
     if ParsetreeViewer.hasAwaitAttribute e.pexp_attributes then
-      Doc.concat [Doc.text "await "; printedExpression]
+      let rhs =
+        match
+          Parens.lazyOrAssertOrAwaitExprRhs
+            {
+              e with
+              pexp_attributes =
+                List.filter
+                  (function
+                    | {Location.txt = "res.await" | "ns.braces"}, _ -> false
+                    | _ -> true)
+                  e.pexp_attributes;
+            }
+        with
+        | Parens.Parenthesized -> addParens printedExpression
+        | Braced braces -> printBraces printedExpression e braces
+        | Nothing -> printedExpression
+      in
+      Doc.concat [Doc.text "await "; rhs]
     else printedExpression
   in
   let shouldPrintItsOwnAttributes =
@@ -3680,11 +3697,7 @@ and printBinaryExpression ~customLayout (expr : Parsetree.expression) cmtTbl =
                 {
                   expr with
                   pexp_attributes =
-                    List.filter
-                      (fun attr ->
-                        match attr with
-                        | {Location.txt = "ns.braces"}, _ -> false
-                        | _ -> true)
+                    ParsetreeViewer.filterPrintableAttributes
                       expr.pexp_attributes;
                 }
             with

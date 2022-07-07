@@ -99,6 +99,7 @@ val hasOptionalAttribute : Parsetree.attributes -> bool
 val shouldIndentBinaryExpr : Parsetree.expression -> bool
 val shouldInlineRhsBinaryExpr : Parsetree.expression -> bool
 val hasPrintableAttributes : Parsetree.attributes -> bool
+val filterPrintableAttributes : Parsetree.attributes -> Parsetree.attributes
 val partitionPrintableAttributes :
   Parsetree.attributes -> Parsetree.attributes * Parsetree.attributes
 
