@@ -192,9 +192,9 @@ let filterParsingAttrs attrs =
       match attr with
       | ( {
             Location.txt =
-              ( "ns.ternary" | "ns.braces" | "res.template" | "res.await"
-              | "res.async" | "bs" | "ns.iflet" | "ns.namedArgLoc"
-              | "ns.optional" );
+              ( "bs" | "ns.braces" | "ns.iflet" | "ns.namedArgLoc"
+              | "ns.optional" | "ns.ternary" | "res.async" | "res.await"
+              | "res.template" );
           },
           _ ) ->
         false
@@ -341,8 +341,8 @@ let hasAttributes attrs =
       match attr with
       | ( {
             Location.txt =
-              ( "bs" | "res.async" | "res.await" | "res.template" | "ns.ternary"
-              | "ns.braces" | "ns.iflet" );
+              ( "bs" | "ns.braces" | "ns.iflet" | "ns.ternary" | "res.async"
+              | "res.await" | "res.template" );
           },
           _ ) ->
         false
