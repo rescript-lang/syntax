@@ -4,6 +4,67 @@ open Asttypes
 open Parsetree
 open Longident
 
+let getJsxConfig payload =
+  match payload with
+  | PStr
+      ({
+         pstr_desc =
+           Pstr_eval ({pexp_desc = Pexp_record (recordFields, None)}, _);
+       }
+      :: _rest) ->
+    recordFields
+  | _ -> []
+
+type configKey = Int | String
+
+let getJsxConfigByKey ~key ~type_ recordFields =
+  let values =
+    List.filter_map
+      (fun ((lid, expr) : Longident.t Location.loc * expression) ->
+        match (type_, lid, expr) with
+        | ( Int,
+            {txt = Lident k},
+            {pexp_desc = Pexp_constant (Pconst_integer (value, None))} )
+          when k = key ->
+          Some value
+        | ( String,
+            {txt = Lident k},
+            {pexp_desc = Pexp_constant (Pconst_string (value, None))} )
+          when k = key ->
+          Some value
+        | _ -> None)
+      recordFields
+  in
+  match values with
+  | [] -> None
+  | [v] | v :: _ -> Some v
+
+let getOrDefaultInt ~key ~default fields =
+  fields
+  |> getJsxConfigByKey ~key ~type_:Int
+  |> Option.map int_of_string_opt
+  |> Option.join |> Option.value ~default
+
+let getOrDefaultString ~key ~default fields =
+  fields |> getJsxConfigByKey ~key ~type_:String |> Option.value ~default
+
+type jsxConfig = {version: int; module_: string; mode: string}
+
+let updateConfig {version; module_; mode} payload =
+  let fields = getJsxConfig payload in
+  let version = getOrDefaultInt ~key:"version" ~default:version fields in
+  let module_ = getOrDefaultString ~key:"module" ~default:module_ fields in
+  let mode = getOrDefaultString ~key:"mode" ~default:mode fields in
+  {version; module_; mode}
+
+let isJsxConfigAttr ((loc, _) : attribute) = loc.txt = "jsxConfig"
+
+let processJsxConfgUpdate attribute config =
+  if isJsxConfigAttr attribute then
+    let _, payload = attribute in
+    updateConfig config payload
+  else config
+
 let rec find_opt p = function
   | [] -> None
   | x :: l -> if p x then Some x else find_opt p l
@@ -323,7 +384,7 @@ let makePropsRecordTypeSig propsName loc namedTypeList =
         ~kind:(Ptype_record labelDeclList);
     ]
 
-let transformUppercaseCall3 ~jsxMode modulePath mapper loc attrs callExpression
+let transformUppercaseCall3 ~config modulePath mapper loc attrs callExpression
     callArguments =
   let children, argsWithLabels =
     extractChildren ~loc ~removeLastPositionUnit:true callArguments
@@ -345,7 +406,7 @@ let transformUppercaseCall3 ~jsxMode modulePath mapper loc attrs callExpression
     | ListLiteral expression -> (
       (* this is a hack to support react components that introspect into their children *)
       childrenArg := Some expression;
-      match jsxMode with
+      match config.mode with
       | "automatic" ->
         [
           ( labelled "children",
@@ -382,7 +443,7 @@ let transformUppercaseCall3 ~jsxMode modulePath mapper loc attrs callExpression
 
   (* handle key, ref, children *)
   (* React.createElement(Component.make, props, ...children) *)
-  match jsxMode with
+  match config.mode with
   (* The new jsx transform *)
   | "automatic" ->
     let record = recordFromProps ~removeKey:true callExpression args in
@@ -432,10 +493,10 @@ let transformUppercaseCall3 ~jsxMode modulePath mapper loc attrs callExpression
         ])
   [@@raises Invalid_argument]
 
-let transformLowercaseCall3 ~jsxMode mapper loc attrs callExpression
+let transformLowercaseCall3 ~config mapper loc attrs callExpression
     callArguments id =
   let componentNameExpr = constantString ~loc id in
-  match jsxMode with
+  match config.mode with
   (* the new jsx transform *)
   | "automatic" ->
     let children, nonChildrenProps =
@@ -1221,7 +1282,7 @@ let reactComponentSignatureTransform mapper signatures =
   List.fold_right (transformComponentSignature mapper) signatures []
   [@@raises Invalid_argument]
 
-let transformJsxCall ~jsxMode mapper callExpression callArguments attrs =
+let transformJsxCall ~config mapper callExpression callArguments attrs =
   match callExpression.pexp_desc with
   | Pexp_ident caller -> (
     match caller with
@@ -1231,13 +1292,13 @@ let transformJsxCall ~jsxMode mapper callExpression callArguments attrs =
            "JSX: `createElement` should be preceeded by a module name.")
     (* Foo.createElement(~prop1=foo, ~prop2=bar, ~children=[], ()) *)
     | {loc; txt = Ldot (modulePath, ("createElement" | "make"))} ->
-      transformUppercaseCall3 ~jsxMode modulePath mapper loc attrs
+      transformUppercaseCall3 ~config modulePath mapper loc attrs
         callExpression callArguments
     (* div(~prop1=foo, ~prop2=bar, ~children=[bla], ()) *)
     (* turn that into
        ReactDOMRe.createElement(~props=ReactDOMRe.props(~props1=foo, ~props2=bar, ()), [|bla|]) *)
     | {loc; txt = Lident id} ->
-      transformLowercaseCall3 ~jsxMode mapper loc attrs callExpression
+      transformLowercaseCall3 ~config mapper loc attrs callExpression
         callArguments id
     | {txt = Ldot (_, anythingNotCreateElementOrMake)} ->
       raise
@@ -1270,7 +1331,7 @@ let structure nestedModules mapper structure =
     @@ reactComponentTransform nestedModules mapper structures
   [@@raises Invalid_argument]
 
-let expr ~jsxMode mapper expression =
+let expr ~config mapper expression =
   match expression with
   (* Does the function application have the @JSX attribute? *)
   | {pexp_desc = Pexp_apply (callExpression, callArguments); pexp_attributes}
@@ -1284,7 +1345,7 @@ let expr ~jsxMode mapper expression =
     (* no JSX attribute *)
     | [], _ -> default_mapper.expr mapper expression
     | _, nonJSXAttributes ->
-      transformJsxCall ~jsxMode mapper callExpression callArguments
+      transformJsxCall ~config mapper callExpression callArguments
         nonJSXAttributes)
   (* is it a list with jsx attribute? Reason <>foo</> desugars to [@JSX][foo]*)
   | {
@@ -1305,7 +1366,7 @@ let expr ~jsxMode mapper expression =
     | _, nonJSXAttributes ->
       let loc = {loc with loc_ghost = true} in
       let fragment =
-        match jsxMode with
+        match config.mode with
         | "automatic" ->
           Exp.ident ~loc {loc; txt = Ldot (Lident "React", "jsxFragment")}
         | "classic" | _ ->
@@ -1315,7 +1376,7 @@ let expr ~jsxMode mapper expression =
       let args =
         [
           (nolabel, fragment);
-          (match jsxMode with
+          (match config.mode with
           | "automatic" ->
             ( nolabel,
               Exp.record
@@ -1341,7 +1402,7 @@ let expr ~jsxMode mapper expression =
         ~loc (* throw away the [@JSX] attribute and keep the others, if any *)
         ~attrs:nonJSXAttributes
         (* ReactDOMRe.createElement *)
-        (match jsxMode with
+        (match config.mode with
         | "automatic" ->
           if countOfChildren childrenExpr > 1 then
             Exp.ident ~loc {loc; txt = Ldot (Lident "React", "jsxs")}
@@ -1362,23 +1423,25 @@ let module_binding nestedModules mapper module_binding =
   [@@raises Failure]
 
 (* TODO: some line number might still be wrong *)
-let jsxMapper ~jsxMode nestedModules =
+let jsxMapper ~config nestedModules =
   let structure = structure nestedModules in
   let module_binding = module_binding nestedModules in
-  let expr = expr ~jsxMode in
+  let expr = expr ~config in
   {default_mapper with structure; expr; signature; module_binding}
   [@@raises Invalid_argument, Failure]
 
-let rewrite_implementation ~jsx_mode (code : Parsetree.structure) :
+let rewrite_implementation ~jsxMode (code : Parsetree.structure) :
     Parsetree.structure =
   let nestedModules = ref [] in
-  let mapper = jsxMapper ~jsxMode:jsx_mode nestedModules in
+  let config = {mode = jsxMode; module_ = ""; version = 4} in
+  let mapper = jsxMapper ~config nestedModules in
   mapper.structure mapper code
   [@@raises Invalid_argument, Failure]
 
-let rewrite_signature ~jsx_mode (code : Parsetree.signature) :
+let rewrite_signature ~jsxMode (code : Parsetree.signature) :
     Parsetree.signature =
   let nestedModules = ref [] in
-  let mapper = jsxMapper ~jsxMode:jsx_mode nestedModules in
+  let config = {mode = jsxMode; module_ = ""; version = 4} in
+  let mapper = jsxMapper ~config nestedModules in
   mapper.signature mapper code
   [@@raises Invalid_argument, Failure]

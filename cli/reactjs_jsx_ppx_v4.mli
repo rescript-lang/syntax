@@ -63,7 +63,7 @@
   children O -> `jsxs("div", { ..., children: [ ... ]})`
 *)
 val rewrite_implementation :
-  jsx_mode:string -> Parsetree.structure -> Parsetree.structure
+  jsxMode:string -> Parsetree.structure -> Parsetree.structure
 
 val rewrite_signature :
-  jsx_mode:string -> Parsetree.signature -> Parsetree.signature
+  jsxMode:string -> Parsetree.signature -> Parsetree.signature
