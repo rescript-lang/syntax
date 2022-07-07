@@ -1215,13 +1215,13 @@ module V3 = struct
       [@@raises Invalid_argument]
     in
 
-    let signatureV3 mapper signature =
+    let signature mapper signature =
       default_mapper.signature mapper
       @@ reactComponentSignatureTransform mapper signature
       [@@raises Invalid_argument]
     in
 
-    let structureV3 mapper structure =
+    let structure mapper structure =
       match structure with
       | structures ->
         default_mapper.structure mapper
@@ -1229,7 +1229,7 @@ module V3 = struct
       [@@raises Invalid_argument]
     in
 
-    let exprV3 mapper expression =
+    let expr mapper expression =
       match expression with
       (* Does the function application have the @JSX attribute? *)
       | {
@@ -1289,14 +1289,14 @@ module V3 = struct
       [@@raises Invalid_argument]
     in
 
-    let module_bindingV3 mapper module_binding =
+    let module_binding mapper module_binding =
       let _ = nestedModules := module_binding.pmb_name.txt :: !nestedModules in
       let mapped = default_mapper.module_binding mapper module_binding in
       let _ = nestedModules := List.tl !nestedModules in
       mapped
       [@@raises Failure]
     in
-    (exprV3, module_bindingV3, signatureV3, structureV3)
+    (expr, module_binding, signature, structure)
     [@@raises Invalid_argument, Failure]
 end
 
