@@ -1,20 +1,35 @@
 @@jsxConfig({version: 4, mode: "automatic"})
+@obj external makeProps: (~msg: 'msg, ~key: string=?, unit) => {"msg": 'msg} = ""
 
-@react.component
-let make = (~msg) => {
-  ReactDOM.jsx("div", {children: {msg->React.string}})
+let make =
+  (@warning("-16") ~msg) => {
+    ReactDOM.jsx("div", {children: {msg->React.string}})
+  }
+let make = {
+  let \"FileLevelConfig" = (\"Props": {"msg": 'msg}) => make(~msg=\"Props"["msg"])
+  \"FileLevelConfig"
 }
 
 @@jsxConfig({version: 4, mode: "classic"})
+@obj external makeProps: (~msg: 'msg, ~key: string=?, unit) => {"msg": 'msg} = ""
 
-@react.component
-let make = (~msg) => {
-  ReactDOMRe.createDOMElementVariadic("div", [{msg->React.string}])
+let make =
+  (@warning("-16") ~msg) => {
+    ReactDOMRe.createDOMElementVariadic("div", [{msg->React.string}])
+  }
+let make = {
+  let \"FileLevelConfig" = (\"Props": {"msg": 'msg}) => make(~msg=\"Props"["msg"])
+  \"FileLevelConfig"
 }
 
 @@jsxConfig({version: 3})
+@obj external makeProps: (~msg: 'msg, ~key: string=?, unit) => {"msg": 'msg} = ""
 
-@react.component
-let make = (~msg) => {
-  ReactDOMRe.createDOMElementVariadic("div", [{msg->React.string}])
+let make =
+  (@warning("-16") ~msg) => {
+    ReactDOMRe.createDOMElementVariadic("div", [{msg->React.string}])
+  }
+let make = {
+  let \"FileLevelConfig" = (\"Props": {"msg": 'msg}) => make(~msg=\"Props"["msg"])
+  \"FileLevelConfig"
 }

@@ -2759,18 +2759,8 @@ let getMapper ~config =
     | 4 -> module_binding4 mapper mb
     | _ -> default_mapper.module_binding mapper mb
   in
-  let signature mapper s =
-    match config.version with
-    | 3 -> signature3 mapper s
-    | 4 -> signature4 mapper s
-    | _ -> default_mapper.signature mapper s
-  in
-  let structure mapper s =
-    match config.version with
-    | 3 -> structure3 mapper s
-    | 4 -> structure4 mapper s
-    | _ -> default_mapper.structure mapper s
-  in
+  let signature mapper s = signature4 mapper (signature3 mapper s) in
+  let structure mapper s = structure4 mapper (structure3 mapper s) in
   {
     default_mapper with
     expr;
