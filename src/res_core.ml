@@ -2759,6 +2759,14 @@ and parseBracedOrRecordExpr p =
     let expr = parseRecordExpr ~startPos [] p in
     Parser.expect Rbrace p;
     expr
+  (*
+    The branch below takes care of the "braced" expression {async}.
+    The big reason that we need all these branches is that {x} isn't a record with a punned field x, but a braced expression… There's lots of "ambiguity" between a record with a single punned field and a braced expression…
+    What is {x}?
+      1) record {x: x}
+      2) expression x which happens to wrapped in braces
+    Due to historical reasons, we always follow 2
+  *)
   | Lident "async" when isEs6ArrowExpression ~inTernary:false p ->
     let expr = parseAsyncArrowExpression p in
     let expr = parseExprBlock ~first:expr p in
