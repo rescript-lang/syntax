@@ -2796,9 +2796,8 @@ let rewrite_implementation ~config (code : Parsetree.structure) :
 
 let rewrite_signature ~config (code : Parsetree.signature) : Parsetree.signature
     =
-  match (config.version, config.mode) with
-  | 3, _ -> rewrite_signatureV3 code
-  | 4, "classic" -> rewrite_signatureV4 ~config code
-  | 4, "automatic" -> rewrite_signatureV4 ~config code
+  match config.version with
+  | 3 -> rewrite_signatureV3 code
+  | 4 -> rewrite_signatureV4 ~config code
   | _ -> code
   [@@raises Invalid_argument, Failure]
