@@ -8,6 +8,7 @@ type jsxConfig = {
   mutable version: int;
   mutable module_: string;
   mutable mode: string;
+  mutable nestedModules: string list;
 }
 
 module V3 = struct
@@ -368,9 +369,7 @@ module V3 = struct
     mapper.typ mapper type_
 
   (* TODO: some line number might still be wrong *)
-  let jsxMapper () =
-    let jsxVersion = ref None in
-
+  let jsxMapper ~config =
     let transformUppercaseCall3 modulePath mapper loc attrs _ callArguments =
       let children, argsWithLabels =
         extractChildren ~loc ~removeLastPositionUnit:true callArguments
@@ -1184,20 +1183,18 @@ module V3 = struct
                "JSX: `createElement` should be preceeded by a module name.")
         (* Foo.createElement(~prop1=foo, ~prop2=bar, ~children=[], ()) *)
         | {loc; txt = Ldot (modulePath, ("createElement" | "make"))} -> (
-          match !jsxVersion with
-          | None | Some 3 ->
+          match config.version with
+          | 3 ->
             transformUppercaseCall3 modulePath mapper loc attrs callExpression
               callArguments
-          | Some _ -> raise (Invalid_argument "JSX: the JSX version must be  3")
-          )
+          | _ -> raise (Invalid_argument "JSX: the JSX version must be  3"))
         (* div(~prop1=foo, ~prop2=bar, ~children=[bla], ()) *)
         (* turn that into
            ReactDOMRe.createElement(~props=ReactDOMRe.props(~props1=foo, ~props2=bar, ()), [|bla|]) *)
         | {loc; txt = Lident id} -> (
-          match !jsxVersion with
-          | None | Some 3 ->
-            transformLowercaseCall3 mapper loc attrs callArguments id
-          | Some _ -> raise (Invalid_argument "JSX: the JSX version must be 3"))
+          match config.version with
+          | 3 -> transformLowercaseCall3 mapper loc attrs callArguments id
+          | _ -> raise (Invalid_argument "JSX: the JSX version must be 3"))
         | {txt = Ldot (_, anythingNotCreateElementOrMake)} ->
           raise
             (Invalid_argument
@@ -2058,8 +2055,7 @@ module V4 = struct
     | name when isOptional name -> (true, getLabel name, [], type_) :: types
     | _ -> types
 
-  let transformComponentDefinition nestedModules mapper structure
-      returnStructures =
+  let transformComponentDefinition ~config mapper structure returnStructures =
     match structure with
     (* external *)
     | {
@@ -2134,7 +2130,9 @@ module V4 = struct
           in
           let fnName = getFnName binding.pvb_pat in
           let internalFnName = fnName ^ "$Internal" in
-          let fullModuleName = makeModuleName fileName !nestedModules fnName in
+          let fullModuleName =
+            makeModuleName fileName config.nestedModules fnName
+          in
           let modifiedBindingOld binding =
             let expression = binding.pvb_expr in
             (* TODO: there is a long-tail of unsupported features inside of blocks - Pexp_letmodule , Pexp_letexception , Pexp_ifthenelse *)
@@ -2522,10 +2520,8 @@ module V4 = struct
     | structure -> structure :: returnStructures
     [@@raises Invalid_argument]
 
-  let reactComponentTransform nestedModules mapper structures =
-    List.fold_right
-      (transformComponentDefinition nestedModules mapper)
-      structures []
+  let reactComponentTransform ~config mapper structures =
+    List.fold_right (transformComponentDefinition ~config mapper) structures []
     [@@raises Invalid_argument]
 
   let transformComponentSignature _mapper signature returnSignatures =
@@ -2632,11 +2628,11 @@ module V4 = struct
     @@ reactComponentSignatureTransform mapper signature
     [@@raises Invalid_argument]
 
-  let structureV4 nestedModules mapper items =
+  let structureV4 ~config mapper items =
     match items with
     | items ->
       default_mapper.structure mapper
-      @@ reactComponentTransform nestedModules mapper items
+      @@ reactComponentTransform ~config mapper items
     [@@raises Invalid_argument]
 
   let exprV4 ~config mapper expression =
@@ -2723,15 +2719,15 @@ module V4 = struct
     | e -> default_mapper.expr mapper e
     [@@raises Invalid_argument]
 
-  let module_bindingV4 nestedModules mapper module_binding =
-    let _ = nestedModules := module_binding.pmb_name.txt :: !nestedModules in
+  let module_bindingV4 ~config mapper module_binding =
+    config.nestedModules <- module_binding.pmb_name.txt :: config.nestedModules;
     let mapped = default_mapper.module_binding mapper module_binding in
-    let _ = nestedModules := List.tl !nestedModules in
+    config.nestedModules <- List.tl config.nestedModules;
     mapped
     [@@raises Failure]
 
   (* TODO: some line number might still be wrong *)
-  let jsxMapper ~config nestedModules =
+  let jsxMapper ~config =
     let structure_item mapper item =
       (match item.pstr_desc with
       | Pstr_attribute attr -> processConfigAttribute attr config
@@ -2745,9 +2741,9 @@ module V4 = struct
       default_mapper.signature_item mapper item
     in
 
-    let structure = structureV4 nestedModules in
+    let structure = structureV4 ~config in
     let signature = signatureV4 in
-    let module_binding = module_bindingV4 nestedModules in
+    let module_binding = module_bindingV4 ~config in
     let expr = exprV4 ~config in
     {
       default_mapper with
@@ -2763,11 +2759,10 @@ end
 
 let rewrite_implementation ~config (code : Parsetree.structure) :
     Parsetree.structure =
-  let nestedModules = ref [] in
   let mapper =
     match config.version with
-    | 3 -> V3.jsxMapper ()
-    | 4 -> V4.jsxMapper ~config nestedModules
+    | 3 -> V3.jsxMapper ~config
+    | 4 -> V4.jsxMapper ~config
     | _ -> default_mapper
   in
   mapper.structure mapper code
@@ -2776,10 +2771,9 @@ let rewrite_implementation ~config (code : Parsetree.structure) :
 let rewrite_signature ~config (code : Parsetree.signature) : Parsetree.signature
     =
   let mapper =
-    let nestedModules = ref [] in
     match config.version with
-    | 3 -> V3.jsxMapper ()
-    | 4 -> V4.jsxMapper ~config nestedModules
+    | 3 -> V3.jsxMapper ~config
+    | 4 -> V4.jsxMapper ~config
     | _ -> default_mapper
   in
   mapper.signature mapper code
