@@ -286,8 +286,8 @@ module CliArgProcessor = struct
         else exit 1)
       else
         let parsetree =
-          Reactjs_jsx_ppx.rewrite_signature ~jsx_version:jsxVersion
-            ~jsx_module:jsxModule ~jsx_mode:jsxMode parseResult.parsetree
+          Reactjs_jsx_ppx.rewrite_signature ~jsxVersion ~jsxModule ~jsxMode
+            parseResult.parsetree
         in
         printEngine.printInterface ~width ~filename
           ~comments:parseResult.comments parsetree
@@ -302,8 +302,8 @@ module CliArgProcessor = struct
         else exit 1)
       else
         let parsetree =
-          Reactjs_jsx_ppx.rewrite_implementation ~jsx_version:jsxVersion
-            ~jsx_module:jsxModule ~jsx_mode:jsxMode parseResult.parsetree
+          Reactjs_jsx_ppx.rewrite_implementation ~jsxVersion ~jsxModule ~jsxMode
+            parseResult.parsetree
         in
         printEngine.printImplementation ~width ~filename
           ~comments:parseResult.comments parsetree
