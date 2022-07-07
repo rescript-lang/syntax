@@ -237,11 +237,9 @@ let rec goToClosing closingToken state =
 (* Madness *)
 let isEs6ArrowExpression ~inTernary p =
   Parser.lookahead p (fun state ->
-      let () =
-        match state.Parser.token with
-        | Lident "async" -> Parser.next state
-        | _ -> ()
-      in
+      (match state.Parser.token with
+      | Lident "async" -> Parser.next state
+      | _ -> ());
       match state.Parser.token with
       | Lident _ | Underscore -> (
         Parser.next state;
