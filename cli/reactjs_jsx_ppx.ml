@@ -63,9 +63,9 @@ let getJsxConfigByKey ~key ~type_ recordFields =
 
 let transform ~v3 ~v4 ~jsx_version ~jsx_module ~jsx_mode code =
   match (jsx_version, jsx_module, jsx_mode) with
-  | "3", _, _ -> v3 code
-  | "4", _, "classic" -> v4 ~jsx_mode:"classic" code
-  | "4", _, "automatic" -> v4 ~jsx_mode:"automatic" code
+  | 3, _, _ -> v3 code
+  | 4, _, "classic" -> v4 ~jsx_mode:"classic" code
+  | 4, _, "automatic" -> v4 ~jsx_mode:"automatic" code
   | _ -> code
 
 let rewrite_implementation ~jsx_version ~jsx_module ~jsx_mode
@@ -79,7 +79,10 @@ let rewrite_implementation ~jsx_version ~jsx_module ~jsx_mode
       | _ -> (Location.none, None)
     in
     let version =
-      getJsxConfig payload |> getJsxConfigByKey ~key:"version" ~type_:Int
+      getJsxConfig payload
+      |> getJsxConfigByKey ~key:"version" ~type_:Int
+      |> Option.map int_of_string_opt
+      |> Option.join
     in
     let module_ =
       getJsxConfig payload |> getJsxConfigByKey ~key:"module" ~type_:String
@@ -88,10 +91,10 @@ let rewrite_implementation ~jsx_version ~jsx_module ~jsx_mode
       getJsxConfig payload |> getJsxConfigByKey ~key:"mode" ~type_:String
     in
     match (version, module_, mode) with
-    | Some "3", _, _ -> Reactjs_jsx_ppx_v3.rewrite_implementation code
-    | Some "4", _, Some "classic" ->
+    | Some 3, _, _ -> Reactjs_jsx_ppx_v3.rewrite_implementation code
+    | Some 4, _, Some "classic" ->
       Reactjs_jsx_ppx_v4.rewrite_implementation ~jsx_mode:"classic" code
-    | Some "4", _, Some "automatic" ->
+    | Some 4, _, Some "automatic" ->
       Reactjs_jsx_ppx_v4.rewrite_implementation ~jsx_mode:"automatic" code
     | _ ->
       raise
@@ -115,7 +118,10 @@ let rewrite_signature ~jsx_version ~jsx_module ~jsx_mode
       | _ -> (Location.none, None)
     in
     let version =
-      getJsxConfig payload |> getJsxConfigByKey ~key:"version" ~type_:Int
+      getJsxConfig payload
+      |> getJsxConfigByKey ~key:"version" ~type_:Int
+      |> Option.map int_of_string_opt
+      |> Option.join
     in
     let module_ =
       getJsxConfig payload |> getJsxConfigByKey ~key:"module" ~type_:String
@@ -124,10 +130,10 @@ let rewrite_signature ~jsx_version ~jsx_module ~jsx_mode
       getJsxConfig payload |> getJsxConfigByKey ~key:"mode" ~type_:String
     in
     match (version, module_, mode) with
-    | Some "3", _, _ -> Reactjs_jsx_ppx_v3.rewrite_signature code
-    | Some "4", _, Some "classic" ->
+    | Some 3, _, _ -> Reactjs_jsx_ppx_v3.rewrite_signature code
+    | Some 4, _, Some "classic" ->
       Reactjs_jsx_ppx_v4.rewrite_signature ~jsx_mode code
-    | Some "4", _, Some "automatic" ->
+    | Some 4, _, Some "automatic" ->
       Reactjs_jsx_ppx_v4.rewrite_signature ~jsx_mode code
     | _ ->
       raise
