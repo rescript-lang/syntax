@@ -12,6 +12,7 @@ type jsxConfig = {
   mutable version: int;
   mutable module_: string;
   mutable mode: string;
+  mutable nestedModules: string list;
 }
 
 val rewrite_implementation :
