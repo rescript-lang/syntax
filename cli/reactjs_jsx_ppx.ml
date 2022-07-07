@@ -2753,7 +2753,15 @@ let getMapper ~config =
   match config.version with
   | 3 ->
     let expr, module_binding, signature, structure = V3.jsxMapper ~config in
-    {default_mapper with expr; module_binding; signature; structure}
+    {
+      default_mapper with
+      expr;
+      module_binding;
+      signature;
+      signature_item;
+      structure;
+      structure_item;
+    }
   | 4 ->
     let expr, module_binding, signature, structure = V4.jsxMapper ~config in
     {
