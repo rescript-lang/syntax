@@ -2055,8 +2055,8 @@ module V4 = struct
     | name when isOptional name -> (true, getLabel name, [], type_) :: types
     | _ -> types
 
-  let transformStructureItem ~config mapper structure returnStructures =
-    match structure with
+  let transformStructureItem ~config mapper item =
+    match item with
     (* external *)
     | {
         pstr_loc;
@@ -2064,7 +2064,7 @@ module V4 = struct
           Pstr_primitive ({pval_attributes; pval_type} as value_description);
       } as pstr -> (
       match List.filter hasAttr pval_attributes with
-      | [] -> structure :: returnStructures
+      | [] -> [item]
       | [_] ->
         let rec getPropTypes types ({ptyp_loc; ptyp_desc} as fullType) =
           match ptyp_desc with
@@ -2107,14 +2107,14 @@ module V4 = struct
                 };
           }
         in
-        propsRecordType :: newStructure :: returnStructures
+        [propsRecordType; newStructure]
       | _ ->
         raise
           (Invalid_argument
              "Only one react.component call can exist on a component at one \
               time"))
     (* let component = ... *)
-    | {pstr_loc; pstr_desc = Pstr_value (recFlag, valueBindings)} ->
+    | {pstr_loc; pstr_desc = Pstr_value (recFlag, valueBindings)} -> (
       let fileName = filenameFromLoc pstr_loc in
       let emptyLoc = Location.in_file fileName in
       let mapBinding binding =
@@ -2512,16 +2512,16 @@ module V4 = struct
       in
       types
       @ [{pstr_loc; pstr_desc = Pstr_value (recFlag, bindings)}]
-      @ (match newBindings with
-        | [] -> []
-        | newBindings ->
-          [{pstr_loc = emptyLoc; pstr_desc = Pstr_value (recFlag, newBindings)}])
-      @ returnStructures
-    | structure -> structure :: returnStructures
+      @
+      match newBindings with
+      | [] -> []
+      | newBindings ->
+        [{pstr_loc = emptyLoc; pstr_desc = Pstr_value (recFlag, newBindings)}])
+    | _ -> [item]
     [@@raises Invalid_argument]
 
-  let transformStructure ~config mapper structures =
-    List.fold_right (transformStructureItem ~config mapper) structures []
+  let transformStructure ~config mapper items =
+    List.map (transformStructureItem ~config mapper) items |> List.flatten
     [@@raises Invalid_argument]
 
   let transformSignatureItem _mapper signature returnSignatures =
