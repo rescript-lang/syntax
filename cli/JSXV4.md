@@ -70,11 +70,11 @@ React.createElement(Comp.make, {x, y:7, @optional z})
 React.createElement(Comp.make, {x, key: "7"})
 ```
 
-**The new JSX transform**
+**New "jsx" transform**
 
-The JSX PPX V4 supports [the new JSX transform](https://reactjs.org/blog/2020/09/22/introducing-the-new-jsx-transform.html) of React.js.
+The V4 ppx supports [the new "jsx" transform](https://reactjs.org/blog/2020/09/22/introducing-the-new-jsx-transform.html) of React.js.
 
-It affects only the application.
+The "jsx" transform affects component application but not the definition.
 
 ```rescript
 <Comp x>
@@ -129,11 +129,11 @@ ReactDOMRe.createElement(ReasonReact.fragment, [comp1, comp2, comp3])
 
 **File-level config**
 
-The top-level attribute `@@jsxConfig` set the jsx config in the file-level. The jsx config of the project is ignored.
+The top-level attribute `@@jsxConfig` is used to update the jsx config for the rest of the file. Only the values mentioned are updated, the others are left unchanged.
 
 ```rescript
 @@jsxConfig({version: 4, mode: "automatic"})
-// The jsx config is updated in the file-level.
+// The jsx config is updated for the rest of the file.
 
 @react.component
 let make = () => body
