@@ -25,3 +25,5 @@ let async = {
 
     result->async->mapAsync(a => doStuff(a))
 }
+
+let f = isPositive ? (async (a, b) : int => a + b) : async (c, d) : int => c - d

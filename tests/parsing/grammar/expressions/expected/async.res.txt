@@ -21,3 +21,8 @@ let async =
     { async = (async.(async)) };
     (result |. async) |. (mapAsync (fun a -> doStuff a)))
   [@ns.braces ])
+let f =
+  ((if isPositive
+    then ((fun a -> fun b -> (a + b : int))[@res.async ])
+    else (((fun c -> fun d -> (c - d : int)))[@res.async ]))
+  [@ns.ternary ])
