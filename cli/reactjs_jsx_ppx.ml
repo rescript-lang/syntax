@@ -1215,17 +1215,15 @@ module V3 = struct
       [@@raises Invalid_argument]
     in
 
-    let signature mapper signature =
-      default_mapper.signature mapper
-      @@ reactComponentSignatureTransform mapper signature
+    let signature mapper items =
+      let items = default_mapper.signature mapper items in
+      reactComponentSignatureTransform mapper items
       [@@raises Invalid_argument]
     in
 
-    let structure mapper structure =
-      match structure with
-      | structures ->
-        default_mapper.structure mapper
-        @@ reactComponentTransform mapper structures
+    let structure mapper items =
+      let items = default_mapper.structure mapper items in
+      reactComponentTransform mapper items
       [@@raises Invalid_argument]
     in
 
