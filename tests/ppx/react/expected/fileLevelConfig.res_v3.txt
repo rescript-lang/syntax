@@ -1,11 +1,1 @@
-@@jsxConfig({version: 4, mode: "automatic"})
-@obj external makeProps: (~msg: 'msg, ~key: string=?, unit) => {"msg": 'msg} = ""
-
-let make =
-  (@warning("-16") ~msg) => {
-    ReactDOMRe.createDOMElementVariadic("div", [{msg->React.string}])
-  }
-let make = {
-  let \"FileLevelConfig" = (\"Props": {"msg": 'msg}) => make(~msg=\"Props"["msg"])
-  \"FileLevelConfig"
-}
+Fatal error: exception Invalid_argument("JSX: the JSX version must be 3")
