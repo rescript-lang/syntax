@@ -647,7 +647,7 @@ module V3 = struct
     in
 
     let nestedModules = ref [] in
-    let transformComponentDefinition mapper structure returnStructures =
+    let transformStructureItem mapper structure returnStructures =
       match structure with
       (* external *)
       | {
@@ -1100,12 +1100,12 @@ module V3 = struct
       [@@raises Invalid_argument]
     in
 
-    let reactComponentTransform mapper structures =
-      List.fold_right (transformComponentDefinition mapper) structures []
+    let transformStucture mapper structures =
+      List.fold_right (transformStructureItem mapper) structures []
       [@@raises Invalid_argument]
     in
 
-    let transformComponentSignature _mapper signature returnSignatures =
+    let transformSignatureItem _mapper signature returnSignatures =
       match signature with
       | {
           psig_loc;
@@ -1168,8 +1168,8 @@ module V3 = struct
       [@@raises Invalid_argument]
     in
 
-    let reactComponentSignatureTransform mapper signatures =
-      List.fold_right (transformComponentSignature mapper) signatures []
+    let transformSignature mapper items =
+      List.fold_right (transformSignatureItem mapper) items []
       [@@raises Invalid_argument]
     in
 
@@ -1217,13 +1217,13 @@ module V3 = struct
 
     let signature mapper items =
       let items = default_mapper.signature mapper items in
-      reactComponentSignatureTransform mapper items
+      transformSignature mapper items
       [@@raises Invalid_argument]
     in
 
     let structure mapper items =
       let items = default_mapper.structure mapper items in
-      reactComponentTransform mapper items
+      transformStucture mapper items
       [@@raises Invalid_argument]
     in
 
