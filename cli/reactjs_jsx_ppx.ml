@@ -2750,30 +2750,42 @@ let getMapper ~config =
     default_mapper.signature_item mapper item
   in
 
-  match config.version with
-  | 3 ->
-    let expr, module_binding, signature, structure = V3.jsxMapper ~config in
-    {
-      default_mapper with
-      expr;
-      module_binding;
-      signature;
-      signature_item;
-      structure;
-      structure_item;
-    }
-  | 4 ->
-    let expr, module_binding, signature, structure = V4.jsxMapper ~config in
-    {
-      default_mapper with
-      expr;
-      module_binding;
-      signature;
-      signature_item;
-      structure;
-      structure_item;
-    }
-  | _ -> default_mapper
+  let expr3, module_binding3, signature3, structure3 = V3.jsxMapper ~config in
+  let expr4, module_binding4, signature4, structure4 = V4.jsxMapper ~config in
+
+  let expr mapper e =
+    match config.version with
+    | 3 -> expr3 mapper e
+    | 4 -> expr4 mapper e
+    | _ -> default_mapper.expr mapper e
+  in
+  let module_binding mapper mb =
+    match config.version with
+    | 3 -> module_binding3 mapper mb
+    | 4 -> module_binding4 mapper mb
+    | _ -> default_mapper.module_binding mapper mb
+  in
+  let signature mapper s =
+    match config.version with
+    | 3 -> signature3 mapper s
+    | 4 -> signature4 mapper s
+    | _ -> default_mapper.signature mapper s
+  in
+  let structure mapper s =
+    match config.version with
+    | 3 -> structure3 mapper s
+    | 4 -> structure4 mapper s
+    | _ -> default_mapper.structure mapper s
+  in
+  {
+    default_mapper with
+    expr;
+    module_binding;
+    signature;
+    signature_item;
+    structure;
+    structure_item;
+  }
 
 let rewrite_implementation ~config (code : Parsetree.structure) :
     Parsetree.structure =
