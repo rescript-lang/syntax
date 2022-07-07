@@ -2740,9 +2740,9 @@ let getMapper ~config =
     | _ -> default_mapper.module_binding mapper mb
   in
   let signature mapper items =
-    let items = default_mapper.signature mapper items in
     List.map
       (fun item ->
+        let item = default_mapper.signature_item mapper item in
         if config.version = 3 then transformSignatureItem3 mapper item
         else if config.version = 4 then transformSignatureItem4 mapper item
         else [item])
@@ -2751,9 +2751,9 @@ let getMapper ~config =
     [@@raises Invalid_argument]
   in
   let structure mapper items =
-    let items = default_mapper.structure mapper items in
     List.map
       (fun item ->
+        let item = default_mapper.structure_item mapper item in
         if config.version = 3 then transformStructureItem3 mapper item
         else if config.version = 4 then
           transformStructureItem4 ~config mapper item
