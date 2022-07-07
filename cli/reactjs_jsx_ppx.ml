@@ -2700,8 +2700,9 @@ module V4 = struct
 
   (* TODO: some line number might still be wrong *)
   let jsxMapper ~config =
-    let module_binding = module_binding ~config in
     let expr = expr ~config in
+    let module_binding = module_binding ~config in
+    let transformStructureItem = transformStructureItem ~config in
     (expr, module_binding, transformSignatureItem, transformStructureItem)
     [@@raises Invalid_argument, Failure]
 end
@@ -2768,8 +2769,7 @@ let getMapper ~config =
           | _ -> ());
           let item = default_mapper.structure_item mapper item in
           if config.version = 3 then transformStructureItem3 mapper item
-          else if config.version = 4 then
-            transformStructureItem4 ~config mapper item
+          else if config.version = 4 then transformStructureItem4 mapper item
           else [item])
         items
       |> List.flatten
