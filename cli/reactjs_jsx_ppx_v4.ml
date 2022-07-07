@@ -1328,7 +1328,11 @@ let signature mapper signature =
   @@ reactComponentSignatureTransform mapper signature
   [@@raises Invalid_argument]
 
-let signature_item mapper item = default_mapper.signature_item mapper item
+let signature_item ~config mapper item =
+  (match item.psig_desc with
+  | Psig_attribute attr -> processConfigAttribute attr config
+  | _ -> ());
+  default_mapper.signature_item mapper item
 
 let structure nestedModules mapper items =
   match items with
@@ -1337,7 +1341,11 @@ let structure nestedModules mapper items =
     @@ reactComponentTransform nestedModules mapper items
   [@@raises Invalid_argument]
 
-let structure_item mapper item = default_mapper.structure_item mapper item
+let structure_item ~config mapper item =
+  (match item.pstr_desc with
+  | Pstr_attribute attr -> processConfigAttribute attr config
+  | _ -> ());
+  default_mapper.structure_item mapper item
 
 let expr ~config mapper expression =
   match expression with
@@ -1433,6 +1441,8 @@ let module_binding nestedModules mapper module_binding =
 (* TODO: some line number might still be wrong *)
 let jsxMapper ~config nestedModules =
   let structure = structure nestedModules in
+  let structure_item = structure_item ~config in
+  let signature_item = signature_item ~config in
   let module_binding = module_binding nestedModules in
   let expr = expr ~config in
   {
