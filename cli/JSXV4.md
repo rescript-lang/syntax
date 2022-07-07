@@ -133,7 +133,7 @@ The top-level attribute `@@jsxConfig` set the jsx config in the file-level. The 
 
 ```rescript
 @@jsxConfig({version: 4, mode: "automatic"})
-// The jsx config in bsconfig is ignored.
+// The jsx config is updated in the file-level.
 
 @react.component
 let make = () => body
