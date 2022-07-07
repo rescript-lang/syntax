@@ -147,11 +147,11 @@ let isAtomicTypExprStart = function
   | _ -> false
 
 let isExprStart = function
-  | Token.True | False | Int _ | String _ | Float _ | Codepoint _ | Backtick
-  | Underscore (* _ => doThings() *)
-  | Uident _ | Lident _ | Hash | Lparen | List | Module | Lbracket | Lbrace
-  | LessThan | Minus | MinusDot | Plus | PlusDot | Bang | Percent | At | If
-  | Switch | While | For | Assert | Await | Lazy | Try ->
+  | Token.Assert | At | Await | Backtick | Bang | Codepoint _ | False | Float _
+  | For | Hash | If | Int _ | Lazy | Lbrace | Lbracket | LessThan | Lident _
+  | List | Lparen | Minus | MinusDot | Module | Percent | Plus | PlusDot
+  | String _ | Switch | True | Try | Uident _ | Underscore (* _ => doThings() *)
+  | While ->
     true
   | _ -> false
 
