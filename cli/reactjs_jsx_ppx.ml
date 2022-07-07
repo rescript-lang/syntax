@@ -647,8 +647,8 @@ module V3 = struct
     in
 
     let nestedModules = ref [] in
-    let transformStructureItem mapper structure returnStructures =
-      match structure with
+    let transformStructureItem mapper item =
+      match item with
       (* external *)
       | {
           pstr_loc;
@@ -658,7 +658,7 @@ module V3 = struct
               value_description);
         } as pstr -> (
         match List.filter hasAttr pval_attributes with
-        | [] -> structure :: returnStructures
+        | [] -> [item]
         | [_] ->
           let rec getPropTypes types ({ptyp_loc; ptyp_desc} as fullType) =
             match ptyp_desc with
@@ -701,14 +701,14 @@ module V3 = struct
                   };
             }
           in
-          externalPropsDecl :: newStructure :: returnStructures
+          [externalPropsDecl; newStructure]
         | _ ->
           raise
             (Invalid_argument
                "Only one react.component call can exist on a component at one \
                 time"))
       (* let component = ... *)
-      | {pstr_loc; pstr_desc = Pstr_value (recFlag, valueBindings)} ->
+      | {pstr_loc; pstr_desc = Pstr_value (recFlag, valueBindings)} -> (
         let fileName = filenameFromLoc pstr_loc in
         let emptyLoc = Location.in_file fileName in
         let mapBinding binding =
@@ -1086,27 +1086,18 @@ module V3 = struct
         in
         externs
         @ [{pstr_loc; pstr_desc = Pstr_value (recFlag, bindings)}]
-        @ (match newBindings with
-          | [] -> []
-          | newBindings ->
-            [
-              {
-                pstr_loc = emptyLoc;
-                pstr_desc = Pstr_value (recFlag, newBindings);
-              };
-            ])
-        @ returnStructures
-      | structure -> structure :: returnStructures
+        @
+        match newBindings with
+        | [] -> []
+        | newBindings ->
+          [{pstr_loc = emptyLoc; pstr_desc = Pstr_value (recFlag, newBindings)}]
+        )
+      | _ -> [item]
       [@@raises Invalid_argument]
     in
 
-    let transformStucture mapper structures =
-      List.fold_right (transformStructureItem mapper) structures []
-      [@@raises Invalid_argument]
-    in
-
-    let transformSignatureItem _mapper signature returnSignatures =
-      match signature with
+    let transformSignatureItem _mapper item =
+      match item with
       | {
           psig_loc;
           psig_desc =
@@ -1115,7 +1106,7 @@ module V3 = struct
               psig_desc);
         } as psig -> (
         match List.filter hasAttr pval_attributes with
-        | [] -> signature :: returnSignatures
+        | [] -> [item]
         | [_] ->
           let rec getPropTypes types ({ptyp_loc; ptyp_desc} as fullType) =
             match ptyp_desc with
@@ -1158,18 +1149,13 @@ module V3 = struct
                   };
             }
           in
-          externalPropsDecl :: newStructure :: returnSignatures
+          [externalPropsDecl; newStructure]
         | _ ->
           raise
             (Invalid_argument
                "Only one react.component call can exist on a component at one \
                 time"))
-      | signature -> signature :: returnSignatures
-      [@@raises Invalid_argument]
-    in
-
-    let transformSignature mapper items =
-      List.fold_right (transformSignatureItem mapper) items []
+      | _ -> [item]
       [@@raises Invalid_argument]
     in
 
@@ -1217,13 +1203,13 @@ module V3 = struct
 
     let signature mapper items =
       let items = default_mapper.signature mapper items in
-      transformSignature mapper items
+      List.map (transformSignatureItem mapper) items |> List.flatten
       [@@raises Invalid_argument]
     in
 
     let structure mapper items =
       let items = default_mapper.structure mapper items in
-      transformStucture mapper items
+      List.map (transformStructureItem mapper) items |> List.flatten
       [@@raises Invalid_argument]
     in
 
