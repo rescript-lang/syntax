@@ -162,7 +162,7 @@ module ResClflags : sig
   val origin : string ref
   val file : string ref
   val interface : bool ref
-  val jsxVersion : string ref
+  val jsxVersion : int ref
   val jsxModule : string ref
   val jsxMode : string ref
   val typechecker : bool ref
@@ -175,7 +175,7 @@ end = struct
   let print = ref "res"
   let origin = ref ""
   let interface = ref false
-  let jsxVersion = ref ""
+  let jsxVersion = ref (-1)
   let jsxModule = ref "react"
   let jsxMode = ref "classic"
   let file = ref ""
@@ -206,7 +206,7 @@ end = struct
         Arg.Unit (fun () -> interface := true),
         "Parse as interface" );
       ( "-jsx-version",
-        Arg.String (fun txt -> jsxVersion := txt),
+        Arg.Int (fun i -> jsxVersion := i),
         "Apply a specific built-in ppx before parsing, none or 3, 4. Default: \
          none" );
       ( "-jsx-module",
