@@ -2785,23 +2785,20 @@ let rewrite_implementationV4 ~config (code : Parsetree.structure) :
   mapper.structure mapper code
   [@@raises Invalid_argument, Failure]
 
-let rewrite_implementation ~jsxVersion ~jsxModule ~jsxMode
-    (code : Parsetree.structure) : Parsetree.structure =
-  let config = {mode = jsxMode; module_ = ""; version = jsxVersion} in
-
-  match (jsxVersion, jsxModule, jsxMode) with
-  | 3, _, _ -> rewrite_implementationV3 code
-  | 4, _, "classic" -> rewrite_implementationV4 ~config code
-  | 4, _, "automatic" -> rewrite_implementationV4 ~config code
+let rewrite_implementation ~config (code : Parsetree.structure) :
+    Parsetree.structure =
+  match (config.version, config.mode) with
+  | 3, _ -> rewrite_implementationV3 code
+  | 4, "classic" -> rewrite_implementationV4 ~config code
+  | 4, "automatic" -> rewrite_implementationV4 ~config code
   | _ -> code
   [@@raises Invalid_argument, Failure]
 
-let rewrite_signature ~jsxVersion ~jsxModule ~jsxMode
-    (code : Parsetree.signature) : Parsetree.signature =
-  let config = {mode = jsxMode; module_ = ""; version = jsxVersion} in
-  match (jsxVersion, jsxModule, jsxMode) with
-  | 3, _, _ -> rewrite_signatureV3 code
-  | 4, _, "classic" -> rewrite_signatureV4 ~config code
-  | 4, _, "automatic" -> rewrite_signatureV4 ~config code
+let rewrite_signature ~config (code : Parsetree.signature) : Parsetree.signature
+    =
+  match (config.version, config.mode) with
+  | 3, _ -> rewrite_signatureV3 code
+  | 4, "classic" -> rewrite_signatureV4 ~config code
+  | 4, "automatic" -> rewrite_signatureV4 ~config code
   | _ -> code
   [@@raises Invalid_argument, Failure]
