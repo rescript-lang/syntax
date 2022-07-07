@@ -2037,6 +2037,11 @@ and parseOperandExpr ~context p =
       let loc = mkLoc startPos p.prevEndPos in
       Ast_helper.Exp.assert_ ~loc expr
     | Lident "async"
+    (* we need to be careful when we're in a ternary true branch:
+       `condition ? ternary-true-branch : false-branch`
+       Arrow expressions could be of the form: `async (): int => stuff()`
+       But if we're in a ternary, the `:` of the ternary takes precedence
+    *)
       when isEs6ArrowExpression ~inTernary:(context = TernaryTrueBranchExpr) p
       ->
       parseAsyncArrowExpression p
