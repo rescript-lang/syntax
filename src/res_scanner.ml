@@ -587,12 +587,15 @@ let scanTemplateLiteralToken scanner =
   let startPos = position scanner in
 
   let rec scan () =
+    let lastPos = position scanner in
     match scanner.ch with
     | '`' ->
       next scanner;
-      Token.TemplateTail
-        ((String.sub [@doesNotRaise]) scanner.src startOff
-           (scanner.offset - 1 - startOff))
+      let contents =
+        (String.sub [@doesNotRaise]) scanner.src startOff
+          (scanner.offset - 1 - startOff)
+      in
+      Token.TemplateTail (contents, lastPos)
     | '$' -> (
       match peek scanner with
       | '{' ->
@@ -601,7 +604,7 @@ let scanTemplateLiteralToken scanner =
           (String.sub [@doesNotRaise]) scanner.src startOff
             (scanner.offset - 2 - startOff)
         in
-        Token.TemplatePart contents
+        Token.TemplatePart (contents, lastPos)
       | _ ->
         next scanner;
         scan ())
@@ -617,9 +620,11 @@ let scanTemplateLiteralToken scanner =
     | ch when ch = hackyEOFChar ->
       let endPos = position scanner in
       scanner.err ~startPos ~endPos Diagnostics.unclosedTemplate;
-      Token.TemplateTail
-        ((String.sub [@doesNotRaise]) scanner.src startOff
-           (max (scanner.offset - 1 - startOff) 0))
+      let contents =
+        (String.sub [@doesNotRaise]) scanner.src startOff
+          (max (scanner.offset - 1 - startOff) 0)
+      in
+      Token.TemplateTail (contents, lastPos)
     | _ ->
       next scanner;
       scan ()
