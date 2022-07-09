@@ -1,4 +1,4 @@
-@@jsxConfig({version: 4, mode: "automatic"})
+@@jsxConfig({version: 3})
 
 @react.component
 let make = (~msg) => {
@@ -12,7 +12,7 @@ let make = (~msg) => {
   <div> {msg->React.string} </div>
 }
 
-@@jsxConfig({version: 3})
+@@jsxConfig({version: 4, mode: "automatic"})
 
 @react.component
 let make = (~msg) => {
