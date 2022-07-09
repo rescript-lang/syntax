@@ -8,9 +8,6 @@
 function exp {
   echo "$(dirname $1)/expected/$(basename $1).txt"
 }
-function exp2 {
-  echo "$(dirname $1)/expected/$(basename $1)$2.txt"
-}
 
 taskCount=0
 function maybeWait {
@@ -38,22 +35,10 @@ while read file; do
   rescript $file &> $(exp $file) & maybeWait
 done <temp/files.txt
 
-# printing with ppx v3
+# printing with ppx
 find tests/ppx/react -name "*.res" -o -name "*.resi" >temp/files.txt
 while read file; do
-  rescript -jsx-version 3 $file &> $(exp2 $file "_v3") & maybeWait
-done <temp/files.txt
-
-# printing with ppx v4 classic
-find tests/ppx/react -name "*.res" -o -name "*.resi" >temp/files.txt
-while read file; do
-  rescript -jsx-version 4 -jsx-mode classic $file &> $(exp2 $file "_v4_cls") & maybeWait
-done <temp/files.txt
-
-# printing with ppx v4 automatic
-find tests/ppx/react -name "*.res" -o -name "*.resi" >temp/files.txt
-while read file; do
-  rescript -jsx-version 4 -jsx-mode automatic $file &> $(exp2 $file "_v4_auto") & maybeWait
+  rescript -jsx-version 4 -jsx-mode "automatic" $file &> $(exp $file) & maybeWait
 done <temp/files.txt
 
 wait
