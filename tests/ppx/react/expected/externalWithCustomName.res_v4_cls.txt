@@ -1,7 +1,7 @@
 module Foo = {
   type props<'a, 'b> = {key?: string, a: 'a, b: 'b}
   @module("Foo")
-  external component: React.componentLike<props<'a, 'b>, React.element> = "component"
+  external component: React.componentLike<props<int, string>, React.element> = "component"
 }
 
 let t = React.createElement(Foo.component, {a: 1, b: "1"})
