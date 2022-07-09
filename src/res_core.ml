@@ -815,7 +815,7 @@ let parseTemplateConstant ~prefix (p : Parser.t) =
   let startPos = p.startPos in
   Parser.nextTemplateLiteralToken p;
   match p.token with
-  | TemplateTail txt ->
+  | TemplateTail (txt, _) ->
     Parser.next p;
     Parsetree.Pconst_string (txt, prefix)
   | _ ->
@@ -2147,36 +2147,34 @@ and parseTemplateExpr ?(prefix = "js") p =
     let op = Location.mknoloc (Longident.Lident "^") in
     Ast_helper.Exp.ident op
   in
-  let rec parseParts acc =
+  let concat (e1 : Parsetree.expression) (e2 : Parsetree.expression) =
+    let loc = mkLoc e1.pexp_loc.loc_start e2.pexp_loc.loc_end in
+    Ast_helper.Exp.apply ~attrs:[templateLiteralAttr] ~loc hiddenOperator
+      [(Nolabel, e1); (Nolabel, e2)]
+  in
+  let rec parseParts (acc : Parsetree.expression) =
     let startPos = p.Parser.startPos in
     Parser.nextTemplateLiteralToken p;
     match p.token with
-    | TemplateTail txt ->
+    | TemplateTail (txt, lastPos) ->
       Parser.next p;
-      let loc = mkLoc startPos p.prevEndPos in
+      let loc = mkLoc startPos lastPos in
       let str =
         Ast_helper.Exp.constant ~attrs:[templateLiteralAttr] ~loc
           (Pconst_string (txt, Some prefix))
       in
-      Ast_helper.Exp.apply ~attrs:[templateLiteralAttr] ~loc hiddenOperator
-        [(Nolabel, acc); (Nolabel, str)]
-    | TemplatePart txt ->
+      concat acc str
+    | TemplatePart (txt, lastPos) ->
       Parser.next p;
-      let loc = mkLoc startPos p.prevEndPos in
+      let loc = mkLoc startPos lastPos in
       let expr = parseExprBlock p in
-      let fullLoc = mkLoc startPos p.prevEndPos in
       let str =
         Ast_helper.Exp.constant ~attrs:[templateLiteralAttr] ~loc
           (Pconst_string (txt, Some prefix))
       in
       let next =
-        let a =
-          Ast_helper.Exp.apply ~attrs:[templateLiteralAttr] ~loc:fullLoc
-            hiddenOperator
-            [(Nolabel, acc); (Nolabel, str)]
-        in
-        Ast_helper.Exp.apply ~loc:fullLoc hiddenOperator
-          [(Nolabel, a); (Nolabel, expr)]
+        let a = concat acc str in
+        concat a expr
       in
       parseParts next
     | token ->
@@ -2186,25 +2184,20 @@ and parseTemplateExpr ?(prefix = "js") p =
   let startPos = p.startPos in
   Parser.nextTemplateLiteralToken p;
   match p.token with
-  | TemplateTail txt ->
+  | TemplateTail (txt, lastPos) ->
     Parser.next p;
     Ast_helper.Exp.constant ~attrs:[templateLiteralAttr]
-      ~loc:(mkLoc startPos p.prevEndPos)
+      ~loc:(mkLoc startPos lastPos)
       (Pconst_string (txt, Some prefix))
-  | TemplatePart txt ->
+  | TemplatePart (txt, lastPos) ->
     Parser.next p;
-    let constantLoc = mkLoc startPos p.prevEndPos in
+    let constantLoc = mkLoc startPos lastPos in
     let expr = parseExprBlock p in
-    let fullLoc = mkLoc startPos p.prevEndPos in
     let str =
       Ast_helper.Exp.constant ~attrs:[templateLiteralAttr] ~loc:constantLoc
         (Pconst_string (txt, Some prefix))
     in
-    let next =
-      Ast_helper.Exp.apply ~attrs:[templateLiteralAttr] ~loc:fullLoc
-        hiddenOperator
-        [(Nolabel, str); (Nolabel, expr)]
-    in
+    let next = concat str expr in
     parseParts next
   | token ->
     Parser.err p (Diagnostics.unexpected token p.breadcrumbs);
