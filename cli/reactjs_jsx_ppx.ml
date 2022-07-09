@@ -1587,30 +1587,17 @@ module V4 = struct
         pexp_attributes = [];
       }
 
-  (* make type params for type props<'id, 'name, ...> *)
-  let makePropsTypeParamsTvar namedTypeList =
-    namedTypeList
-    |> List.filter_map (fun (_, label, _, _) ->
-           if label = "key" || label = "ref" then None
-           else Some (Typ.var label, Invariant))
-
-  (* make props type for external *)
-  (* external make: React.componentLike<props< .. >, React.element> = "default" *)
-  let makePropsTypeExternal namedTypeList =
-    namedTypeList
-    |> List.filter_map (fun (_isOptional, label, _, interiorType) ->
-           if label = "key" || label = "ref" then None else Some interiorType)
-
   (* make type params for make fn arguments *)
   (* let make = ({id, name, children}: props<'id, 'name, 'children>) *)
-  let makePropsTypeParams namedTypeList =
+  let makePropsTypeParamsTvar namedTypeList =
     namedTypeList
     |> List.filter_map (fun (_isOptional, label, _, _interiorType) ->
            if label = "key" || label = "ref" then None else Some (Typ.var label))
 
-  (* make type params for make sig arguments *)
+  (* make type params for make sig arguments and for external *)
   (* let make: React.componentLike<props<string, option<string>>, React.element> *)
-  let makePropsTypeParamsSig namedTypeList =
+  (* external make: React.componentLike<props< .. >, React.element> = "default" *)
+  let makePropsTypeParams namedTypeList =
     namedTypeList
     |> List.filter_map (fun (_isOptional, label, _, interiorType) ->
            if label = "key" || label = "ref" then None else Some interiorType)
@@ -1633,7 +1620,10 @@ module V4 = struct
              else Type.field ~loc {txt = label; loc} (Typ.var label))
     in
     (* 'id, 'className, ... *)
-    let params = makePropsTypeParamsTvar namedTypeList in
+    let params =
+      makePropsTypeParamsTvar namedTypeList
+      |> List.map (fun coreType -> (coreType, Invariant))
+    in
     Str.type_ Nonrecursive
       [
         Type.mk ~loc ~params {txt = propsName; loc}
@@ -1653,7 +1643,10 @@ module V4 = struct
                  (Typ.var label)
              else Type.field ~loc {txt = label; loc} (Typ.var label))
     in
-    let params = makePropsTypeParamsTvar namedTypeList in
+    let params =
+      makePropsTypeParamsTvar namedTypeList
+      |> List.map (fun coreType -> (coreType, Invariant))
+    in
     Sig.type_ Nonrecursive
       [
         Type.mk ~loc ~params {txt = propsName; loc}
@@ -2061,7 +2054,7 @@ module V4 = struct
         let retPropsType =
           Typ.constr ~loc:pstr_loc
             (Location.mkloc (Lident "props") pstr_loc)
-            (makePropsTypeExternal namedTypeList)
+            (makePropsTypeParams namedTypeList)
         in
         (* type props<'id, 'name> = { @optional key: string, @optional id: 'id, ... } *)
         let propsRecordType =
@@ -2524,7 +2517,7 @@ module V4 = struct
         let retPropsType =
           Typ.constr
             (Location.mkloc (Lident "props") psig_loc)
-            (makePropsTypeParamsSig namedTypeList)
+            (makePropsTypeParams namedTypeList)
         in
         let propsRecordType =
           makePropsRecordTypeSig "props" Location.none
