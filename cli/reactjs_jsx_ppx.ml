@@ -1594,6 +1594,13 @@ module V4 = struct
            if label = "key" || label = "ref" then None
            else Some (Typ.var label, Invariant))
 
+  (* make props type for external *)
+  (* external make: React.componentLike<props< .. >, React.element> = "default" *)
+  let makePropsTypeExternal namedTypeList =
+    namedTypeList
+    |> List.filter_map (fun (_isOptional, label, _, interiorType) ->
+           if label = "key" || label = "ref" then None else Some interiorType)
+
   (* make type params for make fn arguments *)
   (* let make = ({id, name, children}: props<'id, 'name, 'children>) *)
   let makePropsTypeParams namedTypeList =
@@ -2054,7 +2061,7 @@ module V4 = struct
         let retPropsType =
           Typ.constr ~loc:pstr_loc
             (Location.mkloc (Lident "props") pstr_loc)
-            (makePropsTypeParams namedTypeList)
+            (makePropsTypeExternal namedTypeList)
         in
         (* type props<'id, 'name> = { @optional key: string, @optional id: 'id, ... } *)
         let propsRecordType =
