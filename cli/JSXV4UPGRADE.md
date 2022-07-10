@@ -11,19 +11,14 @@
    ```json
    "jsx": {
      "version": 3,
-     "module": "react",
-     "mode": "classic"
    }
    ```
-
-   **Note:** When using `jsx` v3, the `runtime` option will be ignored.
 
    b. JSX V4 with classic mode (generate calls to `React.createElement` just as with V3)
 
    ```json
    "jsx": {
      "version": 4,
-     "module": "react",
      "mode": "classic"
    }
    ```
@@ -33,7 +28,6 @@
    ```json
    "jsx": {
      "version": 4,
-     "module": "react",
      "mode": "automatic"
    }
    ```

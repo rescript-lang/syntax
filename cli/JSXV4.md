@@ -132,9 +132,24 @@ ReactDOMRe.createElement(ReasonReact.fragment, [comp1, comp2, comp3])
 The top-level attribute `@@jsxConfig` is used to update the jsx config for the rest of the file (or until the next config update). Only the values mentioned are updated, the others are left unchanged.
 
 ```rescript
-@@jsxConfig({version: 4, mode: "automatic"})
-// The jsx config is updated for the rest of the file.
+@@jsxConfig({ version: 4, mode: "automatic" })
 
-@react.component
+module Wrapper = {
+  module R1 = {
+    @react.component  // V4 & new jsx transform
+    let make = () => body
+  }
+
+  @@jsxConfig({ version: 4, mode: "classic" })
+
+  module R2 = {
+    @react.component  // V4 with `React.createElement`
+    let make = () => body
+  }
+}
+
+@@jsxConfig({ versino: 3 })
+
+@react.component  // V3
 let make = () => body
 ```
