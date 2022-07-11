@@ -1961,57 +1961,18 @@ module V4 = struct
 
   let argToType types (name, default, _noLabelName, _alias, loc, type_) =
     match (type_, name, default) with
-    | Some {ptyp_desc = Ptyp_constr ({txt = Lident "option"}, [type_])}, name, _
-      when isOptional name ->
-      ( true,
-        getLabel name,
-        [],
-        {
-          type_ with
-          ptyp_desc =
-            Ptyp_constr ({loc = type_.ptyp_loc; txt = optionIdent}, [type_]);
-        } )
-      :: types
-    | Some type_, name, Some _default ->
-      ( false,
-        getLabel name,
-        [],
-        {
-          ptyp_desc = Ptyp_constr ({loc; txt = optionIdent}, [type_]);
-          ptyp_loc = loc;
-          ptyp_attributes = [];
-        } )
+    | Some type_, name, _ when isOptional name ->
+      (true, getLabel name, [], {type_ with ptyp_attributes = optionalAttr})
       :: types
     | Some type_, name, _ -> (false, getLabel name, [], type_) :: types
     | None, name, _ when isOptional name ->
       ( true,
         getLabel name,
         [],
-        {
-          ptyp_desc =
-            Ptyp_constr
-              ( {loc; txt = optionIdent},
-                [
-                  {
-                    ptyp_desc = Ptyp_var (safeTypeFromValue name);
-                    ptyp_loc = loc;
-                    ptyp_attributes = [];
-                  };
-                ] );
-          ptyp_loc = loc;
-          ptyp_attributes = [];
-        } )
+        Typ.var ~loc ~attrs:optionalAttr (safeTypeFromValue name) )
       :: types
     | None, name, _ when isLabelled name ->
-      ( false,
-        getLabel name,
-        [],
-        {
-          ptyp_desc = Ptyp_var (safeTypeFromValue name);
-          ptyp_loc = loc;
-          ptyp_attributes = [];
-        } )
-      :: types
+      (false, getLabel name, [], Typ.var ~loc (safeTypeFromValue name)) :: types
     | _ -> types
     [@@raises Invalid_argument]
 
