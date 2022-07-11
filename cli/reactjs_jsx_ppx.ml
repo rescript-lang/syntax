@@ -1959,7 +1959,27 @@ module V4 = struct
     | _ -> (args, newtypes, None)
     [@@raises Invalid_argument]
 
-  let argToType types (name, default, _noLabelName, _alias, loc, type_) =
+  let newtypeToVar newtype type_ =
+    let var_desc = Ptyp_var ("type-" ^ newtype) in
+    let typ (mapper : Ast_mapper.mapper) typ =
+      match typ.ptyp_desc with
+      | Ptyp_constr ({txt = Lident name}, _) when name = newtype ->
+        {typ with ptyp_desc = var_desc}
+      | _ -> Ast_mapper.default_mapper.typ mapper typ
+    in
+    let mapper = {Ast_mapper.default_mapper with typ} in
+    mapper.typ mapper type_
+
+  let argToType ~newtypes types (name, default, _noLabelName, _alias, loc, type_)
+      =
+    let type_ =
+      List.fold_left
+        (fun type_ newtype ->
+          match type_ with
+          | Some typ -> Some (newtypeToVar newtype.txt typ)
+          | None -> None)
+        type_ newtypes
+    in
     match (type_, name, default) with
     | Some type_, name, _ when isOptional name ->
       (true, getLabel name, [], {type_ with ptyp_attributes = optionalAttr})
@@ -2230,12 +2250,14 @@ module V4 = struct
             modifiedBinding binding
           in
           (* do stuff here! *)
-          let namedArgList, _newtypes, _forwardRef =
+          let namedArgList, newtypes, _forwardRef =
             recursivelyTransformNamedArgsForMake mapper
               (modifiedBindingOld binding)
               [] []
           in
-          let namedTypeList = List.fold_left argToType [] namedArgList in
+          let namedTypeList =
+            List.fold_left (argToType ~newtypes) [] namedArgList
+          in
           (* let _ = ref *)
           let vbIgnoreUnusedRef =
             Vb.mk (Pat.any ()) (Exp.ident (Location.mknoloc (Lident "ref")))
@@ -2337,6 +2359,7 @@ module V4 = struct
           in
           let rec returnedExpression patterns ({pexp_desc} as expr) =
             match pexp_desc with
+            | Pexp_newtype ({txt}, expr) -> returnedExpression patterns expr
             | Pexp_fun
                 ( _arg_label,
                   _default,
