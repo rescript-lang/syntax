@@ -148,7 +148,7 @@ module Wrapper = {
   }
 }
 
-@@jsxConfig({ versino: 3 })
+@@jsxConfig({ version: 3 })
 
 @react.component  // V3
 let make = () => body
