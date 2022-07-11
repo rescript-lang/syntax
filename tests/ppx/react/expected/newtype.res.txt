@@ -19,14 +19,8 @@ let make = {
 @@jsxConfig({version: 4, mode: "classic"})
 type props<'a, 'b, 'c> = {key?: string, a: 'a, b: 'b, c: 'c}
 
-let make = (
-  _: props<a, array<option<[#Foo(a)]>>, 'a>,
-  type a,
-  ~a: a,
-  ~b: array<option<[#Foo(a)]>>,
-  ~c: 'a,
-  _,
-) => ReactDOMRe.createDOMElementVariadic("div", [])
+let make = ({a, b, c, _}: props<'\"type-a", array<option<[#Foo('\"type-a")]>>, 'a>) =>
+  ReactDOMRe.createDOMElementVariadic("div", [])
 let make = {
   let \"Newtype" = (props: props<_>) => make(props)
   \"Newtype"
@@ -35,14 +29,8 @@ let make = {
 @@jsxConfig({version: 4, mode: "automatic"})
 type props<'a, 'b, 'c> = {key?: string, a: 'a, b: 'b, c: 'c}
 
-let make = (
-  _: props<a, array<option<[#Foo(a)]>>, 'a>,
-  type a,
-  ~a: a,
-  ~b: array<option<[#Foo(a)]>>,
-  ~c: 'a,
-  _,
-) => ReactDOM.jsx("div", {key: ?None})
+let make = ({a, b, c, _}: props<'\"type-a", array<option<[#Foo('\"type-a")]>>, 'a>) =>
+  ReactDOM.jsx("div", {key: ?None})
 let make = {
   let \"Newtype" = (props: props<_>) => make(props)
   \"Newtype"
