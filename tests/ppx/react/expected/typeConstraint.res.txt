@@ -12,9 +12,8 @@ let make = {
 @@jsxConfig({version: 4, mode: "classic"})
 type props<'a, 'b> = {key?: string, a: 'a, b: 'b}
 
-let make: 'a. (~a: 'a, ~b: 'a, 'a) => React.element = (_: props<'a, 'b>): (
-  (~a: a, ~b: a, a) => React.element
-) => (~a, ~b, _) => ReactDOMRe.createDOMElementVariadic("div", [])
+let make = ({a, b, _}: props<'\"type-a", '\"type-a">) =>
+  ReactDOMRe.createDOMElementVariadic("div", [])
 let make = {
   let \"TypeConstraint" = (props: props<_>) => make(props)
   \"TypeConstraint"
@@ -23,9 +22,7 @@ let make = {
 @@jsxConfig({version: 4, mode: "automatic"})
 type props<'a, 'b> = {key?: string, a: 'a, b: 'b}
 
-let make: 'a. (~a: 'a, ~b: 'a, 'a) => React.element = (_: props<'a, 'b>): (
-  (~a: a, ~b: a, a) => React.element
-) => (~a, ~b, _) => ReactDOM.jsx("div", {key: ?None})
+let make = ({a, b, _}: props<'\"type-a", '\"type-a">) => ReactDOM.jsx("div", {key: ?None})
 let make = {
   let \"TypeConstraint" = (props: props<_>) => make(props)
   \"TypeConstraint"

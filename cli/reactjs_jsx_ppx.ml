@@ -1879,7 +1879,8 @@ module V4 = struct
         args
     [@@raises Invalid_argument]
 
-  let rec recursivelyTransformNamedArgsForMake mapper expr args newtypes =
+  let rec recursivelyTransformNamedArgsForMake mapper expr args newtypes
+      coreType =
     let expr = mapper.expr mapper expr in
     match expr.pexp_desc with
     (* TODO: make this show up with a loc. *)
@@ -1931,32 +1932,33 @@ module V4 = struct
 
       recursivelyTransformNamedArgsForMake mapper expression
         ((arg, default, pattern, alias, pattern.ppat_loc, type_) :: args)
-        newtypes
+        newtypes coreType
     | Pexp_fun
         ( Nolabel,
           _,
           {ppat_desc = Ppat_construct ({txt = Lident "()"}, _) | Ppat_any},
           _expression ) ->
-      (args, newtypes, None)
+      (args, newtypes, coreType)
     | Pexp_fun
         ( Nolabel,
           _,
           {
             ppat_desc =
-              Ppat_var {txt} | Ppat_constraint ({ppat_desc = Ppat_var {txt}}, _);
+              Ppat_var _ | Ppat_constraint ({ppat_desc = Ppat_var _}, _);
           },
           _expression ) ->
-      (args, newtypes, Some txt)
+      (args, newtypes, coreType)
     | Pexp_fun (Nolabel, _, pattern, _expression) ->
       Location.raise_errorf ~loc:pattern.ppat_loc
         "React: react.component refs only support plain arguments and type \
          annotations."
     | Pexp_newtype (label, expression) ->
       recursivelyTransformNamedArgsForMake mapper expression args
-        (label :: newtypes)
-    | Pexp_constraint (expression, _typ) ->
+        (label :: newtypes) coreType
+    | Pexp_constraint (expression, coreType) ->
       recursivelyTransformNamedArgsForMake mapper expression args newtypes
-    | _ -> (args, newtypes, None)
+        (Some coreType)
+    | _ -> (args, newtypes, coreType)
     [@@raises Invalid_argument]
 
   let newtypeToVar newtype type_ =
@@ -1970,14 +1972,21 @@ module V4 = struct
     let mapper = {Ast_mapper.default_mapper with typ} in
     mapper.typ mapper type_
 
-  let argToType ~newtypes types (name, default, _noLabelName, _alias, loc, type_)
-      =
+  let argToType ~newtypes ~(typeConstraints : core_type option) types
+      (name, default, _noLabelName, _alias, loc, type_) =
+    let rec getType name coreType =
+      match coreType with
+      | {ptyp_desc = Ptyp_arrow (arg, c1, c2)} ->
+        if name = arg then Some c1 else getType name c2
+      | _ -> None
+    in
+    let typeConst = Option.bind typeConstraints (getType name) in
     let type_ =
       List.fold_left
         (fun type_ newtype ->
-          match type_ with
-          | Some typ -> Some (newtypeToVar newtype.txt typ)
-          | None -> None)
+          match (type_, typeConst) with
+          | _, Some typ | Some typ, None -> Some (newtypeToVar newtype.txt typ)
+          | _ -> None)
         type_ newtypes
     in
     match (type_, name, default) with
@@ -2250,13 +2259,15 @@ module V4 = struct
             modifiedBinding binding
           in
           (* do stuff here! *)
-          let namedArgList, newtypes, _forwardRef =
+          let namedArgList, newtypes, typeConstraints =
             recursivelyTransformNamedArgsForMake mapper
               (modifiedBindingOld binding)
-              [] []
+              [] [] None
           in
           let namedTypeList =
-            List.fold_left (argToType ~newtypes) [] namedArgList
+            List.fold_left
+              (argToType ~newtypes ~typeConstraints)
+              [] namedArgList
           in
           (* let _ = ref *)
           let vbIgnoreUnusedRef =
@@ -2360,6 +2371,8 @@ module V4 = struct
           let rec returnedExpression patterns ({pexp_desc} as expr) =
             match pexp_desc with
             | Pexp_newtype ({txt}, expr) -> returnedExpression patterns expr
+            | Pexp_constraint (expr, coreType) ->
+              returnedExpression patterns expr
             | Pexp_fun
                 ( _arg_label,
                   _default,
@@ -2440,7 +2453,14 @@ module V4 = struct
                 ],
                 None )
             | Nonrecursive ->
-              ( [{binding with pvb_expr = expression; pvb_attributes = []}],
+              ( [
+                  {
+                    binding with
+                    pvb_expr = expression;
+                    pvb_attributes = [];
+                    pvb_pat = Pat.var {txt = fnName; loc = Location.none};
+                  };
+                ],
                 Some (bindingWrapper fullExpression) )
           in
           (Some propsRecordType, bindings, newBinding)
