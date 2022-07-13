@@ -1118,7 +1118,7 @@ module V3 = struct
                   ],
                   None )
               | Nonrecursive ->
-                ( [{binding with pvb_expr = expression; pvb_attributes = []}],
+                ( [{binding with pvb_expr = expression}],
                   Some (bindingWrapper fullExpression) )
             in
             (Some externalDecl, bindings, newBinding)
@@ -2457,7 +2457,6 @@ module V4 = struct
                   {
                     binding with
                     pvb_expr = expression;
-                    pvb_attributes = [];
                     pvb_pat = Pat.var {txt = fnName; loc = Location.none};
                   };
                 ],

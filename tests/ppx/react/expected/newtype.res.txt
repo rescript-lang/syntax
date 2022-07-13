@@ -8,6 +8,7 @@ external makeProps: (
   unit,
 ) => {"a": '\"type-a", "b": array<option<[#Foo('\"type-a")]>>, "c": 'a} = ""
 
+@react.component
 let make = (type a, ~a: a, ~b: array<option<[#Foo(a)]>>, ~c: 'a, _) =>
   ReactDOMRe.createDOMElementVariadic("div", [])
 let make = {
@@ -19,6 +20,7 @@ let make = {
 @@jsxConfig({version: 4, mode: "classic"})
 type props<'a, 'b, 'c> = {key?: string, a: 'a, b: 'b, c: 'c}
 
+@react.component
 let make = ({a, b, c, _}: props<'\"type-a", array<option<[#Foo('\"type-a")]>>, 'a>) =>
   ReactDOMRe.createDOMElementVariadic("div", [])
 let make = {
@@ -29,6 +31,7 @@ let make = {
 @@jsxConfig({version: 4, mode: "automatic"})
 type props<'a, 'b, 'c> = {key?: string, a: 'a, b: 'b, c: 'c}
 
+@react.component
 let make = ({a, b, c, _}: props<'\"type-a", array<option<[#Foo('\"type-a")]>>, 'a>) =>
   ReactDOM.jsx("div", {key: ?None})
 let make = {

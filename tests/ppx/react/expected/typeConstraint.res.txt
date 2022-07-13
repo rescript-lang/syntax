@@ -1,6 +1,7 @@
 @@jsxConfig({version: 3})
 @obj external makeProps: (~a: 'a, ~b: 'b, ~key: string=?, unit) => {"a": 'a, "b": 'b} = ""
 
+@react.component
 let make:
   type a. (~a: a, ~b: a, a) => React.element =
   (~a, ~b, _) => ReactDOMRe.createDOMElementVariadic("div", [])
@@ -12,6 +13,7 @@ let make = {
 @@jsxConfig({version: 4, mode: "classic"})
 type props<'a, 'b> = {key?: string, a: 'a, b: 'b}
 
+@react.component
 let make = ({a, b, _}: props<'\"type-a", '\"type-a">) =>
   ReactDOMRe.createDOMElementVariadic("div", [])
 let make = {
@@ -22,6 +24,7 @@ let make = {
 @@jsxConfig({version: 4, mode: "automatic"})
 type props<'a, 'b> = {key?: string, a: 'a, b: 'b}
 
+@react.component
 let make = ({a, b, _}: props<'\"type-a", '\"type-a">) => ReactDOM.jsx("div", {key: ?None})
 let make = {
   let \"TypeConstraint" = (props: props<_>) => make(props)

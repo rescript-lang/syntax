@@ -1,6 +1,7 @@
 @@jsxConfig({version: 3})
 @obj external makeProps: (~msg: 'msg, ~key: string=?, unit) => {"msg": 'msg} = ""
 
+@react.component
 let make =
   (@warning("-16") ~msg) => {
     ReactDOMRe.createDOMElementVariadic("div", [{msg->React.string}])
@@ -13,6 +14,7 @@ let make = {
 @@jsxConfig({version: 4, mode: "classic"})
 type props<'msg> = {key?: string, msg: 'msg}
 
+@react.component
 let make = ({msg, _}: props<'msg>) => {
   ReactDOMRe.createDOMElementVariadic("div", [{msg->React.string}])
 }
@@ -24,6 +26,7 @@ let make = {
 @@jsxConfig({version: 4, mode: "automatic"})
 type props<'msg> = {key?: string, msg: 'msg}
 
+@react.component
 let make = ({msg, _}: props<'msg>) => {
   ReactDOM.jsx("div", {children: {msg->React.string}})
 }
