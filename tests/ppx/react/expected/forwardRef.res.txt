@@ -10,6 +10,7 @@ module FancyInput = {
     unit,
   ) => {"className": option<'className>, "children": 'children} = ""
 
+  @react.component
   let make =
     (@warning("-16") ~className=?, @warning("-16") ~children) =>
       @warning("-16")
@@ -40,6 +41,7 @@ module FancyInput = {
 }
 @obj external makeProps: (~key: string=?, unit) => {.} = ""
 
+@react.component
 let make = () => {
   let input = React.useRef(Js.Nullable.null)
 
@@ -68,6 +70,7 @@ module FancyInput = {
     ref?: ReactDOM.Ref.currentDomRef,
   }
 
+  @react.component
   let make = ({?className, children, ?ref, _}: props<'className, 'children>) => {
     let ref = Js.Nullable.fromOption(ref)
     let _ = ref
@@ -97,6 +100,7 @@ module FancyInput = {
 }
 type props = {key?: string}
 
+@react.component
 let make = (_: props) => {
   let input = React.useRef(Js.Nullable.null)
 
@@ -125,6 +129,7 @@ module FancyInput = {
     ref?: ReactDOM.Ref.currentDomRef,
   }
 
+  @react.component
   let make = ({?className, children, ?ref, _}: props<'className, 'children>) => {
     let ref = Js.Nullable.fromOption(ref)
     let _ = ref
@@ -154,6 +159,7 @@ module FancyInput = {
 }
 type props = {key?: string}
 
+@react.component
 let make = (_: props) => {
   let input = React.useRef(Js.Nullable.null)
 

@@ -1,6 +1,7 @@
 @@jsxConfig({version: 3})
 @obj external makeProps: (~a: 'a, ~b: 'b, ~key: string=?, unit) => {"a": 'a, "b": 'b} = ""
 
+@react.component
 let make =
   (@warning("-16") ~a, @warning("-16") ~b, _) => {
     Js.log("This function should be named 'TopLevel.react'")
@@ -14,6 +15,7 @@ let make = {
 @@jsxConfig({version: 4, mode: "classic"})
 type props<'a, 'b> = {key?: string, a: 'a, b: 'b}
 
+@react.component
 let make = ({a, b, _}: props<'a, 'b>) => {
   Js.log("This function should be named 'TopLevel.react'")
   ReactDOMRe.createDOMElementVariadic("div", [])
@@ -26,6 +28,7 @@ let make = {
 @@jsxConfig({version: 4, mode: "automatic"})
 type props<'a, 'b> = {key?: string, a: 'a, b: 'b}
 
+@react.component
 let make = ({a, b, _}: props<'a, 'b>) => {
   Js.log("This function should be named 'TopLevel.react'")
   ReactDOM.jsx("div", {key: ?None})
