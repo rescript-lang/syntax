@@ -1360,8 +1360,6 @@ module V4 = struct
     | Optional str | Labelled str -> str
     | Nolabel -> ""
 
-  let optionIdent = Lident "option"
-
   let optionalAttr = [({txt = "ns.optional"; loc = Location.none}, PStr [])]
 
   let constantString ~loc str =
@@ -2370,9 +2368,8 @@ module V4 = struct
           in
           let rec returnedExpression patterns ({pexp_desc} as expr) =
             match pexp_desc with
-            | Pexp_newtype ({txt}, expr) -> returnedExpression patterns expr
-            | Pexp_constraint (expr, coreType) ->
-              returnedExpression patterns expr
+            | Pexp_newtype (_, expr) -> returnedExpression patterns expr
+            | Pexp_constraint (expr, _) -> returnedExpression patterns expr
             | Pexp_fun
                 ( _arg_label,
                   _default,
@@ -2588,26 +2585,6 @@ module V4 = struct
         (Invalid_argument
            "JSX: `createElement` should be preceeded by a simple, direct \
             module name.")
-    [@@raises Invalid_argument]
-
-  let signature ~config mapper items =
-    let items = default_mapper.signature mapper items in
-    List.map
-      (fun item ->
-        if config.version = 4 then transformSignatureItem mapper item
-        else [item])
-      items
-    |> List.flatten
-    [@@raises Invalid_argument]
-
-  let structure ~config mapper items =
-    let items = default_mapper.structure mapper items in
-    List.map
-      (fun item ->
-        if config.version = 4 then transformStructureItem ~config mapper item
-        else [item])
-      items
-    |> List.flatten
     [@@raises Invalid_argument]
 
   let expr ~config mapper expression =
