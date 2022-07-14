@@ -1535,7 +1535,7 @@ module V4 = struct
 *)
 
   (* make record from props and spread props if exists *)
-  let recordFromProps ?(removeKey = false) {pexp_loc} callArguments =
+  let recordFromProps ?(removeKey = false) callArguments =
     let rec removeLastPositionUnitAux props acc =
       match props with
       | [] -> acc
@@ -1571,17 +1571,21 @@ module V4 = struct
     in
     match spreadFields with
     | [] ->
-      {pexp_desc = Pexp_record (fields, None); pexp_loc; pexp_attributes = []}
+      {
+        pexp_desc = Pexp_record (fields, None);
+        pexp_loc = Location.none;
+        pexp_attributes = [];
+      }
     | [spreadProps] ->
       {
         pexp_desc = Pexp_record (fields, Some spreadProps);
-        pexp_loc;
+        pexp_loc = Location.none;
         pexp_attributes = [];
       }
     | spreadProps :: _ ->
       {
         pexp_desc = Pexp_record (fields, Some spreadProps);
-        pexp_loc;
+        pexp_loc = Location.none;
         pexp_attributes = [];
       }
 
@@ -1651,8 +1655,8 @@ module V4 = struct
           ~kind:(Ptype_record labelDeclList);
       ]
 
-  let transformUppercaseCall3 ~config modulePath mapper loc attrs callExpression
-      callArguments =
+  let transformUppercaseCall3 ~config modulePath mapper loc attrs callArguments
+      =
     let children, argsWithLabels =
       extractChildren ~loc ~removeLastPositionUnit:true callArguments
     in
@@ -1713,7 +1717,7 @@ module V4 = struct
     match config.mode with
     (* The new jsx transform *)
     | "automatic" ->
-      let record = recordFromProps ~removeKey:true callExpression args in
+      let record = recordFromProps ~removeKey:true args in
       let props =
         if isEmptyRecord record then recordWithOnlyKey ~loc else record
       in
@@ -1723,20 +1727,24 @@ module V4 = struct
       let jsxExpr, key =
         match (!childrenArg, keyProp) with
         | None, (_, keyExpr) :: _ ->
-          ( Exp.ident ~loc {loc; txt = Ldot (Lident "React", "jsxKeyed")},
+          ( Exp.ident
+              {loc = Location.none; txt = Ldot (Lident "React", "jsxKeyed")},
             [(nolabel, keyExpr)] )
         | None, [] ->
-          (Exp.ident ~loc {loc; txt = Ldot (Lident "React", "jsx")}, [])
+          ( Exp.ident {loc = Location.none; txt = Ldot (Lident "React", "jsx")},
+            [] )
         | Some _, (_, keyExpr) :: _ ->
-          ( Exp.ident ~loc {loc; txt = Ldot (Lident "React", "jsxsKeyed")},
+          ( Exp.ident
+              {loc = Location.none; txt = Ldot (Lident "React", "jsxsKeyed")},
             [(nolabel, keyExpr)] )
         | Some _, [] ->
-          (Exp.ident ~loc {loc; txt = Ldot (Lident "React", "jsxs")}, [])
+          ( Exp.ident {loc = Location.none; txt = Ldot (Lident "React", "jsxs")},
+            [] )
       in
-      Exp.apply ~loc ~attrs jsxExpr
-        ([(nolabel, Exp.ident ~loc {txt = ident; loc}); (nolabel, props)] @ key)
+      Exp.apply ~attrs jsxExpr
+        ([(nolabel, Exp.ident {txt = ident; loc}); (nolabel, props)] @ key)
     | _ -> (
-      let record = recordFromProps callExpression args in
+      let record = recordFromProps args in
       (* check if record which goes to Foo.make({ ... } as record) empty or not
          if empty then change it to {key: @optional None} only for upper case jsx
            This would be redundant regarding PR progress https://github.com/rescript-lang/syntax/pull/299
@@ -1746,22 +1754,25 @@ module V4 = struct
       in
       match !childrenArg with
       | None ->
-        Exp.apply ~loc ~attrs
-          (Exp.ident ~loc {loc; txt = Ldot (Lident "React", "createElement")})
-          [(nolabel, Exp.ident ~loc {txt = ident; loc}); (nolabel, props)]
+        Exp.apply ~attrs
+          (Exp.ident
+             {loc = Location.none; txt = Ldot (Lident "React", "createElement")})
+          [(nolabel, Exp.ident {txt = ident; loc}); (nolabel, props)]
       | Some children ->
-        Exp.apply ~loc ~attrs
-          (Exp.ident ~loc
-             {loc; txt = Ldot (Lident "React", "createElementVariadic")})
+        Exp.apply ~attrs
+          (Exp.ident
+             {
+               loc = Location.none;
+               txt = Ldot (Lident "React", "createElementVariadic");
+             })
           [
-            (nolabel, Exp.ident ~loc {txt = ident; loc});
+            (nolabel, Exp.ident {txt = ident; loc});
             (nolabel, props);
             (nolabel, children);
           ])
     [@@raises Invalid_argument]
 
-  let transformLowercaseCall3 ~config mapper loc attrs callExpression
-      callArguments id =
+  let transformLowercaseCall3 ~config mapper loc attrs callArguments id =
     let componentNameExpr = constantString ~loc id in
     match config.mode with
     (* the new jsx transform *)
@@ -1799,7 +1810,7 @@ module V4 = struct
         | Pexp_record (labelDecls, _) when List.length labelDecls = 0 -> true
         | _ -> false
       in
-      let record = recordFromProps ~removeKey:true callExpression args in
+      let record = recordFromProps ~removeKey:true args in
       let props =
         if isEmptyRecord record then recordWithOnlyKey ~loc else record
       in
@@ -2561,13 +2572,12 @@ module V4 = struct
       (* Foo.createElement(~prop1=foo, ~prop2=bar, ~children=[], ()) *)
       | {loc; txt = Ldot (modulePath, ("createElement" | "make"))} ->
         transformUppercaseCall3 ~config modulePath mapper loc attrs
-          callExpression callArguments
+          callArguments
       (* div(~prop1=foo, ~prop2=bar, ~children=[bla], ()) *)
       (* turn that into
          ReactDOMRe.createElement(~props=ReactDOMRe.props(~props1=foo, ~props2=bar, ()), [|bla|]) *)
       | {loc; txt = Lident id} ->
-        transformLowercaseCall3 ~config mapper loc attrs callExpression
-          callArguments id
+        transformLowercaseCall3 ~config mapper loc attrs callArguments id
       | {txt = Ldot (_, anythingNotCreateElementOrMake)} ->
         raise
           (Invalid_argument
