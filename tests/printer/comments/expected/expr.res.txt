@@ -228,6 +228,17 @@ let multiply = (
   /* c2 */ m2 /* c3 */,
 ) => ()
 
+f(() => 1)
+// c1
+f(_ => 1)
+// c2
+f(a => 1)
+// c3
+f((~a) =>
+  // c4
+  1
+)
+
 // ternary
 let x = /* c0 */ test /* c1 */ ? /* c2 */ true /* c3 */ : /* c4 */ false /* c5 */
 

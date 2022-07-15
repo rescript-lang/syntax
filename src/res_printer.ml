@@ -4585,11 +4585,12 @@ and printExprFunParameters ~customLayout ~inCallback ~uncurried ~hasConstraint
        attrs = [];
        lbl = Asttypes.Nolabel;
        defaultExpr = None;
-       pat = {Parsetree.ppat_desc = Ppat_any};
+       pat = {Parsetree.ppat_desc = Ppat_any; ppat_loc};
      };
   ]
     when not uncurried ->
-    if hasConstraint then Doc.text "(_)" else Doc.text "_"
+    let doc = if hasConstraint then Doc.text "(_)" else Doc.text "_" in
+    printComments doc cmtTbl ppat_loc
   (* let f = a => () *)
   | [
    ParsetreeViewer.Parameter
@@ -4613,11 +4614,13 @@ and printExprFunParameters ~customLayout ~inCallback ~uncurried ~hasConstraint
        attrs = [];
        lbl = Asttypes.Nolabel;
        defaultExpr = None;
-       pat = {ppat_desc = Ppat_construct ({txt = Longident.Lident "()"}, None)};
+       pat =
+         {ppat_desc = Ppat_construct ({txt = Longident.Lident "()"; loc}, None)};
      };
   ]
     when not uncurried ->
-    Doc.text "()"
+    let doc = Doc.text "()" in
+    printComments doc cmtTbl loc
   (* let f = (~greeting, ~from as hometown, ~x=?) => () *)
   | parameters ->
     let inCallback =
