@@ -1461,10 +1461,6 @@ module V4 = struct
         (Invalid_argument "JSX: somehow there's more than one `children` label")
     [@@raises Invalid_argument]
 
-  let unerasableIgnore loc =
-    ( {loc; txt = "warning"},
-      PStr [Str.eval (Exp.constant (Pconst_string ("-16", None)))] )
-
   let merlinFocus = ({loc = Location.none; txt = "merlin.focus"}, PStr [])
 
   (* Helper method to look up the [@react.component] attribute *)
@@ -2148,13 +2144,6 @@ module V4 = struct
                 (expressionFn expression)
             in
             let expression = binding.pvb_expr in
-            let unerasableIgnoreExp exp =
-              {
-                exp with
-                pexp_attributes =
-                  unerasableIgnore emptyLoc :: exp.pexp_attributes;
-              }
-            in
             (* TODO: there is a long-tail of unsupported features inside of blocks - Pexp_letmodule , Pexp_letexception , Pexp_ifthenelse *)
             let rec spelunkForFunExpression expression =
               match expression with
@@ -2167,17 +2156,15 @@ module V4 = struct
                      pattern,
                      ({pexp_desc = Pexp_fun _} as internalExpression) );
               } ->
-                let wrap, hasUnit, hasForwardRef, exp =
+                let wrap, hasForwardRef, exp =
                   spelunkForFunExpression internalExpression
                 in
                 ( wrap,
-                  hasUnit,
                   hasForwardRef,
-                  unerasableIgnoreExp
-                    {
-                      expression with
-                      pexp_desc = Pexp_fun (label, default, pattern, exp);
-                    } )
+                  {
+                    expression with
+                    pexp_desc = Pexp_fun (label, default, pattern, exp);
+                  } )
               (* let make = (()) => ... *)
               (* let make = (_) => ... *)
               | {
@@ -2191,7 +2178,7 @@ module V4 = struct
                      },
                      _internalExpression );
               } ->
-                ((fun a -> a), true, false, expression)
+                ((fun a -> a), false, expression)
               (* let make = (~prop) => ... *)
               | {
                pexp_desc =
@@ -2201,14 +2188,13 @@ module V4 = struct
                      _pattern,
                      _internalExpression );
               } ->
-                ((fun a -> a), false, false, unerasableIgnoreExp expression)
+                ((fun a -> a), false, expression)
               (* let make = (prop) => ... *)
               | {
                pexp_desc =
                  Pexp_fun (_nolabel, _default, pattern, _internalExpression);
               } ->
-                if !hasApplication then
-                  ((fun a -> a), false, false, unerasableIgnoreExp expression)
+                if !hasApplication then ((fun a -> a), false, expression)
                 else
                   Location.raise_errorf ~loc:pattern.ppat_loc
                     "React: props need to be labelled arguments.\n\
@@ -2219,11 +2205,10 @@ module V4 = struct
               (* let make = {let foo = bar in (~prop) => ...} *)
               | {pexp_desc = Pexp_let (recursive, vbs, internalExpression)} ->
                 (* here's where we spelunk! *)
-                let wrap, hasUnit, hasForwardRef, exp =
+                let wrap, hasForwardRef, exp =
                   spelunkForFunExpression internalExpression
                 in
                 ( wrap,
-                  hasUnit,
                   hasForwardRef,
                   {expression with pexp_desc = Pexp_let (recursive, vbs, exp)}
                 )
@@ -2233,38 +2218,31 @@ module V4 = struct
                  Pexp_apply (wrapperExpression, [(Nolabel, internalExpression)]);
               } ->
                 let () = hasApplication := true in
-                let _, hasUnit, _, exp =
-                  spelunkForFunExpression internalExpression
-                in
+                let _, _, exp = spelunkForFunExpression internalExpression in
                 let hasForwardRef = isForwardRef wrapperExpression in
                 ( (fun exp -> Exp.apply wrapperExpression [(nolabel, exp)]),
-                  hasUnit,
                   hasForwardRef,
                   exp )
               | {
                pexp_desc = Pexp_sequence (wrapperExpression, internalExpression);
               } ->
-                let wrap, hasUnit, hasForwardRef, exp =
+                let wrap, hasForwardRef, exp =
                   spelunkForFunExpression internalExpression
                 in
                 ( wrap,
-                  hasUnit,
                   hasForwardRef,
                   {
                     expression with
                     pexp_desc = Pexp_sequence (wrapperExpression, exp);
                   } )
-              | e -> ((fun a -> a), false, false, e)
+              | e -> ((fun a -> a), false, e)
             in
-            let wrapExpression, hasUnit, hasForwardRef, expression =
+            let wrapExpression, hasForwardRef, expression =
               spelunkForFunExpression expression
             in
-            ( wrapExpressionWithBinding wrapExpression,
-              hasUnit,
-              hasForwardRef,
-              expression )
+            (wrapExpressionWithBinding wrapExpression, hasForwardRef, expression)
           in
-          let bindingWrapper, _hasUnit, hasForwardRef, expression =
+          let bindingWrapper, hasForwardRef, expression =
             modifiedBinding binding
           in
           (* do stuff here! *)
