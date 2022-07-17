@@ -65,9 +65,9 @@ let make = {
 module FancyInput = {
   type props<'className, 'children> = {
     key?: string,
+    ref?: ReactDOM.Ref.currentDomRef,
     className?: 'className,
     children: 'children,
-    ref?: ReactDOM.Ref.currentDomRef,
   }
 
   @react.component
@@ -119,9 +119,9 @@ let make = {
 module FancyInput = {
   type props<'className, 'children> = {
     key?: string,
+    ref?: ReactDOM.Ref.currentDomRef,
     className?: 'className,
     children: 'children,
-    ref?: ReactDOM.Ref.currentDomRef,
   }
 
   @react.component
