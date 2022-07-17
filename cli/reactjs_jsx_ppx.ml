@@ -2256,20 +2256,6 @@ module V4 = struct
               (argToType ~newtypes ~typeConstraints)
               [] namedArgList
           in
-          (* let _ = ref *)
-          let vbIgnoreUnusedRef =
-            Vb.mk (Pat.any ()) (Exp.ident (Location.mknoloc (Lident "ref")))
-          in
-          (* let ref = ref->Js.Nullable.fromOption *)
-          let vbRefFromOption =
-            Vb.mk
-              (Pat.var @@ Location.mknoloc "ref")
-              (Exp.apply
-                 (Exp.ident
-                    (Location.mknoloc
-                       (Ldot (Ldot (Lident "Js", "Nullable"), "fromOption"))))
-                 [(Nolabel, Exp.ident (Location.mknoloc @@ Lident "ref"))])
-          in
           let namedArgWithDefaultValueList =
             List.filter_map argWithDefaultValue namedArgList
           in
@@ -2299,30 +2285,14 @@ module V4 = struct
               else [])
           in
           let innerExpression =
-            if hasForwardRef then
-              Exp.apply
-                (Exp.ident @@ Location.mknoloc @@ Lident "make")
-                [
-                  ( Nolabel,
-                    Exp.record
-                      [
-                        ( Location.mknoloc @@ Lident "ref",
-                          Exp.apply ~attrs:optionalAttr
-                            (Exp.ident
-                               (Location.mknoloc
-                                  (Ldot
-                                     (Ldot (Lident "Js", "Nullable"), "toOption"))))
-                            [
-                              ( Nolabel,
-                                Exp.ident (Location.mknoloc @@ Lident "ref") );
-                            ] );
-                      ]
-                      (Some (Exp.ident (Location.mknoloc @@ Lident "props"))) );
-                ]
-            else
-              Exp.apply
-                (Exp.ident (Location.mknoloc @@ Lident "make"))
-                [(Nolabel, Exp.ident (Location.mknoloc @@ Lident "props"))]
+            Exp.apply
+              (Exp.ident (Location.mknoloc @@ Lident "make"))
+              ([(Nolabel, Exp.ident (Location.mknoloc @@ Lident "props"))]
+              @
+              match hasForwardRef with
+              | true ->
+                [(Nolabel, Exp.ident (Location.mknoloc @@ Lident "ref"))]
+              | false -> [])
           in
           let fullExpression =
             (* React component name should start with uppercase letter *)
@@ -2355,10 +2325,13 @@ module V4 = struct
                 ]
                 (Exp.ident ~loc:emptyLoc {loc = emptyLoc; txt = Lident txt})
           in
-          let rec returnedExpression patterns ({pexp_desc} as expr) =
+          let rec returnedExpression patternsWithLabel patternsWithNolabel
+              ({pexp_desc} as expr) =
             match pexp_desc with
-            | Pexp_newtype (_, expr) -> returnedExpression patterns expr
-            | Pexp_constraint (expr, _) -> returnedExpression patterns expr
+            | Pexp_newtype (_, expr) ->
+              returnedExpression patternsWithLabel patternsWithNolabel expr
+            | Pexp_constraint (expr, _) ->
+              returnedExpression patternsWithLabel patternsWithNolabel expr
             | Pexp_fun
                 ( _arg_label,
                   _default,
@@ -2367,7 +2340,7 @@ module V4 = struct
                       Ppat_construct ({txt = Lident "()"}, _) | Ppat_any;
                   },
                   expr ) ->
-              (patterns, expr)
+              (patternsWithLabel, patternsWithNolabel, expr)
             | Pexp_fun (arg_label, _default, {ppat_loc; ppat_desc}, expr) -> (
               if isLabelled arg_label || isOptional arg_label then
                 returnedExpression
@@ -2376,43 +2349,39 @@ module V4 = struct
                        ~attrs:
                          (if isOptional arg_label then optionalAttr else [])
                        {txt = getLabel arg_label; loc = ppat_loc} )
-                  :: patterns)
-                  expr
+                  :: patternsWithLabel)
+                  patternsWithNolabel expr
               else
                 (* Special case of nolabel arg "ref" in forwardRef fn *)
                 (* let make = React.forwardRef(ref => body) *)
                 match ppat_desc with
-                | Ppat_var {txt}
-                | Ppat_constraint ({ppat_desc = Ppat_var {txt}}, _)
-                  when txt = "ref" ->
-                  returnedExpression
+                | Ppat_var {txt} ->
+                  returnedExpression patternsWithLabel
                     (( {loc = ppat_loc; txt = Lident txt},
                        Pat.var ~attrs:optionalAttr {txt; loc = ppat_loc} )
-                    :: patterns)
+                    :: patternsWithNolabel)
                     expr
-                | _ -> returnedExpression patterns expr)
-            | _ -> (patterns, expr)
+                | _ ->
+                  returnedExpression patternsWithLabel patternsWithNolabel expr)
+            | _ -> (patternsWithLabel, patternsWithNolabel, expr)
           in
-          let patternsWithLid, expression = returnedExpression [] expression in
+          let patternsWithLabel, patternsWithNolabel, expression =
+            returnedExpression [] [] expression
+          in
           let pattern =
-            match patternsWithLid with
+            match patternsWithLabel with
             | [] -> Pat.any ()
-            | _ -> Pat.record (List.rev patternsWithLid) Open
+            | _ -> Pat.record (List.rev patternsWithLabel) Open
           in
-          (* add patttern matching for optional prop value *)
+          (* add pattern matching for optional prop value *)
           let expression =
             if List.length vbMatchList = 0 then expression
             else Exp.let_ Nonrecursive vbMatchList expression
           in
-          (* add let _ = ref to ignore unused warning *)
           let expression =
-            match hasForwardRef with
-            | true ->
-              let expression =
-                Exp.let_ Nonrecursive [vbIgnoreUnusedRef] expression
-              in
-              Exp.let_ Nonrecursive [vbRefFromOption] expression
-            | false -> expression
+            List.fold_left
+              (fun expr (_, pattern) -> Exp.fun_ Nolabel None pattern expr)
+              expression patternsWithNolabel
           in
           let expression =
             Exp.fun_ Nolabel None
