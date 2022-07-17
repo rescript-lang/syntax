@@ -23,11 +23,8 @@ let make = React.forwardRef((~x, ~y, ref) => body)
 
 let make = React.forwardRef({
   let fn =
-    @react.component (~x, ~y, ~ref=?) => {
-      let ref = ref->Js.Nullable.fromOption
-      body
-    }
-  (props, ref) => fn({...props, ref: {ref->Js.Nullable.toOption}})
+    @react.component (~x, ~y) => ref => body
+  (props, ref) => fn(props, ref)
 })
 ```
 
