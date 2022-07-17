@@ -1600,56 +1600,39 @@ module V4 = struct
     |> List.filter_map (fun (_isOptional, label, _, interiorType) ->
            if label = "key" || label = "ref" then None else Some interiorType)
 
-  (* type props<'id, 'name, ...> = { @optional key: string, @optional id: 'id, ... } *)
-  let makePropsRecordType propsName loc namedTypeList =
-    let labelDeclList =
-      namedTypeList
-      |> List.map (fun (isOptional, label, _, _interiorType) ->
-             if label = "key" then
-               Type.field ~loc ~attrs:optionalAttr {txt = label; loc}
-                 (keyType Location.none)
-             else if label = "ref" then
-               Type.field ~loc
-                 ~attrs:(if isOptional then optionalAttr else [])
-                 {txt = label; loc} (refType Location.none)
-             else if isOptional then
-               Type.field ~loc ~attrs:optionalAttr {txt = label; loc}
-                 (Typ.var label)
-             else Type.field ~loc {txt = label; loc} (Typ.var label))
-    in
+  let makeLabelDecls ~loc namedTypeList =
+    namedTypeList
+    |> List.map (fun (isOptional, label, _, interiorType) ->
+           if label = "key" then
+             Type.field ~loc ~attrs:optionalAttr {txt = label; loc} interiorType
+           else if label = "ref" then
+             Type.field ~loc
+               ~attrs:(if isOptional then optionalAttr else [])
+               {txt = label; loc} interiorType
+           else if isOptional then
+             Type.field ~loc ~attrs:optionalAttr {txt = label; loc}
+               (Typ.var label)
+           else Type.field ~loc {txt = label; loc} (Typ.var label))
+
+  let makeTypeDecls propsName loc namedTypeList =
+    let labelDeclList = makeLabelDecls ~loc namedTypeList in
     (* 'id, 'className, ... *)
     let params =
       makePropsTypeParamsTvar namedTypeList
       |> List.map (fun coreType -> (coreType, Invariant))
     in
-    Str.type_ Nonrecursive
-      [
-        Type.mk ~loc ~params {txt = propsName; loc}
-          ~kind:(Ptype_record labelDeclList);
-      ]
+    [
+      Type.mk ~loc ~params {txt = propsName; loc}
+        ~kind:(Ptype_record labelDeclList);
+    ]
+
+  (* type props<'id, 'name, ...> = { @optional key: string, @optional id: 'id, ... } *)
+  let makePropsRecordType propsName loc namedTypeList =
+    Str.type_ Nonrecursive (makeTypeDecls propsName loc namedTypeList)
 
   (* type props<'id, 'name, ...> = { @optional key: string, @optional id: 'id, ... } *)
   let makePropsRecordTypeSig propsName loc namedTypeList =
-    let labelDeclList =
-      namedTypeList
-      |> List.map (fun (isOptional, label, _, _interiorType) ->
-             if label = "key" then
-               Type.field ~loc ~attrs:optionalAttr {txt = label; loc}
-                 (keyType Location.none)
-             else if isOptional then
-               Type.field ~loc ~attrs:optionalAttr {txt = label; loc}
-                 (Typ.var label)
-             else Type.field ~loc {txt = label; loc} (Typ.var label))
-    in
-    let params =
-      makePropsTypeParamsTvar namedTypeList
-      |> List.map (fun coreType -> (coreType, Invariant))
-    in
-    Sig.type_ Nonrecursive
-      [
-        Type.mk ~loc ~params {txt = propsName; loc}
-          ~kind:(Ptype_record labelDeclList);
-      ]
+    Sig.type_ Nonrecursive (makeTypeDecls propsName loc namedTypeList)
 
   let transformUppercaseCall3 ~config modulePath mapper loc attrs callArguments
       =
@@ -2279,10 +2262,11 @@ module V4 = struct
           (* type props = { ... } *)
           let propsRecordType =
             makePropsRecordType "props" emptyLoc
-              (((true, "key", [], keyType emptyLoc) :: namedTypeList)
-              @
-              if hasForwardRef then [(true, "ref", [], refType Location.none)]
-              else [])
+              ([(true, "key", [], keyType emptyLoc)]
+              @ (if hasForwardRef then
+                 [(true, "ref", [], refType Location.none)]
+                else [])
+              @ namedTypeList)
           in
           let innerExpression =
             Exp.apply
@@ -2459,12 +2443,20 @@ module V4 = struct
       match List.filter hasAttr pval_attributes with
       | [] -> [item]
       | [_] ->
+        let hasForwardRef = ref false in
         let rec getPropTypes types ({ptyp_loc; ptyp_desc} as fullType) =
           match ptyp_desc with
           | Ptyp_arrow (name, type_, ({ptyp_desc = Ptyp_arrow _} as rest))
             when isOptional name || isLabelled name ->
             getPropTypes ((name, ptyp_loc, type_) :: types) rest
-          | Ptyp_arrow (Nolabel, _type, rest) -> getPropTypes types rest
+          | Ptyp_arrow
+              ( Nolabel,
+                {ptyp_desc = Ptyp_constr ({txt = Lident "unit"}, _)},
+                rest ) ->
+            getPropTypes types rest
+          | Ptyp_arrow (Nolabel, _type, rest) ->
+            hasForwardRef := true;
+            getPropTypes types rest
           | Ptyp_arrow (name, type_, returnValue)
             when isOptional name || isLabelled name ->
             (returnValue, (name, returnValue.ptyp_loc, type_) :: types)
@@ -2479,7 +2471,11 @@ module V4 = struct
         in
         let propsRecordType =
           makePropsRecordTypeSig "props" Location.none
-            ((true, "key", [], keyType Location.none) :: namedTypeList)
+            ([(true, "key", [], keyType Location.none)]
+            (* If there is Nolabel arg, regard the type as ref in forwardRef *)
+            @ (if !hasForwardRef then [(true, "ref", [], refType Location.none)]
+              else [])
+            @ namedTypeList)
         in
         (* can't be an arrow because it will defensively uncurry *)
         let newExternalType =
