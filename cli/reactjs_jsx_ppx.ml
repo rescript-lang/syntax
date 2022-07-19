@@ -1592,13 +1592,24 @@ module V4 = struct
     |> List.filter_map (fun (_isOptional, label, _, _interiorType) ->
            if label = "key" || label = "ref" then None else Some (Typ.var label))
 
+  let stripOption coreType =
+    match coreType with
+    | {ptyp_desc = Ptyp_constr ({txt = Lident "option"}, coreTypes)} ->
+      List.nth_opt coreTypes 0
+    | _ -> Some coreType
+
   (* make type params for make sig arguments and for external *)
   (* let make: React.componentLike<props<string, option<string>>, React.element> *)
   (* external make: React.componentLike<props< .. >, React.element> = "default" *)
-  let makePropsTypeParams namedTypeList =
+  let makePropsTypeParams ?(stripExplicitOption = false) namedTypeList =
     namedTypeList
-    |> List.filter_map (fun (_isOptional, label, _, interiorType) ->
-           if label = "key" || label = "ref" then None else Some interiorType)
+    |> List.filter_map (fun (isOptional, label, _, interiorType) ->
+           if label = "key" || label = "ref" then None
+             (* Strip the explicit option type in implementation *)
+             (* let make = (~x: option<string>=?) => ... *)
+           else if isOptional && stripExplicitOption then
+             stripOption interiorType
+           else Some interiorType)
 
   let makeLabelDecls ~loc namedTypeList =
     namedTypeList
@@ -2372,7 +2383,7 @@ module V4 = struct
               (Pat.constraint_ pattern
                  (Typ.constr ~loc:emptyLoc
                     {txt = Lident "props"; loc = emptyLoc}
-                    (makePropsTypeParams namedTypeList)))
+                    (makePropsTypeParams ~stripExplicitOption:true namedTypeList)))
               expression
           in
           (* let make = ({id, name, ...}: props<'id, 'name, ...>) => { ... } *)
