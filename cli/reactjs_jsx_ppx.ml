@@ -1590,7 +1590,8 @@ module V4 = struct
   let makePropsTypeParamsTvar namedTypeList =
     namedTypeList
     |> List.filter_map (fun (_isOptional, label, _, _interiorType) ->
-           if label = "key" || label = "ref" then None else Some (Typ.var label))
+           if label = "key" || label = "ref" then None
+           else Some (Typ.var @@ safeTypeFromValue (Labelled label)))
 
   let stripOption coreType =
     match coreType with
@@ -1622,8 +1623,10 @@ module V4 = struct
                {txt = label; loc} interiorType
            else if isOptional then
              Type.field ~loc ~attrs:optionalAttr {txt = label; loc}
-               (Typ.var label)
-           else Type.field ~loc {txt = label; loc} (Typ.var label))
+               (Typ.var @@ safeTypeFromValue @@ Labelled label)
+           else
+             Type.field ~loc {txt = label; loc}
+               (Typ.var @@ safeTypeFromValue @@ Labelled label))
 
   let makeTypeDecls propsName loc namedTypeList =
     let labelDeclList = makeLabelDecls ~loc namedTypeList in
