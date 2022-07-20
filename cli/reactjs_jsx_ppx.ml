@@ -1510,6 +1510,10 @@ module V4 = struct
     let fullModuleName = String.concat "$" fullModuleName in
     fullModuleName
 
+  let raiseErrorMultipleReactComponent ~loc =
+    Location.raise_errorf ~loc
+      "Each module should have one react component at most"
+
   (*
   AST node builders
   These functions help us build AST nodes that are needed when transforming a [@react.component] into a
@@ -2018,8 +2022,7 @@ module V4 = struct
       | [_] ->
         (* If there is another @react.component, throw error *)
         if config.hasReactComponent then
-          Location.raise_errorf ~loc:pstr_loc
-            "Each module should have one react component at most"
+          raiseErrorMultipleReactComponent ~loc:pstr_loc
         else (
           config.hasReactComponent <- true;
           let rec getPropTypes types ({ptyp_loc; ptyp_desc} as fullType) =
@@ -2076,8 +2079,7 @@ module V4 = struct
       let mapBinding binding =
         if hasAttrOnBinding binding then
           if config.hasReactComponent then
-            Location.raise_errorf ~loc:pstr_loc
-              "Each module should have one react component at most"
+            raiseErrorMultipleReactComponent ~loc:pstr_loc
           else (
             config.hasReactComponent <- true;
             let bindingLoc = binding.pvb_loc in
@@ -2466,8 +2468,7 @@ module V4 = struct
       | [_] ->
         (* If there is another @react.component, throw error *)
         if config.hasReactComponent then
-          Location.raise_errorf ~loc:psig_loc
-            "Each module should have one react component at most"
+          raiseErrorMultipleReactComponent ~loc:psig_loc
         else config.hasReactComponent <- true;
         let hasForwardRef = ref false in
         let rec getPropTypes types ({ptyp_loc; ptyp_desc} as fullType) =
