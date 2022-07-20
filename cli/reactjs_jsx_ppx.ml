@@ -2463,7 +2463,9 @@ module V4 = struct
       | [] -> [item]
       | [_] ->
         (* If there is another @react.component, throw error *)
-        if !hasReactComponent then raise (Invalid_argument "2")
+        if !hasReactComponent then
+          Location.raise_errorf ~loc:psig_loc
+            "Each module should have one react component at most"
         else hasReactComponent := true;
         let hasForwardRef = ref false in
         let rec getPropTypes types ({ptyp_loc; ptyp_desc} as fullType) =
