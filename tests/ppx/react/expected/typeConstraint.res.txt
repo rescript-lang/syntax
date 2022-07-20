@@ -1,32 +1,42 @@
 @@jsxConfig({version: 3})
-@obj external makeProps: (~a: 'a, ~b: 'b, ~key: string=?, unit) => {"a": 'a, "b": 'b} = ""
 
-@react.component
-let make:
-  type a. (~a: a, ~b: a, a) => React.element =
-  (~a, ~b, _) => ReactDOMRe.createDOMElementVariadic("div", [])
-let make = {
-  let \"TypeConstraint" = (\"Props": {"a": 'a, "b": 'b}) => make(~b=\"Props"["b"], ~a=\"Props"["a"])
-  \"TypeConstraint"
+module V3 = {
+  @obj external makeProps: (~a: 'a, ~b: 'b, ~key: string=?, unit) => {"a": 'a, "b": 'b} = ""
+
+  @react.component
+  let make:
+    type a. (~a: a, ~b: a, a) => React.element =
+    (~a, ~b, _) => ReactDOMRe.createDOMElementVariadic("div", [])
+  let make = {
+    let \"TypeConstraint$V3" = (\"Props": {"a": 'a, "b": 'b}) =>
+      make(~b=\"Props"["b"], ~a=\"Props"["a"])
+    \"TypeConstraint$V3"
+  }
 }
 
 @@jsxConfig({version: 4, mode: "classic"})
-type props<'a, 'b> = {key?: string, a: 'a, b: 'b}
 
-@react.component
-let make = ({a, b, _}: props<'\"type-a", '\"type-a">) =>
-  ReactDOMRe.createDOMElementVariadic("div", [])
-let make = {
-  let \"TypeConstraint" = (props: props<_>) => make(props)
-  \"TypeConstraint"
+module V4C = {
+  type props<'a, 'b> = {key?: string, a: 'a, b: 'b}
+
+  @react.component
+  let make = ({a, b, _}: props<'\"type-a", '\"type-a">) =>
+    ReactDOMRe.createDOMElementVariadic("div", [])
+  let make = {
+    let \"TypeConstraint$V4C" = (props: props<_>) => make(props)
+    \"TypeConstraint$V4C"
+  }
 }
 
 @@jsxConfig({version: 4, mode: "automatic"})
-type props<'a, 'b> = {key?: string, a: 'a, b: 'b}
 
-@react.component
-let make = ({a, b, _}: props<'\"type-a", '\"type-a">) => ReactDOM.jsx("div", {key: ?None})
-let make = {
-  let \"TypeConstraint" = (props: props<_>) => make(props)
-  \"TypeConstraint"
+module V4A = {
+  type props<'a, 'b> = {key?: string, a: 'a, b: 'b}
+
+  @react.component
+  let make = ({a, b, _}: props<'\"type-a", '\"type-a">) => ReactDOM.jsx("div", {key: ?None})
+  let make = {
+    let \"TypeConstraint$V4A" = (props: props<_>) => make(props)
+    \"TypeConstraint$V4A"
+  }
 }

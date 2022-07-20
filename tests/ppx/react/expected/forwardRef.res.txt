@@ -1,169 +1,175 @@
 @@jsxConfig({version: 3})
 
-module FancyInput = {
-  @obj
-  external makeProps: (
-    ~className: 'className=?,
-    ~children: 'children,
-    ~key: string=?,
-    ~ref: 'ref=?,
-    unit,
-  ) => {"className": option<'className>, "children": 'children} = ""
+module V3 = {
+  module FancyInput = {
+    @obj
+    external makeProps: (
+      ~className: 'className=?,
+      ~children: 'children,
+      ~key: string=?,
+      ~ref: 'ref=?,
+      unit,
+    ) => {"className": option<'className>, "children": 'children} = ""
+
+    @react.component
+    let make =
+      (@warning("-16") ~className=?, @warning("-16") ~children) =>
+        @warning("-16")
+        ref =>
+          ReactDOMRe.createDOMElementVariadic(
+            "div",
+            [
+              ReactDOMRe.createDOMElementVariadic(
+                "input",
+                ~props=ReactDOMRe.domProps(
+                  ~type_="text",
+                  ~className?,
+                  ~ref=?{Js.Nullable.toOption(ref)->Belt.Option.map(ReactDOM.Ref.domRef)},
+                  (),
+                ),
+                [],
+              ),
+              children,
+            ],
+          )
+    let make = React.forwardRef({
+      let \"ForwardRef$V3$FancyInput" = (
+        \"Props": {"className": option<'className>, "children": 'children},
+        ref,
+      ) => make(~children=\"Props"["children"], ~className=?\"Props"["className"], ref)
+      \"ForwardRef$V3$FancyInput"
+    })
+  }
+  @obj external makeProps: (~key: string=?, unit) => {.} = ""
 
   @react.component
-  let make =
-    (@warning("-16") ~className=?, @warning("-16") ~children) =>
-      @warning("-16")
-      ref =>
-        ReactDOMRe.createDOMElementVariadic(
-          "div",
-          [
-            ReactDOMRe.createDOMElementVariadic(
-              "input",
-              ~props=ReactDOMRe.domProps(
-                ~type_="text",
-                ~className?,
-                ~ref=?{Js.Nullable.toOption(ref)->Belt.Option.map(ReactDOM.Ref.domRef)},
-                (),
-              ),
-              [],
-            ),
-            children,
-          ],
-        )
-  let make = React.forwardRef({
-    let \"ForwardRef$FancyInput" = (
-      \"Props": {"className": option<'className>, "children": 'children},
-      ref,
-    ) => make(~children=\"Props"["children"], ~className=?\"Props"["className"], ref)
-    \"ForwardRef$FancyInput"
-  })
-}
-@obj external makeProps: (~key: string=?, unit) => {.} = ""
+  let make = () => {
+    let input = React.useRef(Js.Nullable.null)
 
-@react.component
-let make = () => {
-  let input = React.useRef(Js.Nullable.null)
-
-  ReactDOMRe.createDOMElementVariadic(
-    "div",
-    [
-      React.createElement(
-        FancyInput.make,
-        FancyInput.makeProps(~ref=input, ~children={React.string("Click to focus")}, ()),
-      ),
-    ],
-  )
-}
-let make = {
-  let \"ForwardRef" = (\"Props": {.}) => make()
-  \"ForwardRef"
+    ReactDOMRe.createDOMElementVariadic(
+      "div",
+      [
+        React.createElement(
+          FancyInput.make,
+          FancyInput.makeProps(~ref=input, ~children={React.string("Click to focus")}, ()),
+        ),
+      ],
+    )
+  }
+  let make = {
+    let \"ForwardRef$V3" = (\"Props": {.}) => make()
+    \"ForwardRef$V3"
+  }
 }
 
 @@jsxConfig({version: 4, mode: "classic"})
 
-module FancyInput = {
-  type props<'className, 'children> = {
-    key?: string,
-    ref?: ReactDOM.Ref.currentDomRef,
-    className?: 'className,
-    children: 'children,
+module V4C = {
+  module FancyInput = {
+    type props<'className, 'children> = {
+      key?: string,
+      ref?: ReactDOM.Ref.currentDomRef,
+      className?: 'className,
+      children: 'children,
+    }
+
+    @react.component
+    let make = ({?className, children, _}: props<'className, 'children>, ref) =>
+      ReactDOMRe.createDOMElementVariadic(
+        "div",
+        [
+          ReactDOMRe.createDOMElementVariadic(
+            "input",
+            ~props=ReactDOMRe.domProps(
+              ~type_="text",
+              ~className?,
+              ~ref=?{Js.Nullable.toOption(ref)->Belt.Option.map(ReactDOM.Ref.domRef)},
+              (),
+            ),
+            [],
+          ),
+          children,
+        ],
+      )
+    let make = React.forwardRef({
+      let \"ForwardRef$V4C$FancyInput" = (props: props<_>, ref) => make(props, ref)
+      \"ForwardRef$V4C$FancyInput"
+    })
   }
+  type props = {key?: string}
 
   @react.component
-  let make = ({?className, children, _}: props<'className, 'children>, ref) =>
+  let make = (_: props) => {
+    let input = React.useRef(Js.Nullable.null)
+
     ReactDOMRe.createDOMElementVariadic(
       "div",
       [
-        ReactDOMRe.createDOMElementVariadic(
-          "input",
-          ~props=ReactDOMRe.domProps(
-            ~type_="text",
-            ~className?,
-            ~ref=?{Js.Nullable.toOption(ref)->Belt.Option.map(ReactDOM.Ref.domRef)},
-            (),
-          ),
-          [],
+        React.createElement(
+          FancyInput.make,
+          {ref: input, children: {React.string("Click to focus")}},
         ),
-        children,
       ],
     )
-  let make = React.forwardRef({
-    let \"ForwardRef$FancyInput" = (props: props<_>, ref) => make(props, ref)
-    \"ForwardRef$FancyInput"
-  })
-}
-type props = {key?: string}
-
-@react.component
-let make = (_: props) => {
-  let input = React.useRef(Js.Nullable.null)
-
-  ReactDOMRe.createDOMElementVariadic(
-    "div",
-    [
-      React.createElement(
-        FancyInput.make,
-        {ref: input, children: {React.string("Click to focus")}},
-      ),
-    ],
-  )
-}
-let make = {
-  let \"ForwardRef" = props => make(props)
-  \"ForwardRef"
+  }
+  let make = {
+    let \"ForwardRef$V4C" = props => make(props)
+    \"ForwardRef$V4C"
+  }
 }
 
 @@jsxConfig({version: 4, mode: "automatic"})
 
-module FancyInput = {
-  type props<'className, 'children> = {
-    key?: string,
-    ref?: ReactDOM.Ref.currentDomRef,
-    className?: 'className,
-    children: 'children,
+module V4A = {
+  module FancyInput = {
+    type props<'className, 'children> = {
+      key?: string,
+      ref?: ReactDOM.Ref.currentDomRef,
+      className?: 'className,
+      children: 'children,
+    }
+
+    @react.component
+    let make = ({?className, children, _}: props<'className, 'children>, ref) =>
+      ReactDOM.jsxs(
+        "div",
+        {
+          children: React.array([
+            ReactDOM.jsx(
+              "input",
+              {
+                type_: "text",
+                ?className,
+                ref: ?Js.Nullable.toOption(ref)->Belt.Option.map(ReactDOM.Ref.domRef),
+              },
+            ),
+            children,
+          ]),
+        },
+      )
+    let make = React.forwardRef({
+      let \"ForwardRef$V4A$FancyInput" = (props: props<_>, ref) => make(props, ref)
+      \"ForwardRef$V4A$FancyInput"
+    })
   }
+  type props = {key?: string}
 
   @react.component
-  let make = ({?className, children, _}: props<'className, 'children>, ref) =>
-    ReactDOM.jsxs(
+  let make = (_: props) => {
+    let input = React.useRef(Js.Nullable.null)
+
+    ReactDOM.jsx(
       "div",
       {
-        children: React.array([
-          ReactDOM.jsx(
-            "input",
-            {
-              type_: "text",
-              ?className,
-              ref: ?Js.Nullable.toOption(ref)->Belt.Option.map(ReactDOM.Ref.domRef),
-            },
-          ),
-          children,
-        ]),
+        children: React.jsx(
+          FancyInput.make,
+          {ref: input, children: {React.string("Click to focus")}},
+        ),
       },
     )
-  let make = React.forwardRef({
-    let \"ForwardRef$FancyInput" = (props: props<_>, ref) => make(props, ref)
-    \"ForwardRef$FancyInput"
-  })
-}
-type props = {key?: string}
-
-@react.component
-let make = (_: props) => {
-  let input = React.useRef(Js.Nullable.null)
-
-  ReactDOM.jsx(
-    "div",
-    {
-      children: React.jsx(
-        FancyInput.make,
-        {ref: input, children: {React.string("Click to focus")}},
-      ),
-    },
-  )
-}
-let make = {
-  let \"ForwardRef" = props => make(props)
-  \"ForwardRef"
+  }
+  let make = {
+    let \"ForwardRef$V4A" = props => make(props)
+    \"ForwardRef$V4A"
+  }
 }
