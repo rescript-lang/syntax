@@ -9,6 +9,7 @@ type jsxConfig = {
   mutable module_: string;
   mutable mode: string;
   mutable nestedModules: string list;
+  mutable hasReactComponent: bool;
 }
 
 let getPayloadFields payload =
@@ -2004,7 +2005,7 @@ module V4 = struct
     | name when isOptional name -> (true, getLabel name, [], type_) :: types
     | _ -> types
 
-  let transformStructureItem ~hasReactComponent ~config mapper item =
+  let transformStructureItem ~config mapper item =
     match item with
     (* external *)
     | {
@@ -2016,52 +2017,53 @@ module V4 = struct
       | [] -> [item]
       | [_] ->
         (* If there is another @react.component, throw error *)
-        if !hasReactComponent then
+        if config.hasReactComponent then
           Location.raise_errorf ~loc:pstr_loc
             "Each module should have one react component at most"
-        else hasReactComponent := true;
-        let rec getPropTypes types ({ptyp_loc; ptyp_desc} as fullType) =
-          match ptyp_desc with
-          | Ptyp_arrow (name, type_, ({ptyp_desc = Ptyp_arrow _} as rest))
-            when isLabelled name || isOptional name ->
-            getPropTypes ((name, ptyp_loc, type_) :: types) rest
-          | Ptyp_arrow (Nolabel, _type, rest) -> getPropTypes types rest
-          | Ptyp_arrow (name, type_, returnValue)
-            when isLabelled name || isOptional name ->
-            (returnValue, (name, returnValue.ptyp_loc, type_) :: types)
-          | _ -> (fullType, types)
-        in
-        let innerType, propTypes = getPropTypes [] pval_type in
-        let namedTypeList = List.fold_left argToConcreteType [] propTypes in
-        let retPropsType =
-          Typ.constr ~loc:pstr_loc
-            (Location.mkloc (Lident "props") pstr_loc)
-            (makePropsTypeParams namedTypeList)
-        in
-        (* type props<'id, 'name> = { @optional key: string, @optional id: 'id, ... } *)
-        let propsRecordType =
-          makePropsRecordType "props" Location.none
-            ((true, "key", [], keyType pstr_loc) :: namedTypeList)
-        in
-        (* can't be an arrow because it will defensively uncurry *)
-        let newExternalType =
-          Ptyp_constr
-            ( {loc = pstr_loc; txt = Ldot (Lident "React", "componentLike")},
-              [retPropsType; innerType] )
-        in
-        let newStructure =
-          {
-            pstr with
-            pstr_desc =
-              Pstr_primitive
-                {
-                  value_description with
-                  pval_type = {pval_type with ptyp_desc = newExternalType};
-                  pval_attributes = List.filter otherAttrsPure pval_attributes;
-                };
-          }
-        in
-        [propsRecordType; newStructure]
+        else (
+          config.hasReactComponent <- true;
+          let rec getPropTypes types ({ptyp_loc; ptyp_desc} as fullType) =
+            match ptyp_desc with
+            | Ptyp_arrow (name, type_, ({ptyp_desc = Ptyp_arrow _} as rest))
+              when isLabelled name || isOptional name ->
+              getPropTypes ((name, ptyp_loc, type_) :: types) rest
+            | Ptyp_arrow (Nolabel, _type, rest) -> getPropTypes types rest
+            | Ptyp_arrow (name, type_, returnValue)
+              when isLabelled name || isOptional name ->
+              (returnValue, (name, returnValue.ptyp_loc, type_) :: types)
+            | _ -> (fullType, types)
+          in
+          let innerType, propTypes = getPropTypes [] pval_type in
+          let namedTypeList = List.fold_left argToConcreteType [] propTypes in
+          let retPropsType =
+            Typ.constr ~loc:pstr_loc
+              (Location.mkloc (Lident "props") pstr_loc)
+              (makePropsTypeParams namedTypeList)
+          in
+          (* type props<'id, 'name> = { @optional key: string, @optional id: 'id, ... } *)
+          let propsRecordType =
+            makePropsRecordType "props" Location.none
+              ((true, "key", [], keyType pstr_loc) :: namedTypeList)
+          in
+          (* can't be an arrow because it will defensively uncurry *)
+          let newExternalType =
+            Ptyp_constr
+              ( {loc = pstr_loc; txt = Ldot (Lident "React", "componentLike")},
+                [retPropsType; innerType] )
+          in
+          let newStructure =
+            {
+              pstr with
+              pstr_desc =
+                Pstr_primitive
+                  {
+                    value_description with
+                    pval_type = {pval_type with ptyp_desc = newExternalType};
+                    pval_attributes = List.filter otherAttrsPure pval_attributes;
+                  };
+            }
+          in
+          [propsRecordType; newStructure])
       | _ ->
         raise
           (Invalid_argument
@@ -2073,11 +2075,11 @@ module V4 = struct
       let emptyLoc = Location.in_file fileName in
       let mapBinding binding =
         if hasAttrOnBinding binding then
-          if !hasReactComponent then
+          if config.hasReactComponent then
             Location.raise_errorf ~loc:pstr_loc
               "Each module should have one react component at most"
           else (
-            hasReactComponent := true;
+            config.hasReactComponent <- true;
             let bindingLoc = binding.pvb_loc in
             let bindingPatLoc = binding.pvb_pat.ppat_loc in
             let binding =
@@ -2453,7 +2455,7 @@ module V4 = struct
     | _ -> [item]
     [@@raises Invalid_argument]
 
-  let transformSignatureItem ~hasReactComponent _mapper item =
+  let transformSignatureItem ~config _mapper item =
     match item with
     | {
         psig_loc;
@@ -2463,10 +2465,10 @@ module V4 = struct
       | [] -> [item]
       | [_] ->
         (* If there is another @react.component, throw error *)
-        if !hasReactComponent then
+        if config.hasReactComponent then
           Location.raise_errorf ~loc:psig_loc
             "Each module should have one react component at most"
-        else hasReactComponent := true;
+        else config.hasReactComponent <- true;
         let hasForwardRef = ref false in
         let rec getPropTypes types ({ptyp_loc; ptyp_desc} as fullType) =
           match ptyp_desc with
@@ -2649,9 +2651,14 @@ module V4 = struct
     [@@raises Invalid_argument]
 
   let module_binding ~config mapper module_binding =
+    let hadReactComponent = config.hasReactComponent in
+    (* set default false in each module *)
+    config.hasReactComponent <- false;
     config.nestedModules <- module_binding.pmb_name.txt :: config.nestedModules;
     let mapped = default_mapper.module_binding mapper module_binding in
     config.nestedModules <- List.tl config.nestedModules;
+    (* restore it *)
+    config.hasReactComponent <- hadReactComponent;
     mapped
     [@@raises Failure]
 
@@ -2660,6 +2667,7 @@ module V4 = struct
     let expr = expr ~config in
     let module_binding = module_binding ~config in
     let transformStructureItem = transformStructureItem ~config in
+    let transformSignatureItem = transformSignatureItem ~config in
     (expr, module_binding, transformSignatureItem, transformStructureItem)
     [@@raises Invalid_argument, Failure]
 end
@@ -2699,7 +2707,6 @@ let getMapper ~config =
   in
   let signature mapper items =
     let oldConfig = saveConfig () in
-    let hasReactComponent = ref false in
     let result =
       List.map
         (fun item ->
@@ -2708,8 +2715,7 @@ let getMapper ~config =
           | _ -> ());
           let item = default_mapper.signature_item mapper item in
           if config.version = 3 then transformSignatureItem3 mapper item
-          else if config.version = 4 then
-            transformSignatureItem4 ~hasReactComponent mapper item
+          else if config.version = 4 then transformSignatureItem4 mapper item
           else [item])
         items
       |> List.flatten
@@ -2720,7 +2726,6 @@ let getMapper ~config =
   in
   let structure mapper items =
     let oldConfig = saveConfig () in
-    let hasReactComponent = ref false in
     let result =
       List.map
         (fun item ->
@@ -2729,8 +2734,7 @@ let getMapper ~config =
           | _ -> ());
           let item = default_mapper.structure_item mapper item in
           if config.version = 3 then transformStructureItem3 mapper item
-          else if config.version = 4 then
-            transformStructureItem4 ~hasReactComponent mapper item
+          else if config.version = 4 then transformStructureItem4 mapper item
           else [item])
         items
       |> List.flatten
@@ -2750,6 +2754,7 @@ let rewrite_implementation ~jsxVersion ~jsxModule ~jsxMode
       module_ = jsxModule;
       mode = jsxMode;
       nestedModules = [];
+      hasReactComponent = false;
     }
   in
   let mapper = getMapper ~config in
@@ -2764,6 +2769,7 @@ let rewrite_signature ~jsxVersion ~jsxModule ~jsxMode
       module_ = jsxModule;
       mode = jsxMode;
       nestedModules = [];
+      hasReactComponent = false;
     }
   in
   let mapper = getMapper ~config in
