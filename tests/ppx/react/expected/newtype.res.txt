@@ -1,40 +1,50 @@
 @@jsxConfig({version: 3})
-@obj
-external makeProps: (
-  ~a: '\"type-a",
-  ~b: array<option<[#Foo('\"type-a")]>>,
-  ~c: 'a,
-  ~key: string=?,
-  unit,
-) => {"a": '\"type-a", "b": array<option<[#Foo('\"type-a")]>>, "c": 'a} = ""
 
-@react.component
-let make = (type a, ~a: a, ~b: array<option<[#Foo(a)]>>, ~c: 'a, _) =>
-  ReactDOMRe.createDOMElementVariadic("div", [])
-let make = {
-  let \"Newtype" = (\"Props": {"a": '\"type-a", "b": array<option<[#Foo('\"type-a")]>>, "c": 'a}) =>
-    make(~c=\"Props"["c"], ~b=\"Props"["b"], ~a=\"Props"["a"])
-  \"Newtype"
+module V3 = {
+  @obj
+  external makeProps: (
+    ~a: '\"type-a",
+    ~b: array<option<[#Foo('\"type-a")]>>,
+    ~c: 'a,
+    ~key: string=?,
+    unit,
+  ) => {"a": '\"type-a", "b": array<option<[#Foo('\"type-a")]>>, "c": 'a} = ""
+
+  @react.component
+  let make = (type a, ~a: a, ~b: array<option<[#Foo(a)]>>, ~c: 'a, _) =>
+    ReactDOMRe.createDOMElementVariadic("div", [])
+  let make = {
+    let \"Newtype$V3" = (
+      \"Props": {"a": '\"type-a", "b": array<option<[#Foo('\"type-a")]>>, "c": 'a},
+    ) => make(~c=\"Props"["c"], ~b=\"Props"["b"], ~a=\"Props"["a"])
+    \"Newtype$V3"
+  }
 }
 
 @@jsxConfig({version: 4, mode: "classic"})
-type props<'a, 'b, 'c> = {key?: string, a: 'a, b: 'b, c: 'c}
 
-@react.component
-let make = ({a, b, c, _}: props<'\"type-a", array<option<[#Foo('\"type-a")]>>, 'a>) =>
-  ReactDOMRe.createDOMElementVariadic("div", [])
-let make = {
-  let \"Newtype" = (props: props<_>) => make(props)
-  \"Newtype"
+module V4C = {
+  type props<'a, 'b, 'c> = {key?: string, a: 'a, b: 'b, c: 'c}
+
+  @react.component
+  let make = ({a, b, c, _}: props<'\"type-a", array<option<[#Foo('\"type-a")]>>, 'a>) =>
+    ReactDOMRe.createDOMElementVariadic("div", [])
+  let make = {
+    let \"Newtype$V4C" = (props: props<_>) => make(props)
+    \"Newtype$V4C"
+  }
 }
 
 @@jsxConfig({version: 4, mode: "automatic"})
-type props<'a, 'b, 'c> = {key?: string, a: 'a, b: 'b, c: 'c}
 
-@react.component
-let make = ({a, b, c, _}: props<'\"type-a", array<option<[#Foo('\"type-a")]>>, 'a>) =>
-  ReactDOM.jsx("div", {key: ?None})
-let make = {
-  let \"Newtype" = (props: props<_>) => make(props)
-  \"Newtype"
+module V4A = {
+  type props<'a, 'b, 'c> = {key?: string, a: 'a, b: 'b, c: 'c}
+
+  @react.component
+  let make = ({a, b, c, _}: props<'\"type-a", array<option<[#Foo('\"type-a")]>>, 'a>) =>
+    ReactDOM.jsx("div", {key: ?None})
+  let make = {
+    let \"Newtype$V4A" = (props: props<_>) => make(props)
+    \"Newtype$V4A"
+  }
 }

@@ -1,14 +1,20 @@
 @@jsxConfig({version: 3})
 
-@react.component
-let make = (type a, ~a: a, ~b: array<option<[#Foo(a)]>>, ~c: 'a, _) => <div />
+module V3 = {
+  @react.component
+  let make = (type a, ~a: a, ~b: array<option<[#Foo(a)]>>, ~c: 'a, _) => <div />
+}
 
 @@jsxConfig({version: 4, mode: "classic"})
 
-@react.component
-let make = (type a, ~a: a, ~b: array<option<[#Foo(a)]>>, ~c: 'a, _) => <div />
+module V4C = {
+  @react.component
+  let make = (type a, ~a: a, ~b: array<option<[#Foo(a)]>>, ~c: 'a, _) => <div />
+}
 
 @@jsxConfig({version: 4, mode: "automatic"})
 
-@react.component
-let make = (type a, ~a: a, ~b: array<option<[#Foo(a)]>>, ~c: 'a, _) => <div />
+module V4A = {
+  @react.component
+  let make = (type a, ~a: a, ~b: array<option<[#Foo(a)]>>, ~c: 'a, _) => <div />
+}

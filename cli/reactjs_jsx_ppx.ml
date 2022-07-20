@@ -70,11 +70,14 @@ let isJsxConfigAttr ((loc, _) : attribute) = loc.txt = "jsxConfig"
 let processConfigAttribute attribute config =
   if isJsxConfigAttr attribute then updateConfig config (snd attribute)
 
-module V3 = struct
-  let rec find_opt p = function
-    | [] -> None
-    | x :: l -> if p x then Some x else find_opt p l
+(* Helper method to look up the [@react.component] attribute *)
+let hasAttr (loc, _) = loc.txt = "react.component"
 
+(* Iterate over the attributes and try to find the [@react.component] attribute *)
+let hasAttrOnBinding {pvb_attributes} =
+  List.find_opt hasAttr pvb_attributes <> None
+
+module V3 = struct
   let nolabel = Nolabel
 
   let labelled str = Labelled str
@@ -192,15 +195,8 @@ module V3 = struct
 
   let merlinFocus = ({loc = Location.none; txt = "merlin.focus"}, PStr [])
 
-  (* Helper method to look up the [@react.component] attribute *)
-  let hasAttr (loc, _) = loc.txt = "react.component"
-
   (* Helper method to filter out any attribute that isn't [@react.component] *)
   let otherAttrsPure (loc, _) = loc.txt <> "react.component"
-
-  (* Iterate over the attributes and try to find the [@react.component] attribute *)
-  let hasAttrOnBinding {pvb_attributes} =
-    find_opt hasAttr pvb_attributes <> None
 
   (* Finds the name of the variable the binding is assigned to, otherwise raises Invalid_argument *)
   let rec getFnName binding =
@@ -1332,10 +1328,6 @@ module V3 = struct
 end
 
 module V4 = struct
-  let rec find_opt p = function
-    | [] -> None
-    | x :: l -> if p x then Some x else find_opt p l
-
   let nolabel = Nolabel
 
   let labelled str = Labelled str
@@ -1463,15 +1455,8 @@ module V4 = struct
 
   let merlinFocus = ({loc = Location.none; txt = "merlin.focus"}, PStr [])
 
-  (* Helper method to look up the [@react.component] attribute *)
-  let hasAttr (loc, _) = loc.txt = "react.component"
-
   (* Helper method to filter out any attribute that isn't [@react.component] *)
   let otherAttrsPure (loc, _) = loc.txt <> "react.component"
-
-  (* Iterate over the attributes and try to find the [@react.component] attribute *)
-  let hasAttrOnBinding {pvb_attributes} =
-    find_opt hasAttr pvb_attributes <> None
 
   (* Finds the name of the variable the binding is assigned to, otherwise raises Invalid_argument *)
   let rec getFnName binding =
@@ -2019,7 +2004,7 @@ module V4 = struct
     | name when isOptional name -> (true, getLabel name, [], type_) :: types
     | _ -> types
 
-  let transformStructureItem ~config mapper item =
+  let transformStructureItem ~hasReactComponent ~config mapper item =
     match item with
     (* external *)
     | {
@@ -2030,6 +2015,11 @@ module V4 = struct
       match List.filter hasAttr pval_attributes with
       | [] -> [item]
       | [_] ->
+        (* If there is another @react.component, throw error *)
+        if !hasReactComponent then
+          Location.raise_errorf ~loc:pstr_loc
+            "Each module should have one react component at most"
+        else hasReactComponent := true;
         let rec getPropTypes types ({ptyp_loc; ptyp_desc} as fullType) =
           match ptyp_desc with
           | Ptyp_arrow (name, type_, ({ptyp_desc = Ptyp_arrow _} as rest))
@@ -2083,339 +2073,354 @@ module V4 = struct
       let emptyLoc = Location.in_file fileName in
       let mapBinding binding =
         if hasAttrOnBinding binding then
-          let bindingLoc = binding.pvb_loc in
-          let bindingPatLoc = binding.pvb_pat.ppat_loc in
-          let binding =
-            {
-              binding with
-              pvb_pat = {binding.pvb_pat with ppat_loc = emptyLoc};
-              pvb_loc = emptyLoc;
-            }
-          in
-          let fnName = getFnName binding.pvb_pat in
-          let internalFnName = fnName ^ "$Internal" in
-          let fullModuleName =
-            makeModuleName fileName config.nestedModules fnName
-          in
-          let modifiedBindingOld binding =
-            let expression = binding.pvb_expr in
-            (* TODO: there is a long-tail of unsupported features inside of blocks - Pexp_letmodule , Pexp_letexception , Pexp_ifthenelse *)
-            let rec spelunkForFunExpression expression =
-              match expression with
-              (* let make = (~prop) => ... *)
-              | {pexp_desc = Pexp_fun _} | {pexp_desc = Pexp_newtype _} ->
-                expression
-              (* let make = {let foo = bar in (~prop) => ...} *)
-              | {pexp_desc = Pexp_let (_recursive, _vbs, returnExpression)} ->
-                (* here's where we spelunk! *)
-                spelunkForFunExpression returnExpression
-              (* let make = React.forwardRef((~prop) => ...) *)
-              | {
-               pexp_desc =
-                 Pexp_apply
-                   (_wrapperExpression, [(Nolabel, innerFunctionExpression)]);
-              } ->
-                spelunkForFunExpression innerFunctionExpression
-              | {
-               pexp_desc =
-                 Pexp_sequence (_wrapperExpression, innerFunctionExpression);
-              } ->
-                spelunkForFunExpression innerFunctionExpression
-              | {pexp_desc = Pexp_constraint (innerFunctionExpression, _typ)} ->
-                spelunkForFunExpression innerFunctionExpression
-              | _ ->
-                raise
-                  (Invalid_argument
-                     "react.component calls can only be on function \
-                      definitions or component wrappers (forwardRef, memo).")
-              [@@raises Invalid_argument]
+          if !hasReactComponent then
+            Location.raise_errorf ~loc:pstr_loc
+              "Each module should have one react component at most"
+          else (
+            hasReactComponent := true;
+            let bindingLoc = binding.pvb_loc in
+            let bindingPatLoc = binding.pvb_pat.ppat_loc in
+            let binding =
+              {
+                binding with
+                pvb_pat = {binding.pvb_pat with ppat_loc = emptyLoc};
+                pvb_loc = emptyLoc;
+              }
             in
-            spelunkForFunExpression expression
-          in
-          let modifiedBinding binding =
-            let hasApplication = ref false in
-            let wrapExpressionWithBinding expressionFn expression =
-              Vb.mk ~loc:bindingLoc
-                ~attrs:(List.filter otherAttrsPure binding.pvb_attributes)
-                (Pat.var ~loc:bindingPatLoc {loc = bindingPatLoc; txt = fnName})
-                (expressionFn expression)
+            let fnName = getFnName binding.pvb_pat in
+            let internalFnName = fnName ^ "$Internal" in
+            let fullModuleName =
+              makeModuleName fileName config.nestedModules fnName
             in
-            let expression = binding.pvb_expr in
-            (* TODO: there is a long-tail of unsupported features inside of blocks - Pexp_letmodule , Pexp_letexception , Pexp_ifthenelse *)
-            let rec spelunkForFunExpression expression =
-              match expression with
-              (* let make = (~prop) => ... with no final unit *)
-              | {
-               pexp_desc =
-                 Pexp_fun
-                   ( ((Labelled _ | Optional _) as label),
-                     default,
-                     pattern,
-                     ({pexp_desc = Pexp_fun _} as internalExpression) );
-              } ->
-                let wrap, hasForwardRef, exp =
-                  spelunkForFunExpression internalExpression
-                in
-                ( wrap,
-                  hasForwardRef,
-                  {
-                    expression with
-                    pexp_desc = Pexp_fun (label, default, pattern, exp);
-                  } )
-              (* let make = (()) => ... *)
-              (* let make = (_) => ... *)
-              | {
-               pexp_desc =
-                 Pexp_fun
-                   ( Nolabel,
-                     _default,
-                     {
-                       ppat_desc =
-                         Ppat_construct ({txt = Lident "()"}, _) | Ppat_any;
-                     },
-                     _internalExpression );
-              } ->
-                ((fun a -> a), false, expression)
-              (* let make = (~prop) => ... *)
-              | {
-               pexp_desc =
-                 Pexp_fun
-                   ( (Labelled _ | Optional _),
-                     _default,
-                     _pattern,
-                     _internalExpression );
-              } ->
-                ((fun a -> a), false, expression)
-              (* let make = (prop) => ... *)
-              | {
-               pexp_desc =
-                 Pexp_fun (_nolabel, _default, pattern, _internalExpression);
-              } ->
-                if !hasApplication then ((fun a -> a), false, expression)
-                else
-                  Location.raise_errorf ~loc:pattern.ppat_loc
-                    "React: props need to be labelled arguments.\n\
-                    \  If you are working with refs be sure to wrap with \
-                     React.forwardRef.\n\
-                    \  If your component doesn't have any props use () or _ \
-                     instead of a name."
-              (* let make = {let foo = bar in (~prop) => ...} *)
-              | {pexp_desc = Pexp_let (recursive, vbs, internalExpression)} ->
-                (* here's where we spelunk! *)
-                let wrap, hasForwardRef, exp =
-                  spelunkForFunExpression internalExpression
-                in
-                ( wrap,
-                  hasForwardRef,
-                  {expression with pexp_desc = Pexp_let (recursive, vbs, exp)}
-                )
-              (* let make = React.forwardRef((~prop) => ...) *)
-              | {
-               pexp_desc =
-                 Pexp_apply (wrapperExpression, [(Nolabel, internalExpression)]);
-              } ->
-                let () = hasApplication := true in
-                let _, _, exp = spelunkForFunExpression internalExpression in
-                let hasForwardRef = isForwardRef wrapperExpression in
-                ( (fun exp -> Exp.apply wrapperExpression [(nolabel, exp)]),
-                  hasForwardRef,
-                  exp )
-              | {
-               pexp_desc = Pexp_sequence (wrapperExpression, internalExpression);
-              } ->
-                let wrap, hasForwardRef, exp =
-                  spelunkForFunExpression internalExpression
-                in
-                ( wrap,
-                  hasForwardRef,
-                  {
-                    expression with
-                    pexp_desc = Pexp_sequence (wrapperExpression, exp);
-                  } )
-              | e -> ((fun a -> a), false, e)
-            in
-            let wrapExpression, hasForwardRef, expression =
+            let modifiedBindingOld binding =
+              let expression = binding.pvb_expr in
+              (* TODO: there is a long-tail of unsupported features inside of blocks - Pexp_letmodule , Pexp_letexception , Pexp_ifthenelse *)
+              let rec spelunkForFunExpression expression =
+                match expression with
+                (* let make = (~prop) => ... *)
+                | {pexp_desc = Pexp_fun _} | {pexp_desc = Pexp_newtype _} ->
+                  expression
+                (* let make = {let foo = bar in (~prop) => ...} *)
+                | {pexp_desc = Pexp_let (_recursive, _vbs, returnExpression)} ->
+                  (* here's where we spelunk! *)
+                  spelunkForFunExpression returnExpression
+                (* let make = React.forwardRef((~prop) => ...) *)
+                | {
+                 pexp_desc =
+                   Pexp_apply
+                     (_wrapperExpression, [(Nolabel, innerFunctionExpression)]);
+                } ->
+                  spelunkForFunExpression innerFunctionExpression
+                | {
+                 pexp_desc =
+                   Pexp_sequence (_wrapperExpression, innerFunctionExpression);
+                } ->
+                  spelunkForFunExpression innerFunctionExpression
+                | {pexp_desc = Pexp_constraint (innerFunctionExpression, _typ)}
+                  ->
+                  spelunkForFunExpression innerFunctionExpression
+                | _ ->
+                  raise
+                    (Invalid_argument
+                       "react.component calls can only be on function \
+                        definitions or component wrappers (forwardRef, memo).")
+                [@@raises Invalid_argument]
+              in
               spelunkForFunExpression expression
             in
-            (wrapExpressionWithBinding wrapExpression, hasForwardRef, expression)
-          in
-          let bindingWrapper, hasForwardRef, expression =
-            modifiedBinding binding
-          in
-          (* do stuff here! *)
-          let namedArgList, newtypes, typeConstraints =
-            recursivelyTransformNamedArgsForMake mapper
-              (modifiedBindingOld binding)
-              [] [] None
-          in
-          let namedTypeList =
-            List.fold_left
-              (argToType ~newtypes ~typeConstraints)
-              [] namedArgList
-          in
-          let namedArgWithDefaultValueList =
-            List.filter_map argWithDefaultValue namedArgList
-          in
-          let vbMatch (label, default) =
-            Vb.mk
-              (Pat.var (Location.mknoloc label))
-              (Exp.match_
-                 (Exp.ident {txt = Lident label; loc = Location.none})
-                 [
-                   Exp.case
-                     (Pat.construct
-                        (Location.mknoloc @@ Lident "Some")
-                        (Some (Pat.var (Location.mknoloc label))))
-                     (Exp.ident (Location.mknoloc @@ Lident label));
-                   Exp.case
-                     (Pat.construct (Location.mknoloc @@ Lident "None") None)
-                     default;
-                 ])
-          in
-          let vbMatchList = List.map vbMatch namedArgWithDefaultValueList in
-          (* type props = { ... } *)
-          let propsRecordType =
-            makePropsRecordType "props" emptyLoc
-              ([(true, "key", [], keyType emptyLoc)]
-              @ (if hasForwardRef then
-                 [(true, "ref", [], refType Location.none)]
-                else [])
-              @ namedTypeList)
-          in
-          let innerExpression =
-            Exp.apply
-              (Exp.ident (Location.mknoloc @@ Lident "make"))
-              ([(Nolabel, Exp.ident (Location.mknoloc @@ Lident "props"))]
-              @
-              match hasForwardRef with
-              | true ->
-                [(Nolabel, Exp.ident (Location.mknoloc @@ Lident "ref"))]
-              | false -> [])
-          in
-          let fullExpression =
-            (* React component name should start with uppercase letter *)
-            (* let make = { let \"App" = props => make(props); \"App" } *)
-            (* let make = React.forwardRef({
-                 let \"App" = (props, ref) => make({...props, ref: @optional (Js.Nullabel.toOption(ref))})
-               })*)
-            Exp.fun_ nolabel None
-              (match namedTypeList with
-              | [] -> Pat.var @@ Location.mknoloc "props"
-              | _ ->
-                Pat.constraint_
-                  (Pat.var @@ Location.mknoloc "props")
-                  (Typ.constr (Location.mknoloc @@ Lident "props") [Typ.any ()]))
-              (if hasForwardRef then
-               Exp.fun_ nolabel None
-                 (Pat.var @@ Location.mknoloc "ref")
-                 innerExpression
-              else innerExpression)
-          in
-          let fullExpression =
-            match fullModuleName with
-            | "" -> fullExpression
-            | txt ->
-              Exp.let_ Nonrecursive
-                [
-                  Vb.mk ~loc:emptyLoc
-                    (Pat.var ~loc:emptyLoc {loc = emptyLoc; txt})
-                    fullExpression;
-                ]
-                (Exp.ident ~loc:emptyLoc {loc = emptyLoc; txt = Lident txt})
-          in
-          let rec returnedExpression patternsWithLabel patternsWithNolabel
-              ({pexp_desc} as expr) =
-            match pexp_desc with
-            | Pexp_newtype (_, expr) ->
-              returnedExpression patternsWithLabel patternsWithNolabel expr
-            | Pexp_constraint (expr, _) ->
-              returnedExpression patternsWithLabel patternsWithNolabel expr
-            | Pexp_fun
-                ( _arg_label,
-                  _default,
-                  {
-                    ppat_desc =
-                      Ppat_construct ({txt = Lident "()"}, _) | Ppat_any;
-                  },
-                  expr ) ->
-              (patternsWithLabel, patternsWithNolabel, expr)
-            | Pexp_fun (arg_label, _default, {ppat_loc; ppat_desc}, expr) -> (
-              if isLabelled arg_label || isOptional arg_label then
-                returnedExpression
-                  (( {loc = ppat_loc; txt = Lident (getLabel arg_label)},
-                     Pat.var
-                       ~attrs:
-                         (if isOptional arg_label then optionalAttr else [])
-                       {txt = getLabel arg_label; loc = ppat_loc} )
-                  :: patternsWithLabel)
-                  patternsWithNolabel expr
-              else
-                (* Special case of nolabel arg "ref" in forwardRef fn *)
-                (* let make = React.forwardRef(ref => body) *)
-                match ppat_desc with
-                | Ppat_var {txt} ->
-                  returnedExpression patternsWithLabel
-                    (( {loc = ppat_loc; txt = Lident txt},
-                       Pat.var ~attrs:optionalAttr {txt; loc = ppat_loc} )
-                    :: patternsWithNolabel)
-                    expr
+            let modifiedBinding binding =
+              let hasApplication = ref false in
+              let wrapExpressionWithBinding expressionFn expression =
+                Vb.mk ~loc:bindingLoc
+                  ~attrs:(List.filter otherAttrsPure binding.pvb_attributes)
+                  (Pat.var ~loc:bindingPatLoc
+                     {loc = bindingPatLoc; txt = fnName})
+                  (expressionFn expression)
+              in
+              let expression = binding.pvb_expr in
+              (* TODO: there is a long-tail of unsupported features inside of blocks - Pexp_letmodule , Pexp_letexception , Pexp_ifthenelse *)
+              let rec spelunkForFunExpression expression =
+                match expression with
+                (* let make = (~prop) => ... with no final unit *)
+                | {
+                 pexp_desc =
+                   Pexp_fun
+                     ( ((Labelled _ | Optional _) as label),
+                       default,
+                       pattern,
+                       ({pexp_desc = Pexp_fun _} as internalExpression) );
+                } ->
+                  let wrap, hasForwardRef, exp =
+                    spelunkForFunExpression internalExpression
+                  in
+                  ( wrap,
+                    hasForwardRef,
+                    {
+                      expression with
+                      pexp_desc = Pexp_fun (label, default, pattern, exp);
+                    } )
+                (* let make = (()) => ... *)
+                (* let make = (_) => ... *)
+                | {
+                 pexp_desc =
+                   Pexp_fun
+                     ( Nolabel,
+                       _default,
+                       {
+                         ppat_desc =
+                           Ppat_construct ({txt = Lident "()"}, _) | Ppat_any;
+                       },
+                       _internalExpression );
+                } ->
+                  ((fun a -> a), false, expression)
+                (* let make = (~prop) => ... *)
+                | {
+                 pexp_desc =
+                   Pexp_fun
+                     ( (Labelled _ | Optional _),
+                       _default,
+                       _pattern,
+                       _internalExpression );
+                } ->
+                  ((fun a -> a), false, expression)
+                (* let make = (prop) => ... *)
+                | {
+                 pexp_desc =
+                   Pexp_fun (_nolabel, _default, pattern, _internalExpression);
+                } ->
+                  if !hasApplication then ((fun a -> a), false, expression)
+                  else
+                    Location.raise_errorf ~loc:pattern.ppat_loc
+                      "React: props need to be labelled arguments.\n\
+                      \  If you are working with refs be sure to wrap with \
+                       React.forwardRef.\n\
+                      \  If your component doesn't have any props use () or _ \
+                       instead of a name."
+                (* let make = {let foo = bar in (~prop) => ...} *)
+                | {pexp_desc = Pexp_let (recursive, vbs, internalExpression)} ->
+                  (* here's where we spelunk! *)
+                  let wrap, hasForwardRef, exp =
+                    spelunkForFunExpression internalExpression
+                  in
+                  ( wrap,
+                    hasForwardRef,
+                    {expression with pexp_desc = Pexp_let (recursive, vbs, exp)}
+                  )
+                (* let make = React.forwardRef((~prop) => ...) *)
+                | {
+                 pexp_desc =
+                   Pexp_apply
+                     (wrapperExpression, [(Nolabel, internalExpression)]);
+                } ->
+                  let () = hasApplication := true in
+                  let _, _, exp = spelunkForFunExpression internalExpression in
+                  let hasForwardRef = isForwardRef wrapperExpression in
+                  ( (fun exp -> Exp.apply wrapperExpression [(nolabel, exp)]),
+                    hasForwardRef,
+                    exp )
+                | {
+                 pexp_desc =
+                   Pexp_sequence (wrapperExpression, internalExpression);
+                } ->
+                  let wrap, hasForwardRef, exp =
+                    spelunkForFunExpression internalExpression
+                  in
+                  ( wrap,
+                    hasForwardRef,
+                    {
+                      expression with
+                      pexp_desc = Pexp_sequence (wrapperExpression, exp);
+                    } )
+                | e -> ((fun a -> a), false, e)
+              in
+              let wrapExpression, hasForwardRef, expression =
+                spelunkForFunExpression expression
+              in
+              ( wrapExpressionWithBinding wrapExpression,
+                hasForwardRef,
+                expression )
+            in
+            let bindingWrapper, hasForwardRef, expression =
+              modifiedBinding binding
+            in
+            (* do stuff here! *)
+            let namedArgList, newtypes, typeConstraints =
+              recursivelyTransformNamedArgsForMake mapper
+                (modifiedBindingOld binding)
+                [] [] None
+            in
+            let namedTypeList =
+              List.fold_left
+                (argToType ~newtypes ~typeConstraints)
+                [] namedArgList
+            in
+            let namedArgWithDefaultValueList =
+              List.filter_map argWithDefaultValue namedArgList
+            in
+            let vbMatch (label, default) =
+              Vb.mk
+                (Pat.var (Location.mknoloc label))
+                (Exp.match_
+                   (Exp.ident {txt = Lident label; loc = Location.none})
+                   [
+                     Exp.case
+                       (Pat.construct
+                          (Location.mknoloc @@ Lident "Some")
+                          (Some (Pat.var (Location.mknoloc label))))
+                       (Exp.ident (Location.mknoloc @@ Lident label));
+                     Exp.case
+                       (Pat.construct (Location.mknoloc @@ Lident "None") None)
+                       default;
+                   ])
+            in
+            let vbMatchList = List.map vbMatch namedArgWithDefaultValueList in
+            (* type props = { ... } *)
+            let propsRecordType =
+              makePropsRecordType "props" emptyLoc
+                ([(true, "key", [], keyType emptyLoc)]
+                @ (if hasForwardRef then
+                   [(true, "ref", [], refType Location.none)]
+                  else [])
+                @ namedTypeList)
+            in
+            let innerExpression =
+              Exp.apply
+                (Exp.ident (Location.mknoloc @@ Lident "make"))
+                ([(Nolabel, Exp.ident (Location.mknoloc @@ Lident "props"))]
+                @
+                match hasForwardRef with
+                | true ->
+                  [(Nolabel, Exp.ident (Location.mknoloc @@ Lident "ref"))]
+                | false -> [])
+            in
+            let fullExpression =
+              (* React component name should start with uppercase letter *)
+              (* let make = { let \"App" = props => make(props); \"App" } *)
+              (* let make = React.forwardRef({
+                   let \"App" = (props, ref) => make({...props, ref: @optional (Js.Nullabel.toOption(ref))})
+                 })*)
+              Exp.fun_ nolabel None
+                (match namedTypeList with
+                | [] -> Pat.var @@ Location.mknoloc "props"
                 | _ ->
-                  returnedExpression patternsWithLabel patternsWithNolabel expr)
-            | _ -> (patternsWithLabel, patternsWithNolabel, expr)
-          in
-          let patternsWithLabel, patternsWithNolabel, expression =
-            returnedExpression [] [] expression
-          in
-          let pattern =
-            match patternsWithLabel with
-            | [] -> Pat.any ()
-            | _ -> Pat.record (List.rev patternsWithLabel) Open
-          in
-          (* add pattern matching for optional prop value *)
-          let expression =
-            if List.length vbMatchList = 0 then expression
-            else Exp.let_ Nonrecursive vbMatchList expression
-          in
-          let expression =
-            List.fold_left
-              (fun expr (_, pattern) -> Exp.fun_ Nolabel None pattern expr)
-              expression patternsWithNolabel
-          in
-          let expression =
-            Exp.fun_ Nolabel None
-              (Pat.constraint_ pattern
-                 (Typ.constr ~loc:emptyLoc
-                    {txt = Lident "props"; loc = emptyLoc}
-                    (makePropsTypeParams ~stripExplicitOption:true namedTypeList)))
-              expression
-          in
-          (* let make = ({id, name, ...}: props<'id, 'name, ...>) => { ... } *)
-          let bindings, newBinding =
-            match recFlag with
-            | Recursive ->
-              ( [
-                  bindingWrapper
-                    (Exp.let_ ~loc:emptyLoc Recursive
-                       [
-                         makeNewBinding binding expression internalFnName;
-                         Vb.mk
-                           (Pat.var {loc = emptyLoc; txt = fnName})
-                           fullExpression;
-                       ]
-                       (Exp.ident {loc = emptyLoc; txt = Lident fnName}));
-                ],
-                None )
-            | Nonrecursive ->
-              ( [
-                  {
-                    binding with
-                    pvb_expr = expression;
-                    pvb_pat = Pat.var {txt = fnName; loc = Location.none};
-                  };
-                ],
-                Some (bindingWrapper fullExpression) )
-          in
-          (Some propsRecordType, bindings, newBinding)
+                  Pat.constraint_
+                    (Pat.var @@ Location.mknoloc "props")
+                    (Typ.constr
+                       (Location.mknoloc @@ Lident "props")
+                       [Typ.any ()]))
+                (if hasForwardRef then
+                 Exp.fun_ nolabel None
+                   (Pat.var @@ Location.mknoloc "ref")
+                   innerExpression
+                else innerExpression)
+            in
+            let fullExpression =
+              match fullModuleName with
+              | "" -> fullExpression
+              | txt ->
+                Exp.let_ Nonrecursive
+                  [
+                    Vb.mk ~loc:emptyLoc
+                      (Pat.var ~loc:emptyLoc {loc = emptyLoc; txt})
+                      fullExpression;
+                  ]
+                  (Exp.ident ~loc:emptyLoc {loc = emptyLoc; txt = Lident txt})
+            in
+            let rec returnedExpression patternsWithLabel patternsWithNolabel
+                ({pexp_desc} as expr) =
+              match pexp_desc with
+              | Pexp_newtype (_, expr) ->
+                returnedExpression patternsWithLabel patternsWithNolabel expr
+              | Pexp_constraint (expr, _) ->
+                returnedExpression patternsWithLabel patternsWithNolabel expr
+              | Pexp_fun
+                  ( _arg_label,
+                    _default,
+                    {
+                      ppat_desc =
+                        Ppat_construct ({txt = Lident "()"}, _) | Ppat_any;
+                    },
+                    expr ) ->
+                (patternsWithLabel, patternsWithNolabel, expr)
+              | Pexp_fun (arg_label, _default, {ppat_loc; ppat_desc}, expr) -> (
+                if isLabelled arg_label || isOptional arg_label then
+                  returnedExpression
+                    (( {loc = ppat_loc; txt = Lident (getLabel arg_label)},
+                       Pat.var
+                         ~attrs:
+                           (if isOptional arg_label then optionalAttr else [])
+                         {txt = getLabel arg_label; loc = ppat_loc} )
+                    :: patternsWithLabel)
+                    patternsWithNolabel expr
+                else
+                  (* Special case of nolabel arg "ref" in forwardRef fn *)
+                  (* let make = React.forwardRef(ref => body) *)
+                  match ppat_desc with
+                  | Ppat_var {txt} ->
+                    returnedExpression patternsWithLabel
+                      (( {loc = ppat_loc; txt = Lident txt},
+                         Pat.var ~attrs:optionalAttr {txt; loc = ppat_loc} )
+                      :: patternsWithNolabel)
+                      expr
+                  | _ ->
+                    returnedExpression patternsWithLabel patternsWithNolabel
+                      expr)
+              | _ -> (patternsWithLabel, patternsWithNolabel, expr)
+            in
+            let patternsWithLabel, patternsWithNolabel, expression =
+              returnedExpression [] [] expression
+            in
+            let pattern =
+              match patternsWithLabel with
+              | [] -> Pat.any ()
+              | _ -> Pat.record (List.rev patternsWithLabel) Open
+            in
+            (* add pattern matching for optional prop value *)
+            let expression =
+              if List.length vbMatchList = 0 then expression
+              else Exp.let_ Nonrecursive vbMatchList expression
+            in
+            let expression =
+              List.fold_left
+                (fun expr (_, pattern) -> Exp.fun_ Nolabel None pattern expr)
+                expression patternsWithNolabel
+            in
+            let expression =
+              Exp.fun_ Nolabel None
+                (Pat.constraint_ pattern
+                   (Typ.constr ~loc:emptyLoc
+                      {txt = Lident "props"; loc = emptyLoc}
+                      (makePropsTypeParams ~stripExplicitOption:true
+                         namedTypeList)))
+                expression
+            in
+            (* let make = ({id, name, ...}: props<'id, 'name, ...>) => { ... } *)
+            let bindings, newBinding =
+              match recFlag with
+              | Recursive ->
+                ( [
+                    bindingWrapper
+                      (Exp.let_ ~loc:emptyLoc Recursive
+                         [
+                           makeNewBinding binding expression internalFnName;
+                           Vb.mk
+                             (Pat.var {loc = emptyLoc; txt = fnName})
+                             fullExpression;
+                         ]
+                         (Exp.ident {loc = emptyLoc; txt = Lident fnName}));
+                  ],
+                  None )
+              | Nonrecursive ->
+                ( [
+                    {
+                      binding with
+                      pvb_expr = expression;
+                      pvb_pat = Pat.var {txt = fnName; loc = Location.none};
+                    };
+                  ],
+                  Some (bindingWrapper fullExpression) )
+            in
+            (Some propsRecordType, bindings, newBinding))
         else (None, [binding], None)
         [@@raises Invalid_argument]
       in
@@ -2448,7 +2453,7 @@ module V4 = struct
     | _ -> [item]
     [@@raises Invalid_argument]
 
-  let transformSignatureItem _mapper item =
+  let transformSignatureItem ~hasReactComponent _mapper item =
     match item with
     | {
         psig_loc;
@@ -2457,6 +2462,9 @@ module V4 = struct
       match List.filter hasAttr pval_attributes with
       | [] -> [item]
       | [_] ->
+        (* If there is another @react.component, throw error *)
+        if !hasReactComponent then raise (Invalid_argument "2")
+        else hasReactComponent := true;
         let hasForwardRef = ref false in
         let rec getPropTypes types ({ptyp_loc; ptyp_desc} as fullType) =
           match ptyp_desc with
@@ -2689,6 +2697,7 @@ let getMapper ~config =
   in
   let signature mapper items =
     let oldConfig = saveConfig () in
+    let hasReactComponent = ref false in
     let result =
       List.map
         (fun item ->
@@ -2697,7 +2706,8 @@ let getMapper ~config =
           | _ -> ());
           let item = default_mapper.signature_item mapper item in
           if config.version = 3 then transformSignatureItem3 mapper item
-          else if config.version = 4 then transformSignatureItem4 mapper item
+          else if config.version = 4 then
+            transformSignatureItem4 ~hasReactComponent mapper item
           else [item])
         items
       |> List.flatten
@@ -2708,6 +2718,7 @@ let getMapper ~config =
   in
   let structure mapper items =
     let oldConfig = saveConfig () in
+    let hasReactComponent = ref false in
     let result =
       List.map
         (fun item ->
@@ -2716,7 +2727,8 @@ let getMapper ~config =
           | _ -> ());
           let item = default_mapper.structure_item mapper item in
           if config.version = 3 then transformStructureItem3 mapper item
-          else if config.version = 4 then transformStructureItem4 mapper item
+          else if config.version = 4 then
+            transformStructureItem4 ~hasReactComponent mapper item
           else [item])
         items
       |> List.flatten
