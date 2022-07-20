@@ -1510,9 +1510,10 @@ module V4 = struct
     let fullModuleName = String.concat "$" fullModuleName in
     fullModuleName
 
+  let raiseError ~loc msg = Location.raise_errorf ~loc msg
+
   let raiseErrorMultipleReactComponent ~loc =
-    Location.raise_errorf ~loc
-      "Each module should have one react component at most"
+    raiseError ~loc "Each module should have one react component at most"
 
   (*
   AST node builders
