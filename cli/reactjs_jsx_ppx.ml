@@ -2652,14 +2652,9 @@ module V4 = struct
     [@@raises Invalid_argument]
 
   let module_binding ~config mapper module_binding =
-    let hadReactComponent = config.hasReactComponent in
-    (* set default false in each module *)
-    config.hasReactComponent <- false;
     config.nestedModules <- module_binding.pmb_name.txt :: config.nestedModules;
     let mapped = default_mapper.module_binding mapper module_binding in
     config.nestedModules <- List.tl config.nestedModules;
-    (* restore it *)
-    config.hasReactComponent <- hadReactComponent;
     mapped
     [@@raises Failure]
 
@@ -2699,6 +2694,7 @@ let getMapper ~config =
       version = config.version;
       module_ = config.module_;
       mode = config.mode;
+      hasReactComponent = config.hasReactComponent;
     }
   in
   let restoreConfig oldConfig =
@@ -2708,6 +2704,7 @@ let getMapper ~config =
   in
   let signature mapper items =
     let oldConfig = saveConfig () in
+    config.hasReactComponent <- false;
     let result =
       List.map
         (fun item ->
@@ -2727,6 +2724,7 @@ let getMapper ~config =
   in
   let structure mapper items =
     let oldConfig = saveConfig () in
+    config.hasReactComponent <- false;
     let result =
       List.map
         (fun item ->
