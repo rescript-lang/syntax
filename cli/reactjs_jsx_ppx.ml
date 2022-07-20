@@ -2700,7 +2700,8 @@ let getMapper ~config =
   let restoreConfig oldConfig =
     config.version <- oldConfig.version;
     config.module_ <- oldConfig.module_;
-    config.mode <- oldConfig.mode
+    config.mode <- oldConfig.mode;
+    config.hasReactComponent <- oldConfig.hasReactComponent
   in
   let signature mapper items =
     let oldConfig = saveConfig () in
