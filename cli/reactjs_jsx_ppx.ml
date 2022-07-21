@@ -1513,13 +1513,14 @@ module V4 = struct
   let raiseError ~loc msg = Location.raise_errorf ~loc msg
 
   let raiseErrorMultipleReactComponent ~loc =
-    raiseError ~loc "Each module should have one react component at most"
-
+    raiseError ~loc
+      "Only one component definition is allowed for each module. Move to a \
+       submodule or other file if necessary."
   (*
   AST node builders
   These functions help us build AST nodes that are needed when transforming a [@react.component] into a
   constructor and a props external
-*)
+  *)
 
   (* make record from props and spread props if exists *)
   let recordFromProps ?(removeKey = false) callArguments =
