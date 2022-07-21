@@ -1,8 +1,21 @@
 ## Master
 
+> **Tags:**
+>
+> - :boom: [Breaking Change]
+> - :eyeglasses: [Spec Compliance]
+> - :rocket: [New Feature]
+> - :bug: [Bug Fix]
+> - :memo: [Documentation]
+> - :house: [Internal]
+> - :nail_care: [Polish]
+
 #### :rocket: New Feature
 
 - Add surface syntax for `async`/`await` https://github.com/rescript-lang/syntax/pull/600
+
+- Initial support for JSX V4, still work in progress.
+  - :boom: when V4 is activated, at most one component is allowed for each module.
 
 ## ReScript 10.0
 
