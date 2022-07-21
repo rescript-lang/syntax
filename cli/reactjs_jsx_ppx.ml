@@ -2332,6 +2332,11 @@ module V4 = struct
                   ]
                   (Exp.ident ~loc:emptyLoc {loc = emptyLoc; txt = Lident txt})
             in
+            let stripConstraint pattern =
+              match pattern with
+              | {ppat_desc = Ppat_constraint (pattern, _)} -> pattern
+              | _ -> pattern
+            in
             let rec returnedExpression patternsWithLabel patternsWithNolabel
                 ({pexp_desc} as expr) =
               match pexp_desc with
@@ -2348,14 +2353,19 @@ module V4 = struct
                     },
                     expr ) ->
                 (patternsWithLabel, patternsWithNolabel, expr)
-              | Pexp_fun (arg_label, _default, {ppat_loc; ppat_desc}, expr) -> (
+              | Pexp_fun
+                  (arg_label, _default, ({ppat_loc; ppat_desc} as pattern), expr)
+                -> (
+                let pattern = stripConstraint pattern in
                 if isLabelled arg_label || isOptional arg_label then
                   returnedExpression
                     (( {loc = ppat_loc; txt = Lident (getLabel arg_label)},
-                       Pat.var
-                         ~attrs:
+                       {
+                         pattern with
+                         ppat_attributes =
                            (if isOptional arg_label then optionalAttr else [])
-                         {txt = getLabel arg_label; loc = ppat_loc} )
+                           @ pattern.ppat_attributes;
+                       } )
                     :: patternsWithLabel)
                     patternsWithNolabel expr
                 else
@@ -2365,7 +2375,11 @@ module V4 = struct
                   | Ppat_var {txt} ->
                     returnedExpression patternsWithLabel
                       (( {loc = ppat_loc; txt = Lident txt},
-                         Pat.var ~attrs:optionalAttr {txt; loc = ppat_loc} )
+                         {
+                           pattern with
+                           ppat_attributes =
+                             optionalAttr @ pattern.ppat_attributes;
+                         } )
                       :: patternsWithNolabel)
                       expr
                   | _ ->
