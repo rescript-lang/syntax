@@ -2291,7 +2291,7 @@ module V4 = struct
             in
             let innerExpression =
               Exp.apply
-                (Exp.ident (Location.mknoloc @@ Lident "make"))
+                (Exp.ident (Location.mknoloc @@ Lident fnName))
                 ([(Nolabel, Exp.ident (Location.mknoloc @@ Lident "props"))]
                 @
                 match hasForwardRef with
