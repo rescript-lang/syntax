@@ -1,0 +1,32 @@
+module Parens = {
+  type props<'id> = {key?: string, id?: 'id}
+  @react.component
+  let make = ({?id, _}: props<'id>) => {
+    ReactDOM.jsx(
+      "div",
+      {
+        id: ?{
+          let _ = ()
+          id->Option.map(x => x)
+        },
+      },
+    )
+  }
+  let make = {
+    let \"OptionalPropValue$Parens" = (props: props<_>) => make(props)
+    \"OptionalPropValue$Parens"
+  }
+}
+
+module WithoutParens = {
+  type props<'id> = {key?: string, id?: 'id}
+
+  @react.component
+  let make = ({?id, _}: props<'id>) => {
+    ReactDOM.jsx("div", {id: ?id->Option.map(x => x)})
+  }
+  let make = {
+    let \"OptionalPropValue$WithoutParens" = (props: props<_>) => make(props)
+    \"OptionalPropValue$WithoutParens"
+  }
+}
