@@ -78,6 +78,13 @@ let hasAttr (loc, _) = loc.txt = "react.component"
 let hasAttrOnBinding {pvb_attributes} =
   List.find_opt hasAttr pvb_attributes <> None
 
+let raiseError ~loc msg = Location.raise_errorf ~loc msg
+
+let raiseErrorMultipleReactComponent ~loc =
+  raiseError ~loc
+    "Only one component definition is allowed for each module. Move to a \
+     submodule or other file if necessary."
+
 module V3 = struct
   let nolabel = Nolabel
 
@@ -163,10 +170,9 @@ module V3 = struct
       | [] -> []
       | [(Nolabel, {pexp_desc = Pexp_construct ({txt = Lident "()"}, None)})] ->
         acc
-      | (Nolabel, _) :: _rest ->
-        raise
-          (Invalid_argument
-             "JSX: found non-labelled argument before the last position")
+      | (Nolabel, {pexp_loc}) :: _rest ->
+        raiseError ~loc:pexp_loc
+          "JSX: found non-labelled argument before the last position"
       | arg :: rest -> allButLast_ rest (arg :: acc)
       [@@raises Invalid_argument]
     in
@@ -185,9 +191,7 @@ module V3 = struct
         if removeLastPositionUnit then allButLast props else props )
     | [(_, childrenExpr)], props ->
       (childrenExpr, if removeLastPositionUnit then allButLast props else props)
-    | _ ->
-      raise
-        (Invalid_argument "JSX: somehow there's more than one `children` label")
+    | _ -> raiseError ~loc "JSX: somehow there's more than one `children` label"
     [@@raises Invalid_argument]
 
   let unerasableIgnore loc =
@@ -204,8 +208,8 @@ module V3 = struct
     match binding with
     | {ppat_desc = Ppat_var {txt}} -> txt
     | {ppat_desc = Ppat_constraint (pat, _)} -> getFnName pat
-    | _ ->
-      raise (Invalid_argument "react.component calls cannot be destructured.")
+    | {ppat_loc} ->
+      raiseError ~loc:ppat_loc "react.component calls cannot be destructured."
     [@@raises Invalid_argument]
 
   let makeNewBinding binding expression newName =
@@ -218,8 +222,8 @@ module V3 = struct
         pvb_expr = expression;
         pvb_attributes = [merlinFocus];
       }
-    | _ ->
-      raise (Invalid_argument "react.component calls cannot be destructured.")
+    | {pvb_loc} ->
+      raiseError ~loc:pvb_loc "react.component calls cannot be destructured."
     [@@raises Invalid_argument]
 
   (* Lookup the value of `props` otherwise raise Invalid_argument error *)
@@ -227,11 +231,10 @@ module V3 = struct
     match (loc, exp) with
     | {txt = Lident "props"}, {pexp_desc = Pexp_ident {txt = Lident str}} ->
       {propsName = str}
-    | {txt}, _ ->
-      raise
-        (Invalid_argument
-           ("react.component only accepts props as an option, given: "
-          ^ Longident.last txt))
+    | {txt; loc}, _ ->
+      raiseError ~loc
+        "react.component only accepts props as an option, given: { %s }"
+        (Longident.last txt)
     [@@raises Invalid_argument]
 
   (* Lookup the `props` record or string as part of [@react.component] and store the name for use when rewriting *)
@@ -254,10 +257,9 @@ module V3 = struct
            }
           :: _rest)) ->
       {propsName = "props"}
-    | Some (PStr ({pstr_desc = Pstr_eval (_, _)} :: _rest)) ->
-      raise
-        (Invalid_argument
-           "react.component accepts a record config with props as an options.")
+    | Some (PStr ({pstr_desc = Pstr_eval (_, _); pstr_loc} :: _rest)) ->
+      raiseError ~loc:pstr_loc
+        "react.component accepts a record config with props as an options."
     | _ -> defaultProps
     [@@raises Invalid_argument]
 
@@ -470,9 +472,8 @@ module V3 = struct
         | Lident path -> Lident (path ^ "Props")
         | Ldot (ident, path) -> Ldot (ident, path ^ "Props")
         | _ ->
-          raise
-            (Invalid_argument
-               "JSX name can't be the result of function applications")
+          raiseError ~loc
+            "JSX name can't be the result of function applications"
       in
       let props =
         Exp.apply ~attrs ~loc (Exp.ident ~loc {loc; txt = propsIdent}) args
@@ -511,11 +512,10 @@ module V3 = struct
         } ->
           "createDOMElementVariadic"
         (* [@JSX] div(~children= value), coming from <div> ...(value) </div> *)
-        | _ ->
-          raise
-            (Invalid_argument
-               "A spread as a DOM element's children don't make sense written \
-                together. You can simply remove the spread.")
+        | {pexp_loc} ->
+          raiseError ~loc:pexp_loc
+            "A spread as a DOM element's children don't make sense written \
+             together. You can simply remove the spread."
       in
       let args =
         match nonChildrenProps with
@@ -560,16 +560,14 @@ module V3 = struct
       (* TODO: make this show up with a loc. *)
       | Pexp_fun (Labelled "key", _, _, _) | Pexp_fun (Optional "key", _, _, _)
         ->
-        raise
-          (Invalid_argument
-             "Key cannot be accessed inside of a component. Don't worry - you \
-              can always key a component from its parent!")
+        raiseError ~loc:expr.pexp_loc
+          "Key cannot be accessed inside of a component. Don't worry - you can \
+           always key a component from its parent!"
       | Pexp_fun (Labelled "ref", _, _, _) | Pexp_fun (Optional "ref", _, _, _)
         ->
-        raise
-          (Invalid_argument
-             "Ref cannot be passed as a normal prop. Please use `forwardRef` \
-              API instead.")
+        raiseError ~loc:expr.pexp_loc
+          "Ref cannot be passed as a normal prop. Please use `forwardRef` API \
+           instead."
       | Pexp_fun (arg, default, pattern, expression)
         when isOptional arg || isLabelled arg ->
         let () =
@@ -759,10 +757,9 @@ module V3 = struct
           in
           [externalPropsDecl; newStructure]
         | _ ->
-          raise
-            (Invalid_argument
-               "Only one react.component call can exist on a component at one \
-                time"))
+          raiseError ~loc:pstr_loc
+            "Only one react.component call can exist on a component at one time"
+        )
       (* let component = ... *)
       | {pstr_loc; pstr_desc = Pstr_value (recFlag, valueBindings)} -> (
         let fileName = filenameFromLoc pstr_loc in
@@ -810,11 +807,10 @@ module V3 = struct
                 | {pexp_desc = Pexp_constraint (innerFunctionExpression, _typ)}
                   ->
                   spelunkForFunExpression innerFunctionExpression
-                | _ ->
-                  raise
-                    (Invalid_argument
-                       "react.component calls can only be on function \
-                        definitions or component wrappers (forwardRef, memo).")
+                | {pexp_loc} ->
+                  raiseError ~loc:pexp_loc
+                    "react.component calls can only be on function definitions \
+                     or component wrappers (forwardRef, memo)."
                 [@@raises Invalid_argument]
               in
               spelunkForFunExpression expression
@@ -1207,10 +1203,9 @@ module V3 = struct
           in
           [externalPropsDecl; newStructure]
         | _ ->
-          raise
-            (Invalid_argument
-               "Only one react.component call can exist on a component at one \
-                time"))
+          raiseError ~loc:psig_loc
+            "Only one react.component call can exist on a component at one time"
+        )
       | _ -> [item]
       [@@raises Invalid_argument]
     in
@@ -1219,41 +1214,38 @@ module V3 = struct
       match callExpression.pexp_desc with
       | Pexp_ident caller -> (
         match caller with
-        | {txt = Lident "createElement"} ->
-          raise
-            (Invalid_argument
-               "JSX: `createElement` should be preceeded by a module name.")
+        | {txt = Lident "createElement"; loc} ->
+          raiseError ~loc
+            "JSX: `createElement` should be preceeded by a module name."
         (* Foo.createElement(~prop1=foo, ~prop2=bar, ~children=[], ()) *)
         | {loc; txt = Ldot (modulePath, ("createElement" | "make"))} -> (
           match config.version with
           | 3 ->
             transformUppercaseCall3 modulePath mapper loc attrs callExpression
               callArguments
-          | _ -> raise (Invalid_argument "JSX: the JSX version must be  3"))
+          | _ -> raiseError ~loc "JSX: the JSX version must be  3")
         (* div(~prop1=foo, ~prop2=bar, ~children=[bla], ()) *)
         (* turn that into
            ReactDOMRe.createElement(~props=ReactDOMRe.props(~props1=foo, ~props2=bar, ()), [|bla|]) *)
         | {loc; txt = Lident id} -> (
           match config.version with
           | 3 -> transformLowercaseCall3 mapper loc attrs callArguments id
-          | _ -> raise (Invalid_argument "JSX: the JSX version must be 3"))
-        | {txt = Ldot (_, anythingNotCreateElementOrMake)} ->
-          raise
-            (Invalid_argument
-               ("JSX: the JSX attribute should be attached to a \
-                 `YourModuleName.createElement` or `YourModuleName.make` call. \
-                 We saw `" ^ anythingNotCreateElementOrMake ^ "` instead"))
-        | {txt = Lapply _} ->
+          | _ -> raiseError ~loc "JSX: the JSX version must be 3")
+        | {txt = Ldot (_, anythingNotCreateElementOrMake); loc} ->
+          raiseError ~loc
+            "JSX: the JSX attribute should be attached to a \
+             `YourModuleName.createElement` or `YourModuleName.make` call. We \
+             saw `%s` instead"
+            anythingNotCreateElementOrMake
+        | {txt = Lapply _; loc} ->
           (* don't think there's ever a case where this is reached *)
-          raise
-            (Invalid_argument
-               "JSX: encountered a weird case while processing the code. \
-                Please report this!"))
+          raiseError ~loc
+            "JSX: encountered a weird case while processing the code. Please \
+             report this!")
       | _ ->
-        raise
-          (Invalid_argument
-             "JSX: `createElement` should be preceeded by a simple, direct \
-              module name.")
+        raiseError ~loc:callExpression.pexp_loc
+          "JSX: `createElement` should be preceeded by a simple, direct module \
+           name."
       [@@raises Invalid_argument]
     in
 
@@ -1421,16 +1413,15 @@ module V4 = struct
     in
     transformChildren_ theList []
 
-  let extractChildren ?(removeLastPositionUnit = false) propsAndChildren =
+  let extractChildren ?(removeLastPositionUnit = false) ~loc propsAndChildren =
     let rec allButLast_ lst acc =
       match lst with
       | [] -> []
       | [(Nolabel, {pexp_desc = Pexp_construct ({txt = Lident "()"}, None)})] ->
         acc
-      | (Nolabel, _) :: _rest ->
-        raise
-          (Invalid_argument
-             "JSX: found non-labelled argument before the last position")
+      | (Nolabel, {pexp_loc}) :: _rest ->
+        raiseError ~loc:pexp_loc
+          "JSX: found non-labelled argument before the last position"
       | arg :: rest -> allButLast_ rest (arg :: acc)
       [@@raises Invalid_argument]
     in
@@ -1449,9 +1440,7 @@ module V4 = struct
         if removeLastPositionUnit then allButLast props else props )
     | [(_, childrenExpr)], props ->
       (childrenExpr, if removeLastPositionUnit then allButLast props else props)
-    | _ ->
-      raise
-        (Invalid_argument "JSX: somehow there's more than one `children` label")
+    | _ -> raiseError ~loc "JSX: somehow there's more than one `children` label"
     [@@raises Invalid_argument]
 
   let merlinFocus = ({loc = Location.none; txt = "merlin.focus"}, PStr [])
@@ -1464,8 +1453,8 @@ module V4 = struct
     match binding with
     | {ppat_desc = Ppat_var {txt}} -> txt
     | {ppat_desc = Ppat_constraint (pat, _)} -> getFnName pat
-    | _ ->
-      raise (Invalid_argument "react.component calls cannot be destructured.")
+    | {ppat_loc} ->
+      raiseError ~loc:ppat_loc "react.component calls cannot be destructured."
     [@@raises Invalid_argument]
 
   let makeNewBinding binding expression newName =
@@ -1478,8 +1467,8 @@ module V4 = struct
         pvb_expr = expression;
         pvb_attributes = [merlinFocus];
       }
-    | _ ->
-      raise (Invalid_argument "react.component calls cannot be destructured.")
+    | {pvb_loc} ->
+      raiseError ~loc:pvb_loc "react.component calls cannot be destructured."
     [@@raises Invalid_argument]
 
   (* Lookup the filename from the location information on the AST node and turn it into a valid module identifier *)
@@ -1510,12 +1499,6 @@ module V4 = struct
     let fullModuleName = String.concat "$" fullModuleName in
     fullModuleName
 
-  let raiseError ~loc msg = Location.raise_errorf ~loc msg
-
-  let raiseErrorMultipleReactComponent ~loc =
-    raiseError ~loc
-      "Only one component definition is allowed for each module. Move to a \
-       submodule or other file if necessary."
   (*
   AST node builders
   These functions help us build AST nodes that are needed when transforming a [@react.component] into a
@@ -1529,10 +1512,9 @@ module V4 = struct
       | [] -> acc
       | [(Nolabel, {pexp_desc = Pexp_construct ({txt = Lident "()"}, None)})] ->
         acc
-      | (Nolabel, _) :: _rest ->
-        raise
-          (Invalid_argument
-             "JSX: found non-labelled argument before the last position")
+      | (Nolabel, {pexp_loc}) :: _rest ->
+        raiseError ~loc:pexp_loc
+          "JSX: found non-labelled argument before the last position"
       | prop :: rest -> removeLastPositionUnitAux rest (prop :: acc)
     in
     let props, propsToSpread =
@@ -1643,7 +1625,7 @@ module V4 = struct
   let transformUppercaseCall3 ~config modulePath mapper jsxExprLoc callExprLoc
       attrs callArguments =
     let children, argsWithLabels =
-      extractChildren ~removeLastPositionUnit:true callArguments
+      extractChildren ~removeLastPositionUnit:true ~loc:jsxExprLoc callArguments
     in
     let argsForMake = argsWithLabels in
     let childrenExpr = transformChildrenIfListUpper ~mapper children in
@@ -1774,7 +1756,8 @@ module V4 = struct
     (* the new jsx transform *)
     | "automatic" ->
       let children, nonChildrenProps =
-        extractChildren ~removeLastPositionUnit:true callArguments
+        extractChildren ~removeLastPositionUnit:true ~loc:jsxExprLoc
+          callArguments
       in
       let argsForMake = nonChildrenProps in
       let childrenExpr = transformChildrenIfListUpper ~mapper children in
@@ -1836,7 +1819,9 @@ module V4 = struct
       Exp.apply ~attrs jsxExpr
         ([(nolabel, componentNameExpr); (nolabel, props)] @ key)
     | _ ->
-      let children, nonChildrenProps = extractChildren callArguments in
+      let children, nonChildrenProps =
+        extractChildren ~loc:jsxExprLoc callArguments
+      in
       let childrenExpr = transformChildrenIfList ~mapper children in
       let createElementCall =
         match children with
@@ -1849,11 +1834,10 @@ module V4 = struct
         } ->
           "createDOMElementVariadic"
         (* [@JSX] div(~children= value), coming from <div> ...(value) </div> *)
-        | _ ->
-          raise
-            (Invalid_argument
-               "A spread as a DOM element's children don't make sense written \
-                together. You can simply remove the spread.")
+        | {pexp_loc} ->
+          raiseError ~loc:pexp_loc
+            "A spread as a DOM element's children don't make sense written \
+             together. You can simply remove the spread."
       in
       let args =
         match nonChildrenProps with
@@ -1901,15 +1885,13 @@ module V4 = struct
     match expr.pexp_desc with
     (* TODO: make this show up with a loc. *)
     | Pexp_fun (Labelled "key", _, _, _) | Pexp_fun (Optional "key", _, _, _) ->
-      raise
-        (Invalid_argument
-           "Key cannot be accessed inside of a component. Don't worry - you \
-            can always key a component from its parent!")
+      raiseError ~loc:expr.pexp_loc
+        "Key cannot be accessed inside of a component. Don't worry - you can \
+         always key a component from its parent!"
     | Pexp_fun (Labelled "ref", _, _, _) | Pexp_fun (Optional "ref", _, _, _) ->
-      raise
-        (Invalid_argument
-           "Ref cannot be passed as a normal prop. Please use `forwardRef` API \
-            instead.")
+      raiseError ~loc:expr.pexp_loc
+        "Ref cannot be passed as a normal prop. Please use `forwardRef` API \
+         instead."
     | Pexp_fun (arg, default, pattern, expression)
       when isOptional arg || isLabelled arg ->
       let () =
@@ -2092,10 +2074,8 @@ module V4 = struct
           in
           [propsRecordType; newStructure])
       | _ ->
-        raise
-          (Invalid_argument
-             "Only one react.component call can exist on a component at one \
-              time"))
+        raiseError ~loc:pstr_loc
+          "Only one react.component call can exist on a component at one time")
     (* let component = ... *)
     | {pstr_loc; pstr_desc = Pstr_value (recFlag, valueBindings)} -> (
       let fileName = filenameFromLoc pstr_loc in
@@ -2147,11 +2127,10 @@ module V4 = struct
                 | {pexp_desc = Pexp_constraint (innerFunctionExpression, _typ)}
                   ->
                   spelunkForFunExpression innerFunctionExpression
-                | _ ->
-                  raise
-                    (Invalid_argument
-                       "react.component calls can only be on function \
-                        definitions or component wrappers (forwardRef, memo).")
+                | {pexp_loc} ->
+                  raiseError ~loc:pexp_loc
+                    "react.component calls can only be on function definitions \
+                     or component wrappers (forwardRef, memo)."
                 [@@raises Invalid_argument]
               in
               spelunkForFunExpression expression
@@ -2562,10 +2541,8 @@ module V4 = struct
         in
         [propsRecordType; newStructure]
       | _ ->
-        raise
-          (Invalid_argument
-             "Only one react.component call can exist on a component at one \
-              time"))
+        raiseError ~loc:psig_loc
+          "Only one react.component call can exist on a component at one time")
     | _ -> [item]
     [@@raises Invalid_argument]
 
@@ -2574,10 +2551,9 @@ module V4 = struct
     match callExpression.pexp_desc with
     | Pexp_ident caller -> (
       match caller with
-      | {txt = Lident "createElement"} ->
-        raise
-          (Invalid_argument
-             "JSX: `createElement` should be preceeded by a module name.")
+      | {txt = Lident "createElement"; loc} ->
+        raiseError ~loc
+          "JSX: `createElement` should be preceeded by a module name."
       (* Foo.createElement(~prop1=foo, ~prop2=bar, ~children=[], ()) *)
       | {loc; txt = Ldot (modulePath, ("createElement" | "make"))} ->
         transformUppercaseCall3 ~config modulePath mapper jsxExprLoc loc attrs
@@ -2588,23 +2564,21 @@ module V4 = struct
       | {loc; txt = Lident id} ->
         transformLowercaseCall3 ~config mapper jsxExprLoc loc attrs
           callArguments id
-      | {txt = Ldot (_, anythingNotCreateElementOrMake)} ->
-        raise
-          (Invalid_argument
-             ("JSX: the JSX attribute should be attached to a \
-               `YourModuleName.createElement` or `YourModuleName.make` call. \
-               We saw `" ^ anythingNotCreateElementOrMake ^ "` instead"))
-      | {txt = Lapply _} ->
+      | {txt = Ldot (_, anythingNotCreateElementOrMake); loc} ->
+        raiseError ~loc
+          "JSX: the JSX attribute should be attached to a \
+           `YourModuleName.createElement` or `YourModuleName.make` call. We \
+           saw `%s` instead"
+          anythingNotCreateElementOrMake
+      | {txt = Lapply _; loc} ->
         (* don't think there's ever a case where this is reached *)
-        raise
-          (Invalid_argument
-             "JSX: encountered a weird case while processing the code. Please \
-              report this!"))
+        raiseError ~loc
+          "JSX: encountered a weird case while processing the code. Please \
+           report this!")
     | _ ->
-      raise
-        (Invalid_argument
-           "JSX: `createElement` should be preceeded by a simple, direct \
-            module name.")
+      raiseError ~loc:callExpression.pexp_loc
+        "JSX: `createElement` should be preceeded by a simple, direct module \
+         name."
     [@@raises Invalid_argument]
 
   let expr ~config mapper expression =
