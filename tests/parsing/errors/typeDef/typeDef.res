@@ -1,3 +1,18 @@
+// The name must start with a lowercase
+type T1 = D1
+
+type M.T2 += D2
+
+type M1.M2.T3 += D3
+
+type T3 += Tid: Tid.t<t>
+
+type T4<_> = D4
+
+type M1.M2.T5<_> += D5
+
+type X.Y z += D6
+
 type rec stack
   | Empty
 
