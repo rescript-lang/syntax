@@ -616,19 +616,20 @@ let parseHashIdent ~startPos p =
 let parseValuePath p =
   let startPos = p.Parser.startPos in
   let rec aux p path =
-    match p.Parser.token with
-    | Lident ident -> Longident.Ldot (path, ident)
-    | Uident uident ->
-      Parser.next p;
-      if p.Parser.token = Dot then (
-        Parser.expect Dot p;
-        aux p (Ldot (path, uident)))
-      else (
-        Parser.err p (Diagnostics.unexpected p.Parser.token p.breadcrumbs);
-        path)
-    | token ->
-      Parser.err p (Diagnostics.unexpected token p.breadcrumbs);
-      Longident.Ldot (path, "_")
+    if p.Parser.token = Dot then (
+      Parser.expect Dot p;
+
+      match p.Parser.token with
+      | Lident ident -> Longident.Ldot (path, ident)
+      | Uident uident ->
+        Parser.next p;
+        aux p (Ldot (path, uident))
+      | token ->
+        Parser.err p (Diagnostics.unexpected token p.breadcrumbs);
+        Longident.Ldot (path, "_"))
+    else (
+      Parser.err p (Diagnostics.unexpected p.Parser.token p.breadcrumbs);
+      path)
   in
   let ident =
     match p.Parser.token with
@@ -637,14 +638,7 @@ let parseValuePath p =
       Longident.Lident ident
     | Uident ident ->
       Parser.next p;
-      let res =
-        if p.Parser.token = Dot then (
-          Parser.expect Dot p;
-          aux p (Lident ident))
-        else (
-          Parser.err p (Diagnostics.unexpected p.Parser.token p.breadcrumbs);
-          Longident.Lident ident)
-      in
+      let res = aux p (Lident ident) in
       Parser.nextUnsafe p;
       res
     | token ->
