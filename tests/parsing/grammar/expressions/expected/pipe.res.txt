@@ -1,2 +1,0 @@
-let ok = ((optionMap name (fun x -> x))[@foo ])
-let bad = ((name |. (optionMap (fun x -> x)))[@foo ])
