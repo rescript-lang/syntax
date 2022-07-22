@@ -1,3 +1,18 @@
+type rec stack
+  | Empty
+
+// name cannot contain module access paths
+type Foo.bar = string
+
+// missing type
+type t =
+
+// missing type
+type state =
+
+// prevent last error
+;
+
 // The name must start with a lowercase
 type T1 = D1
 
@@ -12,15 +27,3 @@ type T4<_> = D4
 type M1.M2.T5<_> += D5
 
 type X.Y z += D6
-
-type rec stack
-  | Empty
-
-// name cannot contain module access paths
-type Foo.bar = string
-
-// missing type
-type t =
-
-// missing type
-type state =
