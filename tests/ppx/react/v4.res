@@ -2,6 +2,8 @@
 @react.component
 let make = (~x: string, ~y: string) => React.string(x ++ y)
 
-// Component with another name than "make"
-@react.component
-let withAnotherName = (~x) => React.string(x)
+module AnotherName = {
+  // Component with another name than "make"
+  @react.component
+  let anotherName = (~x) => React.string(x)
+}

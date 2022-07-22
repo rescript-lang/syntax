@@ -1,1 +1,17 @@
-Fatal error: exception Compilerlibs406.Location.Error(_)
+type props<'x, 'y> = {key?: string, x: 'x, y: 'y} // Component with type constraint
+@react.component let make = ({x, y, _}: props<string, string>) => React.string(x ++ y)
+let make = {
+  let \"V4" = (props: props<_>) => make(props)
+  \"V4"
+}
+
+module AnotherName = {
+  type props<'x> = {key?: string, x: 'x}
+
+  // Component with another name than "make"
+  @react.component let anotherName = ({x, _}: props<'x>) => React.string(x)
+  let anotherName = {
+    let \"V4$AnotherName$anotherName" = (props: props<_>) => anotherName(props)
+    \"V4$AnotherName$anotherName"
+  }
+}
