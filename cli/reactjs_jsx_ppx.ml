@@ -1385,7 +1385,7 @@ module V4 = struct
   type 'a children = ListLiteral of 'a | Exact of 'a
 
   (* if children is a list, convert it to an array while mapping each element. If not, just map over it, as usual *)
-  let transformChildrenIfListUpper ~loc ~mapper theList =
+  let transformChildrenIfListUpper ~mapper theList =
     let rec transformChildren_ theList accum =
       (* not in the sense of converting a list to an array; convert the AST
          reprensentation of a list to the AST reprensentation of an array *)
@@ -1393,7 +1393,7 @@ module V4 = struct
       | {pexp_desc = Pexp_construct ({txt = Lident "[]"}, None)} -> (
         match accum with
         | [singleElement] -> Exact singleElement
-        | accum -> ListLiteral (Exp.array ~loc (List.rev accum)))
+        | accum -> ListLiteral (Exp.array (List.rev accum)))
       | {
        pexp_desc =
          Pexp_construct
@@ -1404,13 +1404,13 @@ module V4 = struct
     in
     transformChildren_ theList []
 
-  let transformChildrenIfList ~loc ~mapper theList =
+  let transformChildrenIfList ~mapper theList =
     let rec transformChildren_ theList accum =
       (* not in the sense of converting a list to an array; convert the AST
          reprensentation of a list to the AST reprensentation of an array *)
       match theList with
       | {pexp_desc = Pexp_construct ({txt = Lident "[]"}, None)} ->
-        Exp.array ~loc (List.rev accum)
+        Exp.array (List.rev accum)
       | {
        pexp_desc =
          Pexp_construct
@@ -1421,7 +1421,7 @@ module V4 = struct
     in
     transformChildren_ theList []
 
-  let extractChildren ?(removeLastPositionUnit = false) ~loc propsAndChildren =
+  let extractChildren ?(removeLastPositionUnit = false) propsAndChildren =
     let rec allButLast_ lst acc =
       match lst with
       | [] -> []
@@ -1445,7 +1445,7 @@ module V4 = struct
     with
     | [], props ->
       (* no children provided? Place a placeholder list *)
-      ( Exp.construct ~loc {loc; txt = Lident "[]"} None,
+      ( Exp.construct {loc = Location.none; txt = Lident "[]"} None,
         if removeLastPositionUnit then allButLast props else props )
     | [(_, childrenExpr)], props ->
       (childrenExpr, if removeLastPositionUnit then allButLast props else props)
@@ -1523,7 +1523,7 @@ module V4 = struct
   *)
 
   (* make record from props and spread props if exists *)
-  let recordFromProps ?(removeKey = false) callArguments =
+  let recordFromProps ~loc ?(removeKey = false) callArguments =
     let rec removeLastPositionUnitAux props acc =
       match props with
       | [] -> acc
@@ -1561,19 +1561,19 @@ module V4 = struct
     | [] ->
       {
         pexp_desc = Pexp_record (fields, None);
-        pexp_loc = Location.none;
+        pexp_loc = loc;
         pexp_attributes = [];
       }
     | [spreadProps] ->
       {
         pexp_desc = Pexp_record (fields, Some spreadProps);
-        pexp_loc = Location.none;
+        pexp_loc = loc;
         pexp_attributes = [];
       }
     | spreadProps :: _ ->
       {
         pexp_desc = Pexp_record (fields, Some spreadProps);
-        pexp_loc = Location.none;
+        pexp_loc = loc;
         pexp_attributes = [];
       }
 
@@ -1640,13 +1640,13 @@ module V4 = struct
   let makePropsRecordTypeSig propsName loc namedTypeList =
     Sig.type_ Nonrecursive (makeTypeDecls propsName loc namedTypeList)
 
-  let transformUppercaseCall3 ~config modulePath mapper loc attrs callArguments
-      =
+  let transformUppercaseCall3 ~config modulePath mapper jsxExprLoc callExprLoc
+      attrs callArguments =
     let children, argsWithLabels =
-      extractChildren ~loc ~removeLastPositionUnit:true callArguments
+      extractChildren ~removeLastPositionUnit:true callArguments
     in
     let argsForMake = argsWithLabels in
-    let childrenExpr = transformChildrenIfListUpper ~loc ~mapper children in
+    let childrenExpr = transformChildrenIfListUpper ~mapper children in
     let recursivelyTransformedArgsForMake =
       argsForMake
       |> List.map (fun (label, expression) ->
@@ -1674,7 +1674,8 @@ module V4 = struct
         | _ ->
           [
             ( labelled "children",
-              Exp.ident ~loc {loc; txt = Ldot (Lident "React", "null")} );
+              Exp.ident
+                {loc = Location.none; txt = Ldot (Lident "React", "null")} );
           ])
     in
 
@@ -1702,9 +1703,10 @@ module V4 = struct
     match config.mode with
     (* The new jsx transform *)
     | "automatic" ->
-      let record = recordFromProps ~removeKey:true args in
+      let record = recordFromProps ~loc:jsxExprLoc ~removeKey:true args in
       let props =
-        if isEmptyRecord record then recordWithOnlyKey ~loc else record
+        if isEmptyRecord record then recordWithOnlyKey ~loc:jsxExprLoc
+        else record
       in
       let keyProp =
         args |> List.filter (fun (arg_label, _) -> "key" = getLabel arg_label)
@@ -1727,22 +1729,30 @@ module V4 = struct
             [] )
       in
       Exp.apply ~attrs jsxExpr
-        ([(nolabel, Exp.ident {txt = ident; loc}); (nolabel, props)] @ key)
+        ([
+           (nolabel, Exp.ident {txt = ident; loc = callExprLoc});
+           (nolabel, props);
+         ]
+        @ key)
     | _ -> (
-      let record = recordFromProps args in
+      let record = recordFromProps ~loc:jsxExprLoc args in
       (* check if record which goes to Foo.make({ ... } as record) empty or not
          if empty then change it to {key: @optional None} only for upper case jsx
            This would be redundant regarding PR progress https://github.com/rescript-lang/syntax/pull/299
       *)
       let props =
-        if isEmptyRecord record then recordWithOnlyKey ~loc else record
+        if isEmptyRecord record then recordWithOnlyKey ~loc:jsxExprLoc
+        else record
       in
       match !childrenArg with
       | None ->
         Exp.apply ~attrs
           (Exp.ident
              {loc = Location.none; txt = Ldot (Lident "React", "createElement")})
-          [(nolabel, Exp.ident {txt = ident; loc}); (nolabel, props)]
+          [
+            (nolabel, Exp.ident {txt = ident; loc = callExprLoc});
+            (nolabel, props);
+          ]
       | Some children ->
         Exp.apply ~attrs
           (Exp.ident
@@ -1751,22 +1761,23 @@ module V4 = struct
                txt = Ldot (Lident "React", "createElementVariadic");
              })
           [
-            (nolabel, Exp.ident {txt = ident; loc});
+            (nolabel, Exp.ident {txt = ident; loc = callExprLoc});
             (nolabel, props);
             (nolabel, children);
           ])
     [@@raises Invalid_argument]
 
-  let transformLowercaseCall3 ~config mapper loc attrs callArguments id =
-    let componentNameExpr = constantString ~loc id in
+  let transformLowercaseCall3 ~config mapper jsxExprLoc callExprLoc attrs
+      callArguments id =
+    let componentNameExpr = constantString ~loc:callExprLoc id in
     match config.mode with
     (* the new jsx transform *)
     | "automatic" ->
       let children, nonChildrenProps =
-        extractChildren ~removeLastPositionUnit:true ~loc callArguments
+        extractChildren ~removeLastPositionUnit:true callArguments
       in
       let argsForMake = nonChildrenProps in
-      let childrenExpr = transformChildrenIfListUpper ~loc ~mapper children in
+      let childrenExpr = transformChildrenIfListUpper ~mapper children in
       let recursivelyTransformedArgsForMake =
         argsForMake
         |> List.map (fun (label, expression) ->
@@ -1795,9 +1806,10 @@ module V4 = struct
         | Pexp_record (labelDecls, _) when List.length labelDecls = 0 -> true
         | _ -> false
       in
-      let record = recordFromProps ~removeKey:true args in
+      let record = recordFromProps ~loc:jsxExprLoc ~removeKey:true args in
       let props =
-        if isEmptyRecord record then recordWithOnlyKey ~loc else record
+        if isEmptyRecord record then recordWithOnlyKey ~loc:jsxExprLoc
+        else record
       in
       let keyProp =
         args |> List.filter (fun (arg_label, _) -> "key" = getLabel arg_label)
@@ -1805,21 +1817,27 @@ module V4 = struct
       let jsxExpr, key =
         match (!childrenArg, keyProp) with
         | None, (_, keyExpr) :: _ ->
-          ( Exp.ident ~loc {loc; txt = Ldot (Lident "ReactDOM", "jsxKeyed")},
+          ( Exp.ident
+              {loc = Location.none; txt = Ldot (Lident "ReactDOM", "jsxKeyed")},
             [(nolabel, keyExpr)] )
         | None, [] ->
-          (Exp.ident ~loc {loc; txt = Ldot (Lident "ReactDOM", "jsx")}, [])
+          ( Exp.ident
+              {loc = Location.none; txt = Ldot (Lident "ReactDOM", "jsx")},
+            [] )
         | Some _, (_, keyExpr) :: _ ->
-          ( Exp.ident ~loc {loc; txt = Ldot (Lident "ReactDOM", "jsxsKeyed")},
+          ( Exp.ident
+              {loc = Location.none; txt = Ldot (Lident "ReactDOM", "jsxsKeyed")},
             [(nolabel, keyExpr)] )
         | Some _, [] ->
-          (Exp.ident ~loc {loc; txt = Ldot (Lident "ReactDOM", "jsxs")}, [])
+          ( Exp.ident
+              {loc = Location.none; txt = Ldot (Lident "ReactDOM", "jsxs")},
+            [] )
       in
-      Exp.apply ~loc ~attrs jsxExpr
+      Exp.apply ~attrs jsxExpr
         ([(nolabel, componentNameExpr); (nolabel, props)] @ key)
     | _ ->
-      let children, nonChildrenProps = extractChildren ~loc callArguments in
-      let childrenExpr = transformChildrenIfList ~loc ~mapper children in
+      let children, nonChildrenProps = extractChildren callArguments in
+      let childrenExpr = transformChildrenIfList ~mapper children in
       let createElementCall =
         match children with
         (* [@JSX] div(~children=[a]), coming from <div> a </div> *)
@@ -1848,9 +1866,12 @@ module V4 = struct
           ]
         | nonEmptyProps ->
           let propsCall =
-            Exp.apply ~loc
-              (Exp.ident ~loc
-                 {loc; txt = Ldot (Lident "ReactDOMRe", "domProps")})
+            Exp.apply
+              (Exp.ident
+                 {
+                   loc = Location.none;
+                   txt = Ldot (Lident "ReactDOMRe", "domProps");
+                 })
               (nonEmptyProps
               |> List.map (fun (label, expression) ->
                      (label, mapper.expr mapper expression)))
@@ -1864,12 +1885,13 @@ module V4 = struct
             (nolabel, childrenExpr);
           ]
       in
-      Exp.apply
-        ~loc (* throw away the [@JSX] attribute and keep the others, if any *)
-        ~attrs
+      Exp.apply ~loc:jsxExprLoc ~attrs
         (* ReactDOMRe.createElement *)
-        (Exp.ident ~loc
-           {loc; txt = Ldot (Lident "ReactDOMRe", createElementCall)})
+        (Exp.ident
+           {
+             loc = Location.none;
+             txt = Ldot (Lident "ReactDOMRe", createElementCall);
+           })
         args
     [@@raises Invalid_argument]
 
@@ -2547,7 +2569,8 @@ module V4 = struct
     | _ -> [item]
     [@@raises Invalid_argument]
 
-  let transformJsxCall ~config mapper callExpression callArguments attrs =
+  let transformJsxCall ~config mapper callExpression callArguments jsxExprLoc
+      attrs =
     match callExpression.pexp_desc with
     | Pexp_ident caller -> (
       match caller with
@@ -2557,13 +2580,14 @@ module V4 = struct
              "JSX: `createElement` should be preceeded by a module name.")
       (* Foo.createElement(~prop1=foo, ~prop2=bar, ~children=[], ()) *)
       | {loc; txt = Ldot (modulePath, ("createElement" | "make"))} ->
-        transformUppercaseCall3 ~config modulePath mapper loc attrs
+        transformUppercaseCall3 ~config modulePath mapper jsxExprLoc loc attrs
           callArguments
       (* div(~prop1=foo, ~prop2=bar, ~children=[bla], ()) *)
       (* turn that into
          ReactDOMRe.createElement(~props=ReactDOMRe.props(~props1=foo, ~props2=bar, ()), [|bla|]) *)
       | {loc; txt = Lident id} ->
-        transformLowercaseCall3 ~config mapper loc attrs callArguments id
+        transformLowercaseCall3 ~config mapper jsxExprLoc loc attrs
+          callArguments id
       | {txt = Ldot (_, anythingNotCreateElementOrMake)} ->
         raise
           (Invalid_argument
@@ -2586,8 +2610,11 @@ module V4 = struct
   let expr ~config mapper expression =
     match expression with
     (* Does the function application have the @JSX attribute? *)
-    | {pexp_desc = Pexp_apply (callExpression, callArguments); pexp_attributes}
-      -> (
+    | {
+     pexp_desc = Pexp_apply (callExpression, callArguments);
+     pexp_attributes;
+     pexp_loc;
+    } -> (
       let jsxAttribute, nonJSXAttributes =
         List.partition
           (fun (attribute, _) -> attribute.txt = "JSX")
@@ -2597,7 +2624,7 @@ module V4 = struct
       (* no JSX attribute *)
       | [], _ -> default_mapper.expr mapper expression
       | _, nonJSXAttributes ->
-        transformJsxCall ~config mapper callExpression callArguments
+        transformJsxCall ~config mapper callExpression callArguments pexp_loc
           nonJSXAttributes)
     (* is it a list with jsx attribute? Reason <>foo</> desugars to [@JSX][foo]*)
     | {
@@ -2624,7 +2651,7 @@ module V4 = struct
           | "classic" | _ ->
             Exp.ident ~loc {loc; txt = Ldot (Lident "ReasonReact", "fragment")}
         in
-        let childrenExpr = transformChildrenIfList ~loc ~mapper listItems in
+        let childrenExpr = transformChildrenIfList ~mapper listItems in
         let args =
           [
             (nolabel, fragment);
