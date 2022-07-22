@@ -1,47 +1,159 @@
 
   Syntax error!
-  tests/parsing/errors/typeDef/typeDef.res:1:15-2:3
+  tests/parsing/errors/typeDef/typeDef.res:2:6-7
 
-  1 │ type rec stack
-  2 │   | Empty
+  1 │ // The name must start with a lowercase
+  2 │ type T1 = D1
   3 │ 
-  4 │ // name cannot contain module access paths
+  4 │ type M.T2 += D2
+
+  Did you mean `t1` instead of `T1`?
+
+
+  Syntax error!
+  tests/parsing/errors/typeDef/typeDef.res:4:8-9
+
+  2 │ type T1 = D1
+  3 │ 
+  4 │ type M.T2 += D2
+  5 │ 
+  6 │ type M1.M2.T3 += D3
+
+  Did you mean `t2` instead of `T2`?
+
+
+  Syntax error!
+  tests/parsing/errors/typeDef/typeDef.res:6:12-13
+
+  4 │ type M.T2 += D2
+  5 │ 
+  6 │ type M1.M2.T3 += D3
+  7 │ 
+  8 │ type T3 += Tid: Tid.t<t>
+
+  Did you mean `t3` instead of `T3`?
+
+
+  Syntax error!
+  tests/parsing/errors/typeDef/typeDef.res:8:6-7
+
+   6 │ type M1.M2.T3 += D3
+   7 │ 
+   8 │ type T3 += Tid: Tid.t<t>
+   9 │ 
+  10 │ type T4<_> = D4
+
+  Did you mean `t3` instead of `T3`?
+
+
+  Syntax error!
+  tests/parsing/errors/typeDef/typeDef.res:8:15
+
+   6 │ type M1.M2.T3 += D3
+   7 │ 
+   8 │ type T3 += Tid: Tid.t<t>
+   9 │ 
+  10 │ type T4<_> = D4
+
+  I'm not sure what to parse here when looking at ":".
+
+
+  Syntax error!
+  tests/parsing/errors/typeDef/typeDef.res:10:6-7
+
+   8 │ type T3 += Tid: Tid.t<t>
+   9 │ 
+  10 │ type T4<_> = D4
+  11 │ 
+  12 │ type M1.M2.T5<_> += D5
+
+  Did you mean `t4` instead of `T4`?
+
+
+  Syntax error!
+  tests/parsing/errors/typeDef/typeDef.res:12:12-13
+
+  10 │ type T4<_> = D4
+  11 │ 
+  12 │ type M1.M2.T5<_> += D5
+  13 │ 
+  14 │ type X.Y z += D6
+
+  Did you mean `t5` instead of `T5`?
+
+
+  Syntax error!
+  tests/parsing/errors/typeDef/typeDef.res:14:8
+
+  12 │ type M1.M2.T5<_> += D5
+  13 │ 
+  14 │ type X.Y z += D6
+  15 │ 
+  16 │ type rec stack
+
+  Did you mean `y` instead of `Y`?
+
+
+  Syntax error!
+  tests/parsing/errors/typeDef/typeDef.res:16:15-17:3
+
+  14 │ type X.Y z += D6
+  15 │ 
+  16 │ type rec stack
+  17 │   | Empty
+  18 │ 
+  19 │ // name cannot contain module access paths
 
   Did you forget a `=` here?
 
 
   Syntax error!
-  tests/parsing/errors/typeDef/typeDef.res:5:6-12
+  tests/parsing/errors/typeDef/typeDef.res:20:6-12
 
-  3 │ 
-  4 │ // name cannot contain module access paths
-  5 │ type Foo.bar = string
-  6 │ 
-  7 │ // missing type
+  18 │ 
+  19 │ // name cannot contain module access paths
+  20 │ type Foo.bar = string
+  21 │ 
+  22 │ // missing type
 
   A type declaration's name cannot contain a module access. Did you mean `bar`?
 
 
   Syntax error!
-  tests/parsing/errors/typeDef/typeDef.res:11:1-4
+  tests/parsing/errors/typeDef/typeDef.res:26:1-4
 
-   9 │ 
-  10 │ // missing type
-  11 │ type state =
-  12 │ 
+  24 │ 
+  25 │ // missing type
+  26 │ type state =
+  27 │ 
 
   Missing a type here
 
 
   Syntax error!
-  tests/parsing/errors/typeDef/typeDef.res:12:1
+  tests/parsing/errors/typeDef/typeDef.res:27:1
 
-  10 │ // missing type
-  11 │ type state =
-  12 │ 
+  25 │ // missing type
+  26 │ type state =
+  27 │ 
 
   Missing a type here
 
+type nonrec T1
+;;D1
+type nonrec T2
+;;D2
+type nonrec T3
+;;D3
+type nonrec T3
+;;Tid
+;;(Tid.t < t) > ([%rescript.exprhole ])
+type nonrec T4
+;;([%rescript.exprhole ]) > D4
+type nonrec T5
+;;([%rescript.exprhole ]) > D5
+type X.Y +=  
+  | D6 
 type stack =
   | Empty 
 type nonrec bar = string
