@@ -51,3 +51,7 @@ type user = {
   hairStyle: Hair.t,
   @attrAbove @attrSuperLongNaaaaaaaaaaaaaaameSooooooooLong @attrSuperLongNaaaaaaaaaaaaaaameSooooooooLong hairStyle: Hair.t
 }
+
+type multipleWithAttrs = {x:int, @attr y?: string}
+
+type singleWithAttrs = {@attr y?: string}

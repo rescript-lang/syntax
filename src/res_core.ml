@@ -4286,6 +4286,7 @@ and parseFieldDeclaration p =
     match p.token with
     | _ -> parseLident p
   in
+  let optional = parseOptionalLabel p in
   let name = Location.mkloc lident loc in
   let typ =
     match p.Parser.token with
@@ -4296,7 +4297,7 @@ and parseFieldDeclaration p =
       Ast_helper.Typ.constr ~loc:name.loc {name with txt = Lident name.txt} []
   in
   let loc = mkLoc startPos typ.ptyp_loc.loc_end in
-  Ast_helper.Type.field ~attrs ~loc ~mut name typ
+  (optional, Ast_helper.Type.field ~attrs ~loc ~mut name typ)
 
 and parseFieldDeclarationRegion p =
   let startPos = p.Parser.startPos in
@@ -4309,6 +4310,7 @@ and parseFieldDeclarationRegion p =
   | Lident _ ->
     let lident, loc = parseLident p in
     let name = Location.mkloc lident loc in
+    (* XXX *)
     let optional = parseOptionalLabel p in
     let typ =
       match p.Parser.token with
@@ -4488,7 +4490,10 @@ and parseConstrDeclArgs p =
                   ~closing:Rbrace ~f:parseFieldDeclarationRegion p
               | attrs ->
                 let first =
-                  let field = parseFieldDeclaration p in
+                  let optional, field = parseFieldDeclaration p in
+                  let attrs =
+                    if optional then optionalAttr :: attrs else attrs
+                  in
                   Parser.expect Comma p;
                   {field with Parsetree.pld_attributes = attrs}
                 in
@@ -4885,13 +4890,15 @@ and parseRecordOrObjectDecl p =
     | _ ->
       Parser.leaveBreadcrumb p Grammar.RecordDecl;
       let fields =
+        (* XXX *)
         match attrs with
         | [] ->
           parseCommaDelimitedRegion ~grammar:Grammar.FieldDeclarations
             ~closing:Rbrace ~f:parseFieldDeclarationRegion p
         | attr :: _ as attrs ->
           let first =
-            let field = parseFieldDeclaration p in
+            let optional, field = parseFieldDeclaration p in
+            let attrs = if optional then optionalAttr :: attrs else attrs in
             Parser.optional p Comma |> ignore;
             {
               field with
