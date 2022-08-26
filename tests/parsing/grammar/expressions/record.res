@@ -46,3 +46,7 @@ let _ = switch z {
 type tt = {x:int, @ns.opttinal y : string}
 
 type ttt = {x:int, y?: string}
+
+type multipleWithAttrs = {x:int, @attr y?: string}
+
+type singleWithAttrs = {@attr y?: string}
