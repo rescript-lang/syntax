@@ -1,2 +1,3 @@
 let s1 = x->foo
 let s2 = @ann foo(x)
+let s3 = x |> foo
