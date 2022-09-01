@@ -1,0 +1,2 @@
+let s1 = x->foo
+let s2 = @ann foo(x)
