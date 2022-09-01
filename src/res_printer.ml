@@ -3658,6 +3658,7 @@ and printBinaryExpression ~customLayout (expr : Parsetree.expression) cmtTbl =
     Doc.group
       (Doc.concat
          [
+           printAttributes ~customLayout expr.pexp_attributes cmtTbl;
            lhsDoc;
            (match (lhsHasCommentBelow, op) with
            | true, "|." -> Doc.concat [Doc.softLine; Doc.text "->"]
