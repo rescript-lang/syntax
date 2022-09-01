@@ -17,6 +17,10 @@
 - Initial support for JSX V4, still work in progress.
   - :boom: when V4 is activated, at most one component is allowed for each module.
 
+#### :bug: Bug Fix
+
+- Fix issue where the printer would omit attributes for `->` and `|>` https://github.com/rescript-lang/syntax/pull/629
+
 ## ReScript 10.0
 
 - Fix printing for inline nullary functor types [#477](https://github.com/rescript-lang/syntax/pull/477)
