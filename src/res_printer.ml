@@ -3651,7 +3651,9 @@ and printBinaryExpression ~customLayout (expr : Parsetree.expression) cmtTbl =
         [(Nolabel, lhs); (Nolabel, rhs)] )
     when not
            (ParsetreeViewer.isBinaryExpression lhs
-           || ParsetreeViewer.isBinaryExpression rhs) ->
+           || ParsetreeViewer.isBinaryExpression rhs
+           || printAttributes ~customLayout expr.pexp_attributes cmtTbl
+              <> Doc.nil) ->
     let lhsHasCommentBelow = hasCommentBelow cmtTbl lhs.pexp_loc in
     let lhsDoc = printOperand ~isLhs:true lhs op in
     let rhsDoc = printOperand ~isLhs:false rhs op in
