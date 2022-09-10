@@ -566,8 +566,8 @@ module V3 = struct
       | Pexp_fun (Labelled "ref", _, _, _) | Pexp_fun (Optional "ref", _, _, _)
         ->
         raiseError ~loc:expr.pexp_loc
-          "Ref cannot be passed as a normal prop. Please use `forwardRef` API \
-           instead."
+          "Ref cannot be passed as a normal prop. Either give the prop a \
+           different name or use the `forwardRef` API instead."
       | Pexp_fun (arg, default, pattern, expression)
         when isOptional arg || isLabelled arg ->
         let () =
