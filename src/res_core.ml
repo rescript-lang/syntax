@@ -4310,7 +4310,6 @@ and parseFieldDeclarationRegion p =
   | Lident _ ->
     let lident, loc = parseLident p in
     let name = Location.mkloc lident loc in
-    (* XXX *)
     let optional = parseOptionalLabel p in
     let typ =
       match p.Parser.token with
