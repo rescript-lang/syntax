@@ -20,7 +20,7 @@
 #### :bug: Bug Fix
 
 - Fix issue where the printer would omit attributes for `->` and `|>` https://github.com/rescript-lang/syntax/pull/629
-- Fix printing of optional fiels in records https://github.com/rescript-lang/rescript-compiler/issues/5654
+- Fix printing of optional fields in records https://github.com/rescript-lang/rescript-compiler/issues/5654
 
 ## ReScript 10.0
 
