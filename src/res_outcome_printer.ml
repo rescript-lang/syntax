@@ -526,9 +526,9 @@ and printRecordDeclRowDoc (name, mut, opt, arg) =
   Doc.group
     (Doc.concat
        [
-         (if opt then Doc.text "?" else Doc.nil);
          (if mut then Doc.text "mutable " else Doc.nil);
          printIdentLike ~allowUident:false name;
+         (if opt then Doc.text "?" else Doc.nil);
          Doc.text ": ";
          printOutTypeDoc arg;
        ])
