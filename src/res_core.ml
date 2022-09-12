@@ -2691,13 +2691,9 @@ and parseBracedOrRecordExpr p =
   Parser.expect Lbrace p;
   match p.Parser.token with
   | Rbrace ->
-    Parser.err p (Diagnostics.unexpected Rbrace p.breadcrumbs);
     Parser.next p;
     let loc = mkLoc startPos p.prevEndPos in
-    let braces = makeBracesAttr loc in
-    Ast_helper.Exp.construct ~attrs:[braces] ~loc
-      (Location.mkloc (Longident.Lident "()") loc)
-      None
+    Ast_helper.Exp.record ~loc [] None
   | DotDotDot ->
     (* beginning of record spread, parse record *)
     Parser.next p;
