@@ -15,7 +15,10 @@
 - Add surface syntax for `async`/`await` https://github.com/rescript-lang/syntax/pull/600
 
 - Initial support for JSX V4, still work in progress.
+
   - :boom: when V4 is activated, at most one component is allowed for each module.
+
+- Add support for empty record literal `{}` for records with only optional fields https://github.com/rescript-lang/syntax/pull/632
 
 #### :bug: Bug Fix
 
