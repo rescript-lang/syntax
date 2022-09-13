@@ -4909,13 +4909,6 @@ and parseRecordOrObjectDecl p =
           :: parseCommaDelimitedRegion ~grammar:Grammar.FieldDeclarations
                ~closing:Rbrace ~f:parseFieldDeclarationRegion p
       in
-      let () =
-        match fields with
-        | [] ->
-          Parser.err ~startPos p
-            (Diagnostics.message "A record needs at least one field")
-        | _ -> ()
-      in
       Parser.expect Rbrace p;
       Parser.eatBreadcrumb p;
       (None, Asttypes.Public, Parsetree.Ptype_record fields))
