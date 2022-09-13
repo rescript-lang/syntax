@@ -18,7 +18,7 @@
 
   - :boom: when V4 is activated, at most one component is allowed for each module.
 
-- Add support for empty record literal `{}` for records with only optional fields https://github.com/rescript-lang/syntax/pull/632
+- Add support for empty record literal `{}` for records with only optional fields, and type definition of empty record (e.g. `type empty = {}`)  https://github.com/rescript-lang/syntax/pull/632
 
 #### :bug: Bug Fix
 
