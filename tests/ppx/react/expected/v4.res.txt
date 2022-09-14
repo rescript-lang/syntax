@@ -12,6 +12,7 @@ module AnotherName = {
   @react.component let anotherName = ({x, _}: props<'x>) => React.string(x)
   let anotherName = {
     let \"V4$AnotherName$anotherName" = (props: props<_>) => anotherName(props)
+
     \"V4$AnotherName$anotherName"
   }
 }
