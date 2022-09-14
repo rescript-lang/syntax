@@ -24,6 +24,7 @@ module V4C = {
     ReactDOMRe.createDOMElementVariadic("div", [])
   let make = {
     let \"TypeConstraint$V4C" = (props: props<_>) => make(props)
+
     \"TypeConstraint$V4C"
   }
 }
@@ -37,6 +38,7 @@ module V4A = {
   let make = ({a, b, _}: props<'\"type-a", '\"type-a">) => ReactDOM.jsx("div", {key: ?None})
   let make = {
     let \"TypeConstraint$V4A" = (props: props<_>) => make(props)
+
     \"TypeConstraint$V4A"
   }
 }

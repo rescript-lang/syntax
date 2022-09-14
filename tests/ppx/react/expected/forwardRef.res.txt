@@ -93,6 +93,7 @@ module V4C = {
       )
     let make = React.forwardRef({
       let \"ForwardRef$V4C$FancyInput" = (props: props<_>, ref) => make(props, ref)
+
       \"ForwardRef$V4C$FancyInput"
     })
   }
@@ -114,6 +115,7 @@ module V4C = {
   }
   let make = {
     let \"ForwardRef$V4C" = props => make(props)
+
     \"ForwardRef$V4C"
   }
 }
@@ -149,6 +151,7 @@ module V4A = {
       )
     let make = React.forwardRef({
       let \"ForwardRef$V4A$FancyInput" = (props: props<_>, ref) => make(props, ref)
+
       \"ForwardRef$V4A$FancyInput"
     })
   }
@@ -169,6 +172,7 @@ module V4A = {
   }
   let make = {
     let \"ForwardRef$V4A" = props => make(props)
+
     \"ForwardRef$V4A"
   }
 }

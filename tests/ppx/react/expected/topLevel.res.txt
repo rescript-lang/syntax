@@ -28,6 +28,7 @@ module V4C = {
   }
   let make = {
     let \"TopLevel$V4C" = (props: props<_>) => make(props)
+
     \"TopLevel$V4C"
   }
 }
@@ -44,6 +45,7 @@ module V4A = {
   }
   let make = {
     let \"TopLevel$V4A" = (props: props<_>) => make(props)
+
     \"TopLevel$V4A"
   }
 }
