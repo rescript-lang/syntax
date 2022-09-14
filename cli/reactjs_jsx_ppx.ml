@@ -2331,7 +2331,7 @@ module V4 = struct
                       (Pat.var ~loc:emptyLoc {loc = emptyLoc; txt})
                       fullExpression;
                   ]
-                  (Exp.ident ~loc:emptyLoc {loc = emptyLoc; txt = Lident txt})
+                  (Exp.ident ~loc:pstr_loc {loc = emptyLoc; txt = Lident txt})
             in
             let stripConstraint pattern =
               match pattern with
