@@ -1,6 +1,6 @@
 **JSX V4 upgrade path**
 
-1. No need to upgrade rescript-react or change bsconfig.json
+1. Nothing to change for existing projects with old bsconfig.json
 
    JSX V3 by default.
 
@@ -35,3 +35,11 @@
    JSX V4 with `"automatic"` runtme needs React v17.\* or higher as a peer dependency. It will require a new version of`rescript-react`.
 
    > The existing configuration `reason.react-jsx` will be ignored if the new configuration is present.
+
+   d. Dependencies
+   Dependencies inherit the jsx configuration of the root project.
+   To preserve the jsx configuration specified in a project, use `"preserve-dependencies"` as in the example:
+
+   ```json
+   "jsx": { "version": 4, "preserve-dependencies": ["rescript-react-navigation"] }
+   ```
