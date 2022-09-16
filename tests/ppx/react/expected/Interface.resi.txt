@@ -1,0 +1,2 @@
+type props<'x> = {x: 'x}
+let make: React.componentLike<props<string>, React.element>

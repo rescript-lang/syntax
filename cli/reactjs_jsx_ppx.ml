@@ -2524,10 +2524,9 @@ module V4 = struct
         in
         let propsRecordType =
           makePropsRecordTypeSig "props" Location.none
-            ([(true, "key", [], keyType Location.none)]
-            (* If there is Nolabel arg, regard the type as ref in forwardRef *)
-            @ (if !hasForwardRef then [(true, "ref", [], refType Location.none)]
-              else [])
+            ((* If there is Nolabel arg, regard the type as ref in forwardRef *)
+             (if !hasForwardRef then [(true, "ref", [], refType Location.none)]
+             else [])
             @ namedTypeList)
         in
         (* can't be an arrow because it will defensively uncurry *)
