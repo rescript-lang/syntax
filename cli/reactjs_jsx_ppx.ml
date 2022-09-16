@@ -1715,7 +1715,7 @@ module V4 = struct
         in
         Exp.apply
           (Exp.ident
-             {loc = Location.none; txt = Ldot (Lident "React", "addKeyProp")})
+             {loc = Location.none; txt = Ldot (Lident "Jsx", "addKeyProp")})
           [(nolabel, Exp.constraint_ props propsType); (nolabel, keyExpr)]
       in
       match (!childrenArg, keyProp) with
