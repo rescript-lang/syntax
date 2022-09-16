@@ -1350,15 +1350,8 @@ module V4 = struct
   let constantString ~loc str =
     Ast_helper.Exp.constant ~loc (Pconst_string (str, None))
 
-  (* {} empty object in Js *)
-  let recordWithOnlyKey ~loc =
-    Exp.record ~loc
-      (* {key: @optional None} *)
-      [
-        ( {loc; txt = Lident "key"},
-          Exp.construct ~attrs:optionalAttr {loc; txt = Lident "None"} None );
-      ]
-      None
+  (* {} empty record *)
+  let emptyRecord ~loc = Exp.record ~loc [] None
 
   let safeTypeFromValue valueStr =
     let valueStr = getLabel valueStr in
@@ -1687,8 +1680,7 @@ module V4 = struct
     | "automatic" ->
       let record = recordFromProps ~loc:jsxExprLoc ~removeKey:true args in
       let props =
-        if isEmptyRecord record then recordWithOnlyKey ~loc:jsxExprLoc
-        else record
+        if isEmptyRecord record then emptyRecord ~loc:jsxExprLoc else record
       in
       let keyProp =
         args |> List.filter (fun (arg_label, _) -> "key" = getLabel arg_label)
@@ -1723,8 +1715,7 @@ module V4 = struct
            This would be redundant regarding PR progress https://github.com/rescript-lang/syntax/pull/299
       *)
       let props =
-        if isEmptyRecord record then recordWithOnlyKey ~loc:jsxExprLoc
-        else record
+        if isEmptyRecord record then emptyRecord ~loc:jsxExprLoc else record
       in
       match !childrenArg with
       | None ->
@@ -1791,8 +1782,7 @@ module V4 = struct
       in
       let record = recordFromProps ~loc:jsxExprLoc ~removeKey:true args in
       let props =
-        if isEmptyRecord record then recordWithOnlyKey ~loc:jsxExprLoc
-        else record
+        if isEmptyRecord record then emptyRecord ~loc:jsxExprLoc else record
       in
       let keyProp =
         args |> List.filter (fun (arg_label, _) -> "key" = getLabel arg_label)
@@ -2638,7 +2628,7 @@ module V4 = struct
                       match childrenExpr with
                       | {pexp_desc = Pexp_array children} -> (
                         match children with
-                        | [] -> recordWithOnlyKey ~loc:Location.none
+                        | [] -> emptyRecord ~loc:Location.none
                         | [child] -> child
                         | _ -> childrenExpr)
                       | _ -> childrenExpr );
