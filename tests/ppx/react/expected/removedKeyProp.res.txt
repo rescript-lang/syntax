@@ -30,11 +30,11 @@ let make = (_: props) =>
   ReactDOMRe.createElement(
     ReasonReact.fragment,
     [
-      React.createElement(Foo.make, React.addKeyProp(({x: "x", y: "y"}: Foo.props<_>), "k")),
+      React.createElement(Foo.make, Jsx.addKeyProp(({x: "x", y: "y"}: Foo.props<_>), "k")),
       React.createElement(Foo.make, {x: "x", y: "y"}),
       React.createElement(
         HasChildren.make,
-        React.addKeyProp(
+        Jsx.addKeyProp(
           (
             {
               children: React.createElement(Foo.make, {x: "x", y: "y"}),
