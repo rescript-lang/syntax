@@ -67,7 +67,6 @@ module V3 = {
 module V4C = {
   module FancyInput = {
     type props<'className, 'children> = {
-      key?: string,
       ref?: ReactDOM.Ref.currentDomRef,
       className?: 'className,
       children: 'children,
@@ -97,7 +96,7 @@ module V4C = {
       \"ForwardRef$V4C$FancyInput"
     })
   }
-  type props = {key?: string}
+  type props = {}
 
   @react.component
   let make = (_: props) => {
@@ -125,7 +124,6 @@ module V4C = {
 module V4A = {
   module FancyInput = {
     type props<'className, 'children> = {
-      key?: string,
       ref?: ReactDOM.Ref.currentDomRef,
       className?: 'className,
       children: 'children,
@@ -155,7 +153,7 @@ module V4A = {
       \"ForwardRef$V4A$FancyInput"
     })
   }
-  type props = {key?: string}
+  type props = {}
 
   @react.component
   let make = (_: props) => {
