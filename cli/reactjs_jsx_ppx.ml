@@ -1660,11 +1660,11 @@ module V4 = struct
       first = capped
       [@@raises Invalid_argument]
     in
-    let ident =
+    let ident ~suffix =
       match modulePath with
-      | Lident _ -> Ldot (modulePath, "make")
+      | Lident _ -> Ldot (modulePath, suffix)
       | Ldot (_modulePath, value) as fullPath when isCap value ->
-        Ldot (fullPath, "make")
+        Ldot (fullPath, suffix)
       | modulePath -> modulePath
     in
     let isEmptyRecord {pexp_desc} =
@@ -1675,16 +1675,16 @@ module V4 = struct
 
     (* handle key, ref, children *)
     (* React.createElement(Component.make, props, ...children) *)
+    let record = recordFromProps ~loc:jsxExprLoc ~removeKey:true args in
+    let props =
+      if isEmptyRecord record then emptyRecord ~loc:jsxExprLoc else record
+    in
+    let keyProp =
+      args |> List.filter (fun (arg_label, _) -> "key" = getLabel arg_label)
+    in
     match config.mode with
     (* The new jsx transform *)
     | "automatic" ->
-      let record = recordFromProps ~loc:jsxExprLoc ~removeKey:true args in
-      let props =
-        if isEmptyRecord record then emptyRecord ~loc:jsxExprLoc else record
-      in
-      let keyProp =
-        args |> List.filter (fun (arg_label, _) -> "key" = getLabel arg_label)
-      in
       let jsxExpr, key =
         match (!childrenArg, keyProp) with
         | None, (_, keyExpr) :: _ ->
@@ -1704,29 +1704,38 @@ module V4 = struct
       in
       Exp.apply ~attrs jsxExpr
         ([
-           (nolabel, Exp.ident {txt = ident; loc = callExprLoc});
+           (nolabel, Exp.ident {txt = ident ~suffix:"make"; loc = callExprLoc});
            (nolabel, props);
          ]
         @ key)
     | _ -> (
-      let record = recordFromProps ~loc:jsxExprLoc args in
-      (* check if record which goes to Foo.make({ ... } as record) empty or not
-         if empty then change it to {key: @optional None} only for upper case jsx
-           This would be redundant regarding PR progress https://github.com/rescript-lang/syntax/pull/299
-      *)
-      let props =
-        if isEmptyRecord record then emptyRecord ~loc:jsxExprLoc else record
+      let keyAddedProps ~keyExpr =
+        let propsType =
+          Typ.constr (Location.mknoloc @@ ident ~suffix:"props") [Typ.any ()]
+        in
+        Exp.apply
+          (Exp.ident
+             {loc = Location.none; txt = Ldot (Lident "React", "addKeyProp")})
+          [(nolabel, Exp.constraint_ props propsType); (nolabel, keyExpr)]
       in
-      match !childrenArg with
-      | None ->
+      match (!childrenArg, keyProp) with
+      | None, (_, keyExpr) :: _ ->
         Exp.apply ~attrs
           (Exp.ident
              {loc = Location.none; txt = Ldot (Lident "React", "createElement")})
           [
-            (nolabel, Exp.ident {txt = ident; loc = callExprLoc});
+            (nolabel, Exp.ident {txt = ident ~suffix:"make"; loc = callExprLoc});
+            (nolabel, keyAddedProps ~keyExpr);
+          ]
+      | None, [] ->
+        Exp.apply ~attrs
+          (Exp.ident
+             {loc = Location.none; txt = Ldot (Lident "React", "createElement")})
+          [
+            (nolabel, Exp.ident {txt = ident ~suffix:"make"; loc = callExprLoc});
             (nolabel, props);
           ]
-      | Some children ->
+      | Some children, (_, keyExpr) :: _ ->
         Exp.apply ~attrs
           (Exp.ident
              {
@@ -1734,7 +1743,19 @@ module V4 = struct
                txt = Ldot (Lident "React", "createElementVariadic");
              })
           [
-            (nolabel, Exp.ident {txt = ident; loc = callExprLoc});
+            (nolabel, Exp.ident {txt = ident ~suffix:"make"; loc = callExprLoc});
+            (nolabel, keyAddedProps ~keyExpr);
+            (nolabel, children);
+          ]
+      | Some children, [] ->
+        Exp.apply ~attrs
+          (Exp.ident
+             {
+               loc = Location.none;
+               txt = Ldot (Lident "React", "createElementVariadic");
+             })
+          [
+            (nolabel, Exp.ident {txt = ident ~suffix:"make"; loc = callExprLoc});
             (nolabel, props);
             (nolabel, children);
           ])
@@ -2041,8 +2062,7 @@ module V4 = struct
           in
           (* type props<'id, 'name> = { @optional key: string, @optional id: 'id, ... } *)
           let propsRecordType =
-            makePropsRecordType "props" Location.none
-              ((true, "key", [], keyType pstr_loc) :: namedTypeList)
+            makePropsRecordType "props" Location.none namedTypeList
           in
           (* can't be an arrow because it will defensively uncurry *)
           let newExternalType =
@@ -2274,10 +2294,9 @@ module V4 = struct
             (* type props = { ... } *)
             let propsRecordType =
               makePropsRecordType "props" emptyLoc
-                ([(true, "key", [], keyType emptyLoc)]
-                @ (if hasForwardRef then
-                   [(true, "ref", [], refType Location.none)]
-                  else [])
+                ((if hasForwardRef then
+                  [(true, "ref", [], refType Location.none)]
+                 else [])
                 @ namedTypeList)
             in
             let innerExpression =

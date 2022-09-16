@@ -1,4 +1,4 @@
-type props<'x, 'y> = {key?: string, x: 'x, y: 'y} // Component with type constraint
+type props<'x, 'y> = {x: 'x, y: 'y} // Component with type constraint
 @react.component let make = ({x, y, _}: props<string, string>) => React.string(x ++ y)
 let make = {
   let \"V4" = (props: props<_>) => make(props)
@@ -6,7 +6,7 @@ let make = {
 }
 
 module AnotherName = {
-  type props<'x> = {key?: string, x: 'x}
+  type props<'x> = {x: 'x}
 
   // Component with another name than "make"
   @react.component let anotherName = ({x, _}: props<'x>) => React.string(x)
