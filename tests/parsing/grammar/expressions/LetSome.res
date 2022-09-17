@@ -1,5 +1,7 @@
 let foo = (x, y) => {
   let Some(vx) = x
+  let x1 = vx+1
   let Some(vy) = y
-  Some(vx + vy)
+  let y1 = vy+1
+  Some(x1 + y1)
 }

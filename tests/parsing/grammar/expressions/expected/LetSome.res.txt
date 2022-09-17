@@ -1,5 +1,9 @@
 let foo x y =
   ((match x with
     | None -> None
-    | Some vx -> (match y with | None -> None | Some vy -> Some (vx + vy)))
+    | Some vx ->
+        let x1 = vx + 1 in
+        (match y with
+         | None -> None
+         | Some vy -> let y1 = vy + 1 in Some (x1 + y1)))
   [@ns.braces ])
