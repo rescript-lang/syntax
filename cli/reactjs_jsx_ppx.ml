@@ -1607,11 +1607,11 @@ module V4 = struct
         ~kind:(Ptype_record labelDeclList);
     ]
 
-  (* type props<'id, 'name, ...> = { @optional key: string, @optional id: 'id, ... } *)
+  (* type props<'x, 'y, ...> = { x: 'x, y?: 'y, ... } *)
   let makePropsRecordType propsName loc namedTypeList =
     Str.type_ Nonrecursive (makeTypeDecls propsName loc namedTypeList)
 
-  (* type props<'id, 'name, ...> = { @optional key: string, @optional id: 'id, ... } *)
+  (* type props<'x, 'y, ...> = { x: 'x, y?: 'y, ... } *)
   let makePropsRecordTypeSig propsName loc namedTypeList =
     Sig.type_ Nonrecursive (makeTypeDecls propsName loc namedTypeList)
 
@@ -2060,7 +2060,7 @@ module V4 = struct
               (Location.mkloc (Lident "props") pstr_loc)
               (makePropsTypeParams namedTypeList)
           in
-          (* type props<'id, 'name> = { @optional key: string, @optional id: 'id, ... } *)
+          (* type props<'x, 'y> = { x: 'x, y?: 'y, ... } *)
           let propsRecordType =
             makePropsRecordType "props" Location.none namedTypeList
           in
