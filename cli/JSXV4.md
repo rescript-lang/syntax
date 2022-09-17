@@ -40,7 +40,7 @@ It produces a type definition and a new function.
 
 // is converted to
 
-type props<'x, 'y, 'z> = {x: 'x, @optional y: 'y, @optional z: 'z, @optional key: string}
+type props<'x, 'y, 'z> = {x: 'x, y?: 'y, z?: 'z}
 
 ({x, y, z}: props<_>) => {
   let y = switch props.y {
@@ -60,11 +60,11 @@ React.createElement(Comp.make, {x})
 
 <Comp x y=7 ?z>
 // is converted to
-React.createElement(Comp.make, {x, y:7, @optional z})
+React.createElement(Comp.make, {x, y:7, ?z})
 
 <Comp x key="7">
 // is converted to
-React.createElement(Comp.make, {x, key: "7"})
+React.createElement(Comp.make, Jsx.addKeyProp({x}, "7"))
 ```
 
 **New "jsx" transform**
@@ -76,16 +76,16 @@ The "jsx" transform affects component application but not the definition.
 ```rescript
 <Comp x>
 // is converted to
-Js.React.jsx(Comp.make, {x})
+React.jsx(Comp.make, {x})
 ```
 
 ```rescript
 <div name="div" />
 // is converted to
-Js.React.jsxDom("div", { name: "div" })
+ReactDOM.jsx("div", { name: "div" })
 ```
 
-The props type of dom elements, e.g. `div`, is inferred to `Js.React.domProps`.
+The props type of dom elements, e.g. `div`, is inferred to `ReactDOM.domProps`.
 
 ```rescript
 type domProps = {
@@ -102,7 +102,7 @@ type domProps = {
 
 // is converted to
 
-type props<'x, 'y, 'z> = {x: 'x, @optional y: 'y, @optional z: 'z}
+type props<'x, 'y, 'z> = {x: 'x, y?: 'y, z?: 'z}
 
 props<int, int, int> => React.element
 ```
@@ -121,7 +121,11 @@ function has the name of the enclosing module/file.
 
 // is converted to
 
+// v4
 ReactDOMRe.createElement(ReasonReact.fragment, [comp1, comp2, comp3])
+
+// v4 @ new jsx transform
+React.jsxs(React.jsxFragment, {children: [comp1, comp2, comp3]})
 ```
 
 **File-level config**
