@@ -3066,6 +3066,7 @@ and parseExprBlockItem p =
     Ast_helper.Exp.open_ ~loc od.popen_override od.popen_lid blockExpr
   | Let ->
     let recFlag, letBindings = parseLetBindings ~attrs p in
+
     parseNewlineOrSemicolonExprBlock p;
     let next =
       if Grammar.isBlockExprStart p.Parser.token then parseExprBlock p
@@ -3076,7 +3077,35 @@ and parseExprBlockItem p =
           None
     in
     let loc = mkLoc startPos p.prevEndPos in
-    Ast_helper.Exp.let_ ~loc recFlag letBindings next
+
+    let res =
+      match letBindings with
+      | [
+       {
+         pvb_pat =
+           {
+             ppat_desc =
+               Ppat_construct
+                 ({txt = Lident "Some"}, Some ({ppat_desc = Ppat_var _} as pat));
+           };
+         pvb_expr;
+       };
+      ]
+        when recFlag = Nonrecursive ->
+        let lid_none = Location.mknoloc (Longident.Lident "None") in
+        let pat_none = Ast_helper.Pat.construct lid_none None in
+        let exp_none = Ast_helper.Exp.construct lid_none None in
+        let case_none = Ast_helper.Exp.case pat_none exp_none in
+        let lid_some = Location.mknoloc (Longident.Lident "Some") in
+        let pat_some = Ast_helper.Pat.construct lid_some (Some pat) in
+        let case_some = Ast_helper.Exp.case pat_some next in
+        let match_exp =
+          Ast_helper.Exp.match_ ~loc pvb_expr [case_none; case_some]
+        in
+        match_exp
+      | _ -> Ast_helper.Exp.let_ ~loc recFlag letBindings next
+    in
+    res
   | _ ->
     let e1 =
       let expr = parseExpr p in
