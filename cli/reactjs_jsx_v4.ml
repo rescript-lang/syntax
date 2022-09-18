@@ -248,7 +248,7 @@ let stripJsNullable coreType =
    ptyp_desc =
      Ptyp_constr ({txt = Ldot (Ldot (Lident "Js", "Nullable"), "t")}, coreTypes);
   } ->
-    List.nth_opt coreTypes 0
+    List.nth_opt coreTypes 0 [@doesNotRaise]
   | _ -> Some coreType
 
 (* Make type params of the props type *)
