@@ -1,2 +1,10 @@
-type props<'x> = {x: 'x}
-let make: React.componentLike<props<string>, React.element>
+module A: {
+  type props<'x> = {x: 'x}
+  let make: React.componentLike<props<string>, React.element>
+}
+
+module NoProps: {
+  type props<_> = {}
+
+  let make: React.componentLike<props<_>, React.element>
+}

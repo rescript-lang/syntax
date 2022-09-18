@@ -99,10 +99,10 @@ module V4C = {
       \"ForwardRef$V4C$FancyInput"
     })
   }
-  type props = {}
+  type props<_> = {}
 
   @react.component
-  let make = (_: props) => {
+  let make = (_: props<_>) => {
     let input = React.useRef(Js.Nullable.null)
 
     ReactDOMRe.createDOMElementVariadic(
@@ -159,10 +159,10 @@ module V4A = {
       \"ForwardRef$V4A$FancyInput"
     })
   }
-  type props = {}
+  type props<_> = {}
 
   @react.component
-  let make = (_: props) => {
+  let make = (_: props<_>) => {
     let input = React.useRef(Js.Nullable.null)
     ReactDOM.jsx(
       "div",

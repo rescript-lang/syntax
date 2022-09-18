@@ -1,0 +1,38 @@
+@@jsxConfig({version: 4, mode: "classic"})
+
+module V4CA = {
+  type props<_> = {}
+
+  @react.component let make = (_: props<_>) => ReactDOMRe.createDOMElementVariadic("div", [])
+  let make = {
+    let \"NoPropsWithKey$V4CA" = props => make(props)
+
+    \"NoPropsWithKey$V4CA"
+  }
+}
+
+module V4CB = {
+  type props<_> = {}
+
+  @module("c")
+  external make: React.componentLike<props<_>, React.element> = "component"
+}
+
+module V4C = {
+  type props<_> = {}
+
+  @react.component
+  let make = (_: props<_>) =>
+    ReactDOMRe.createElement(
+      ReasonReact.fragment,
+      [
+        React.createElement(V4CA.make, Jsx.addKeyProp(({}: V4CA.props<_>), "k")),
+        React.createElement(V4CB.make, Jsx.addKeyProp(({}: V4CB.props<_>), "k")),
+      ],
+    )
+  let make = {
+    let \"NoPropsWithKey$V4C" = props => make(props)
+
+    \"NoPropsWithKey$V4C"
+  }
+}

@@ -35,6 +35,10 @@ let constantString ~loc str =
 (* {} empty record *)
 let emptyRecord ~loc = Exp.record ~loc [] None
 
+(* <_> *)
+let genericCoreTypes ~loc =
+  [{ptyp_desc = Ptyp_any; ptyp_loc = loc; ptyp_attributes = []}]
+
 let safeTypeFromValue valueStr =
   let valueStr = getLabel valueStr in
   if valueStr = "" || (valueStr.[0] [@doesNotRaise]) <> '_' then valueStr
@@ -228,13 +232,18 @@ let recordFromProps ~loc ~removeKey callArguments =
       pexp_attributes = [];
     }
 
-(* make type params for make fn arguments *)
+(* Make type params of the props type *)
 (* let make = ({id, name, children}: props<'id, 'name, 'children>) *)
-let makePropsTypeParamsTvar namedTypeList =
-  namedTypeList
-  |> List.filter_map (fun (_isOptional, label, _, _interiorType) ->
-         if label = "key" then None
-         else Some (Typ.var @@ safeTypeFromValue (Labelled label)))
+let makePropsTypeParamsTvar ~default namedTypeList =
+  let params =
+    namedTypeList
+    |> List.filter_map (fun (_isOptional, label, _, _interiorType) ->
+           if label = "key" then None
+           else Some (Typ.var @@ safeTypeFromValue (Labelled label)))
+  in
+  match params with
+  | [] -> default
+  | _ -> params
 
 let stripOption coreType =
   match coreType with
@@ -251,31 +260,37 @@ let stripJsNullable coreType =
     List.nth_opt coreTypes 0 [@doesNotRaise]
   | _ -> Some coreType
 
-(* Make type params of the props type *)
+(* Make type params for make fn arguments *)
 (* (Sig) let make: React.componentLike<props<string>, React.element> *)
 (* (Str) let make = ({x, _}: props<'x>) => body *)
 (* (Str) external make: React.componentLike<props< .. >, React.element> = "default" *)
 let makePropsTypeParams ?(stripExplicitOption = false)
-    ?(stripExplicitJsNullableOfRef = false) namedTypeList =
-  namedTypeList
-  |> List.filter_map (fun (isOptional, label, _, interiorType) ->
-         if label = "key" then None
-           (* TODO: Worth thinking how about "ref_" or "_ref" usages *)
-         else if label = "ref" then
-           (*
+    ?(stripExplicitJsNullableOfRef = false) ~default namedTypeList =
+  let params =
+    namedTypeList
+    |> List.filter_map (fun (isOptional, label, _, interiorType) ->
+           if label = "key" then None
+             (* TODO: Worth thinking how about "ref_" or "_ref" usages *)
+           else if label = "ref" then
+             (*
                 If ref has a type annotation then use it, else `ReactDOM.Ref.currentDomRef.
                 For example, if JSX ppx is used for React Native, type would be different.
              *)
-           match interiorType with
-           | {ptyp_desc = Ptyp_var "ref"} -> Some (refType Location.none)
-           | _ ->
-             (* Strip explicit Js.Nullable.t in case of forwardRef *)
-             if stripExplicitJsNullableOfRef then stripJsNullable interiorType
-             else Some interiorType
-           (* Strip the explicit option type in implementation *)
-           (* let make = (~x: option<string>=?) => ... *)
-         else if isOptional && stripExplicitOption then stripOption interiorType
-         else Some interiorType)
+             match interiorType with
+             | {ptyp_desc = Ptyp_var "ref"} -> Some (refType Location.none)
+             | _ ->
+               (* Strip explicit Js.Nullable.t in case of forwardRef *)
+               if stripExplicitJsNullableOfRef then stripJsNullable interiorType
+               else Some interiorType
+             (* Strip the explicit option type in implementation *)
+             (* let make = (~x: option<string>=?) => ... *)
+           else if isOptional && stripExplicitOption then
+             stripOption interiorType
+           else Some interiorType)
+  in
+  match params with
+  | [] -> default
+  | _ -> params
 
 let makeLabelDecls ~loc namedTypeList =
   namedTypeList
@@ -293,7 +308,10 @@ let makeTypeDecls propsName loc namedTypeList =
   let labelDeclList = makeLabelDecls ~loc namedTypeList in
   (* 'id, 'className, ... *)
   let params =
-    makePropsTypeParamsTvar namedTypeList
+    makePropsTypeParamsTvar
+      ~default:(genericCoreTypes ~loc:Location.none)
+        (* If empty props type props<_> = {} *)
+      namedTypeList
     |> List.map (fun coreType -> (coreType, Invariant))
   in
   [
@@ -745,9 +763,15 @@ let transformStructureItem ~config mapper item =
         let innerType, propTypes = getPropTypes [] pval_type in
         let namedTypeList = List.fold_left argToConcreteType [] propTypes in
         let retPropsType =
+          let params =
+            makePropsTypeParams
+              ~default:(genericCoreTypes ~loc:Location.none)
+              namedTypeList
+          in
+
           Typ.constr ~loc:pstr_loc
             (Location.mkloc (Lident "props") pstr_loc)
-            (makePropsTypeParams namedTypeList)
+            params
         in
         (* type props<'x, 'y> = { x: 'x, y?: 'y, ... } *)
         let propsRecordType =
@@ -1093,12 +1117,17 @@ let transformStructureItem ~config mapper item =
             | _ -> Pat.record (List.rev patternsWithLabel) Open
           in
           let expression =
+            let params =
+              makePropsTypeParams ~stripExplicitOption:true
+                ~stripExplicitJsNullableOfRef:hasForwardRef
+                ~default:(genericCoreTypes ~loc:Location.none)
+                namedTypeList
+            in
             Exp.fun_ Nolabel None
               (Pat.constraint_ recordPattern
                  (Typ.constr ~loc:emptyLoc
                     {txt = Lident "props"; loc = emptyLoc}
-                    (makePropsTypeParams ~stripExplicitOption:true
-                       ~stripExplicitJsNullableOfRef:hasForwardRef namedTypeList)))
+                    params))
               expression
           in
           (* let make = ({id, name, ...}: props<'id, 'name, ...>) => { ... } *)
@@ -1192,9 +1221,12 @@ let transformSignatureItem ~config _mapper item =
       let innerType, propTypes = getPropTypes [] pval_type in
       let namedTypeList = List.fold_left argToConcreteType [] propTypes in
       let retPropsType =
-        Typ.constr
-          (Location.mkloc (Lident "props") psig_loc)
-          (makePropsTypeParams namedTypeList)
+        let params =
+          makePropsTypeParams
+            ~default:(genericCoreTypes ~loc:Location.none)
+            namedTypeList
+        in
+        Typ.constr (Location.mkloc (Lident "props") psig_loc) params
       in
       let propsRecordType =
         makePropsRecordTypeSig "props" Location.none

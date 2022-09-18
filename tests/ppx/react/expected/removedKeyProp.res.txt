@@ -23,10 +23,10 @@ module HasChildren = {
     \"RemovedKeyProp$HasChildren"
   }
 }
-type props = {}
+type props<_> = {}
 
 @react.component
-let make = (_: props) =>
+let make = (_: props<_>) =>
   ReactDOMRe.createElement(
     ReasonReact.fragment,
     [
