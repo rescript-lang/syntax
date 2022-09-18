@@ -233,7 +233,7 @@ let recordFromProps ~loc ~removeKey callArguments =
 let makePropsTypeParamsTvar namedTypeList =
   namedTypeList
   |> List.filter_map (fun (_isOptional, label, _, _interiorType) ->
-         if label = "key" || label = "ref" then None
+         if label = "key" then None
          else Some (Typ.var @@ safeTypeFromValue (Labelled label)))
 
 let stripOption coreType =
@@ -242,13 +242,36 @@ let stripOption coreType =
     List.nth_opt coreTypes 0 [@doesNotRaise]
   | _ -> Some coreType
 
-(* make type params for make sig arguments and for external *)
-(* let make: React.componentLike<props<string, option<string>>, React.element> *)
-(* external make: React.componentLike<props< .. >, React.element> = "default" *)
-let makePropsTypeParams ?(stripExplicitOption = false) namedTypeList =
+let stripJsNullable coreType =
+  match coreType with
+  | {
+   ptyp_desc =
+     Ptyp_constr ({txt = Ldot (Ldot (Lident "Js", "Nullable"), "t")}, coreTypes);
+  } ->
+    List.nth_opt coreTypes 0
+  | _ -> Some coreType
+
+(* Make type params of the props type *)
+(* (Sig) let make: React.componentLike<props<string>, React.element> *)
+(* (Str) let make = ({x, _}: props<'x>) => body *)
+(* (Str) external make: React.componentLike<props< .. >, React.element> = "default" *)
+let makePropsTypeParams ?(stripExplicitOption = false)
+    ?(stripExplicitJsNullableOfRef = false) namedTypeList =
   namedTypeList
   |> List.filter_map (fun (isOptional, label, _, interiorType) ->
-         if label = "key" || label = "ref" then None
+         if label = "key" then None
+           (* TODO: Worth thinking how about "ref_" or "_ref" usages *)
+         else if label = "ref" then
+           (*
+                If ref has a type annotation then use it, else `ReactDOM.Ref.currentDomRef.
+                For example, if JSX ppx is used for React Native, type would be different.
+             *)
+           match interiorType with
+           | {ptyp_desc = Ptyp_var "ref"} -> Some (refType Location.none)
+           | _ ->
+             (* Strip explicit Js.Nullable.t in case of forwardRef *)
+             if stripExplicitJsNullableOfRef then stripJsNullable interiorType
+             else Some interiorType
            (* Strip the explicit option type in implementation *)
            (* let make = (~x: option<string>=?) => ... *)
          else if isOptional && stripExplicitOption then stripOption interiorType
@@ -259,10 +282,6 @@ let makeLabelDecls ~loc namedTypeList =
   |> List.map (fun (isOptional, label, _, interiorType) ->
          if label = "key" then
            Type.field ~loc ~attrs:optionalAttr {txt = label; loc} interiorType
-         else if label = "ref" then
-           Type.field ~loc
-             ~attrs:(if isOptional then optionalAttr else [])
-             {txt = label; loc} interiorType
          else if isOptional then
            Type.field ~loc ~attrs:optionalAttr {txt = label; loc}
              (Typ.var @@ safeTypeFromValue @@ Labelled label)
@@ -614,9 +633,22 @@ let rec recursivelyTransformNamedArgsForMake mapper expr args newtypes coreType
   | Pexp_fun
       ( Nolabel,
         _,
-        {ppat_desc = Ppat_var _ | Ppat_constraint ({ppat_desc = Ppat_var _}, _)},
+        ({
+           ppat_desc =
+             Ppat_var {txt} | Ppat_constraint ({ppat_desc = Ppat_var {txt}}, _);
+         } as pattern),
         _expression ) ->
-    (args, newtypes, coreType)
+    if txt = "ref" then
+      let type_ =
+        match pattern with
+        | {ppat_desc = Ppat_constraint (_, type_)} -> Some type_
+        | _ -> None
+      in
+      (* The ref arguement of forwardRef should be optional *)
+      ( (Optional "ref", None, pattern, txt, pattern.ppat_loc, type_) :: args,
+        newtypes,
+        coreType )
+    else (args, newtypes, coreType)
   | Pexp_fun (Nolabel, _, pattern, _expression) ->
     Location.raise_errorf ~loc:pattern.ppat_loc
       "React: react.component refs only support plain arguments and type \
@@ -943,10 +975,7 @@ let transformStructureItem ~config mapper item =
           let vbMatchList = List.map vbMatch namedArgWithDefaultValueList in
           (* type props = { ... } *)
           let propsRecordType =
-            makePropsRecordType "props" emptyLoc
-              ((if hasForwardRef then [(true, "ref", [], refType Location.none)]
-               else [])
-              @ namedTypeList)
+            makePropsRecordType "props" emptyLoc namedTypeList
           in
           let innerExpression =
             Exp.apply
@@ -1013,12 +1042,12 @@ let transformStructureItem ~config mapper item =
             | Pexp_fun
                 (arg_label, _default, ({ppat_loc; ppat_desc} as pattern), expr)
               -> (
-              let pattern = stripConstraint pattern in
+              let patternWithoutConstraint = stripConstraint pattern in
               if isLabelled arg_label || isOptional arg_label then
                 returnedExpression
                   (( {loc = ppat_loc; txt = Lident (getLabel arg_label)},
                      {
-                       pattern with
+                       patternWithoutConstraint with
                        ppat_attributes =
                          (if isOptional arg_label then optionalAttr else [])
                          @ pattern.ppat_attributes;
@@ -1029,7 +1058,8 @@ let transformStructureItem ~config mapper item =
                 (* Special case of nolabel arg "ref" in forwardRef fn *)
                 (* let make = React.forwardRef(ref => body) *)
                 match ppat_desc with
-                | Ppat_var {txt} ->
+                | Ppat_var {txt}
+                | Ppat_constraint ({ppat_desc = Ppat_var {txt}}, _) ->
                   returnedExpression patternsWithLabel
                     (( {loc = ppat_loc; txt = Lident txt},
                        {
@@ -1046,27 +1076,29 @@ let transformStructureItem ~config mapper item =
           let patternsWithLabel, patternsWithNolabel, expression =
             returnedExpression [] [] expression
           in
-          let pattern =
-            match patternsWithLabel with
-            | [] -> Pat.any ()
-            | _ -> Pat.record (List.rev patternsWithLabel) Open
-          in
           (* add pattern matching for optional prop value *)
           let expression =
             if List.length vbMatchList = 0 then expression
             else Exp.let_ Nonrecursive vbMatchList expression
           in
+          (* (ref) => expr *)
           let expression =
             List.fold_left
               (fun expr (_, pattern) -> Exp.fun_ Nolabel None pattern expr)
               expression patternsWithNolabel
           in
+          let recordPattern =
+            match patternsWithLabel with
+            | [] -> Pat.any ()
+            | _ -> Pat.record (List.rev patternsWithLabel) Open
+          in
           let expression =
             Exp.fun_ Nolabel None
-              (Pat.constraint_ pattern
+              (Pat.constraint_ recordPattern
                  (Typ.constr ~loc:emptyLoc
                     {txt = Lident "props"; loc = emptyLoc}
-                    (makePropsTypeParams ~stripExplicitOption:true namedTypeList)))
+                    (makePropsTypeParams ~stripExplicitOption:true
+                       ~stripExplicitJsNullableOfRef:hasForwardRef namedTypeList)))
               expression
           in
           (* let make = ({id, name, ...}: props<'id, 'name, ...>) => { ... } *)

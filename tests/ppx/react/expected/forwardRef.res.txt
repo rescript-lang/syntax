@@ -66,14 +66,17 @@ module V3 = {
 
 module V4C = {
   module FancyInput = {
-    type props<'className, 'children> = {
-      ref?: ReactDOM.Ref.currentDomRef,
+    type props<'className, 'children, 'ref> = {
       className?: 'className,
       children: 'children,
+      ref?: 'ref,
     }
 
     @react.component
-    let make = ({?className, children, _}: props<'className, 'children>, ref) =>
+    let make = (
+      {?className, children, _}: props<'className, 'children, ReactRef.currentDomRef>,
+      ref: Js.Nullable.t<ReactRef.currentDomRef>,
+    ) =>
       ReactDOMRe.createDOMElementVariadic(
         "div",
         [
@@ -82,7 +85,7 @@ module V4C = {
             ~props=ReactDOMRe.domProps(
               ~type_="text",
               ~className?,
-              ~ref=?{Js.Nullable.toOption(ref)->Belt.Option.map(ReactDOM.Ref.domRef)},
+              ~ref=?{Js.Nullable.toOption(ref)->Belt.Option.map(React.Ref.domRef)},
               (),
             ),
             [],
@@ -123,14 +126,17 @@ module V4C = {
 
 module V4A = {
   module FancyInput = {
-    type props<'className, 'children> = {
-      ref?: ReactDOM.Ref.currentDomRef,
+    type props<'className, 'children, 'ref> = {
       className?: 'className,
       children: 'children,
+      ref?: 'ref,
     }
 
     @react.component
-    let make = ({?className, children, _}: props<'className, 'children>, ref) =>
+    let make = (
+      {?className, children, _}: props<'className, 'children, ReactDOM.Ref.currentDomRef>,
+      ref,
+    ) =>
       ReactDOM.jsxs(
         "div",
         {
