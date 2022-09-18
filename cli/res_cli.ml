@@ -310,7 +310,7 @@ module CliArgProcessor = struct
     [@@raises exit]
 end
 
-let[@raises exit] () =
+let () =
   if not !Sys.interactive then (
     ResClflags.parse ();
     CliArgProcessor.processFile ~isInterface:!ResClflags.interface
@@ -319,3 +319,4 @@ let[@raises exit] () =
       ~jsxVersion:!ResClflags.jsxVersion ~jsxModule:!ResClflags.jsxModule
       ~jsxMode:!ResClflags.jsxMode ~typechecker:!ResClflags.typechecker
       !ResClflags.file)
+  [@@raises exit]
