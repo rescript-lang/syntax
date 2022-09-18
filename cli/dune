@@ -2,5 +2,6 @@
  (name res_cli)
  (public_name rescript)
  (flags
-  (-open Syntax -open Compilerlibs406))
+  (-open Syntax -open Compilerlibs406)
+  (:standard -w +a-4-42-40-9-48))
  (libraries syntax compilerlibs406))

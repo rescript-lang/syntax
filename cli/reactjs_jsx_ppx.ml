@@ -1360,8 +1360,6 @@ module V4 = struct
     | _ -> valueStr
     [@@raises Invalid_argument]
 
-  let keyType loc = Typ.constr ~loc {loc; txt = Lident "string"} []
-
   let refType loc =
     Typ.constr ~loc
       {loc; txt = Ldot (Ldot (Lident "ReactDOM", "Ref"), "currentDomRef")}
