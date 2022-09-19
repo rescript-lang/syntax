@@ -3082,25 +3082,20 @@ and parseExprBlockItem p =
       match letBindings with
       | [
        {
-         pvb_pat =
-           {
-             ppat_desc =
-               Ppat_construct
-                 ({txt = Lident "Some"}, Some ({ppat_desc = Ppat_var _} as pat));
-           };
+         pvb_pat = {ppat_desc = Ppat_construct ({txt = Lident "Some"}, Some pat)};
          pvb_expr;
        };
       ]
         when recFlag = Nonrecursive ->
         let lid_none = Location.mknoloc (Longident.Lident "None") in
-        let pat_none = Ast_helper.Pat.construct lid_none None in
+        let pat_any = Ast_helper.Pat.any () in
         let exp_none = Ast_helper.Exp.construct lid_none None in
-        let case_none = Ast_helper.Exp.case pat_none exp_none in
+        let case_any = Ast_helper.Exp.case pat_any exp_none in
         let lid_some = Location.mknoloc (Longident.Lident "Some") in
         let pat_some = Ast_helper.Pat.construct lid_some (Some pat) in
         let case_some = Ast_helper.Exp.case pat_some next in
         let match_exp =
-          Ast_helper.Exp.match_ ~loc pvb_expr [case_none; case_some]
+          Ast_helper.Exp.match_ ~loc pvb_expr [case_some; case_any]
         in
         match_exp
       | _ -> Ast_helper.Exp.let_ ~loc recFlag letBindings next
