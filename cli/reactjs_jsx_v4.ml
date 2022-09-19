@@ -397,23 +397,18 @@ let transformUppercaseCall3 ~config modulePath mapper jsxExprLoc callExprLoc
        ]
       @ key)
   | _ -> (
-    let keyAddedProps ~keyExpr =
-      let propsType =
-        Typ.constr (Location.mknoloc @@ ident ~suffix:"props") [Typ.any ()]
-      in
-      Exp.apply
-        (Exp.ident
-           {loc = Location.none; txt = Ldot (Lident "Jsx", "addKeyProp")})
-        [(nolabel, Exp.constraint_ props propsType); (nolabel, keyExpr)]
-    in
     match (!childrenArg, keyProp) with
     | None, (_, keyExpr) :: _ ->
       Exp.apply ~attrs
         (Exp.ident
-           {loc = Location.none; txt = Ldot (Lident "React", "createElement")})
+           {
+             loc = Location.none;
+             txt = Ldot (Lident "React", "createElementWithKey");
+           })
         [
           (nolabel, Exp.ident {txt = ident ~suffix:"make"; loc = callExprLoc});
-          (nolabel, keyAddedProps ~keyExpr);
+          (nolabel, props);
+          (nolabel, keyExpr);
         ]
     | None, [] ->
       Exp.apply ~attrs
@@ -428,12 +423,13 @@ let transformUppercaseCall3 ~config modulePath mapper jsxExprLoc callExprLoc
         (Exp.ident
            {
              loc = Location.none;
-             txt = Ldot (Lident "React", "createElementVariadic");
+             txt = Ldot (Lident "React", "createElementVariadicWithKey");
            })
         [
           (nolabel, Exp.ident {txt = ident ~suffix:"make"; loc = callExprLoc});
-          (nolabel, keyAddedProps ~keyExpr);
+          (nolabel, props);
           (nolabel, children);
+          (nolabel, keyExpr);
         ]
     | Some children, [] ->
       Exp.apply ~attrs
