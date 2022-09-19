@@ -16,7 +16,8 @@ let q = 11
   */
 type h = int
 
-/**
-  doc comment and attributes
- */
+/* comment and attribute */
+@foo let x = 10
+
+/** doc comment and attribute */
 @foo let x = 10

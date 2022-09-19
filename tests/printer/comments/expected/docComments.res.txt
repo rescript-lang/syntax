@@ -16,6 +16,7 @@ let q = 11
   */
 type h = int
 
-/**
-  external with doc comment
- */ @foo let x = 10
+/* comment and attribute */
+@foo let x = 10
+
+/** doc comment and attribute */ @foo let x = 10
