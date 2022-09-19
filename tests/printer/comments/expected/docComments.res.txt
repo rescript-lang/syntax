@@ -15,3 +15,7 @@ let q = 11
   multiline doc comment
   */
 type h = int
+
+/**
+  external with doc comment
+ */ @foo let x = 10
