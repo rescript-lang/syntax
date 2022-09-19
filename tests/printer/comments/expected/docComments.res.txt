@@ -22,3 +22,12 @@ type h = int
 /** doc comment and attribute */
 @foo
 let x = 10
+
+/** doc comment and 3 attributes */
+@foo
+@bar
+@baz
+let x = 10
+
+/** doc comment and 0 attributes */
+let x = 10
