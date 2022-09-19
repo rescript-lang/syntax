@@ -22,6 +22,7 @@
 
 #### :bug: Bug Fix
 
+- Fix pretty printer where it would print doc comments on the same line as other attributes.
 - Fix location issue in error messages with JSX V4 where the body of the component is an application https://github.com/rescript-lang/syntax/pull/633
 - Fix issue where the printer would omit attributes for `->` and `|>` https://github.com/rescript-lang/syntax/pull/629
 - Fix printing of optional fields in records https://github.com/rescript-lang/rescript-compiler/issues/5654

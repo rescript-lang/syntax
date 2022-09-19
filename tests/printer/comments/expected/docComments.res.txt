@@ -19,4 +19,6 @@ type h = int
 /* comment and attribute */
 @foo let x = 10
 
-/** doc comment and attribute */ @foo let x = 10
+/** doc comment and attribute */
+@foo
+let x = 10

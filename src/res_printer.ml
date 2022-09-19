@@ -569,7 +569,7 @@ and printStructureItem ~customLayout (si : Parsetree.structure_item) cmtTbl =
     in
     Doc.concat [printAttributes ~customLayout attrs cmtTbl; exprDoc]
   | Pstr_attribute attr ->
-    printAttribute ~customLayout ~standalone:true attr cmtTbl
+    fst (printAttribute ~customLayout ~standalone:true attr cmtTbl)
   | Pstr_extension (extension, attrs) ->
     Doc.concat
       [
@@ -940,7 +940,7 @@ and printSignatureItem ~customLayout (si : Parsetree.signature_item) cmtTbl =
   | Psig_include includeDescription ->
     printIncludeDescription ~customLayout includeDescription cmtTbl
   | Psig_attribute attr ->
-    printAttribute ~customLayout ~standalone:true attr cmtTbl
+    fst (printAttribute ~customLayout ~standalone:true attr cmtTbl)
   | Psig_extension (extension, attrs) ->
     Doc.concat
       [
@@ -5033,7 +5033,7 @@ and printAttributes ?loc ?(inline = false) ~customLayout
     Doc.concat
       [
         Doc.group
-          (Doc.join ~sep:Doc.line
+          (Doc.joinWithSep
              (List.map
                 (fun attr -> printAttribute ~customLayout attr cmtTbl)
                 attrs));
@@ -5134,20 +5134,22 @@ and printAttribute ?(standalone = false) ~customLayout
               Pstr_eval ({pexp_desc = Pexp_constant (Pconst_string (txt, _))}, _);
           };
         ] ) ->
-    Doc.concat
-      [
-        Doc.text (if standalone then "/***" else "/**");
-        Doc.text txt;
-        Doc.text "*/";
-      ]
+    ( Doc.concat
+        [
+          Doc.text (if standalone then "/***" else "/**");
+          Doc.text txt;
+          Doc.text "*/";
+        ],
+      Doc.hardLine )
   | _ ->
-    Doc.group
-      (Doc.concat
-         [
-           Doc.text (if standalone then "@@" else "@");
-           Doc.text (convertBsExternalAttribute id.txt);
-           printPayload ~customLayout payload cmtTbl;
-         ])
+    ( Doc.group
+        (Doc.concat
+           [
+             Doc.text (if standalone then "@@" else "@");
+             Doc.text (convertBsExternalAttribute id.txt);
+             printPayload ~customLayout payload cmtTbl;
+           ]),
+      Doc.line )
 
 and printModExpr ~customLayout modExpr cmtTbl =
   let doc =
