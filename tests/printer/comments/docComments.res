@@ -15,3 +15,8 @@ let q = 11
   multiline doc comment
   */
 type h = int
+
+/**
+  doc comment and attributes
+ */
+@foo let x = 10
