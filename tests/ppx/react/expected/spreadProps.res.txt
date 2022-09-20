@@ -1,3 +1,16 @@
+@@jsxConfig({version: 4, mode: "classic"})
+let c0 = React.createElement(A.make, {...p, x: "x"})
+
+// ignore second one
+let c0 = React.createElement(A.make, {...p0, x: "x"})
+
+// only spread props
+let c1 = React.createElement(A.make, p)
+
+// reversed order
+let c2 = React.createElement(A.make, {...p, x: "x"})
+
+@@jsxConfig({version: 4, mode: "automatic"})
 let c0 = React.jsx(A.make, {...p, x: "x"})
 
 // ignore second one
