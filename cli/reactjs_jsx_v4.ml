@@ -208,20 +208,21 @@ let recordFromProps ~loc ~removeKey callArguments =
   let spreadFields =
     propsToSpread |> List.map (fun (_, expression) -> expression)
   in
-  match spreadFields with
-  | [] ->
+  match (fields, spreadFields) with
+  | [], [spreadProps] | [], spreadProps :: _ -> spreadProps
+  | _, [] ->
     {
       pexp_desc = Pexp_record (fields, None);
       pexp_loc = loc;
       pexp_attributes = [];
     }
-  | [spreadProps] ->
+  | _, [spreadProps] ->
     {
       pexp_desc = Pexp_record (fields, Some spreadProps);
       pexp_loc = loc;
       pexp_attributes = [];
     }
-  | spreadProps :: _ ->
+  | _, spreadProps :: _ ->
     {
       pexp_desc = Pexp_record (fields, Some spreadProps);
       pexp_loc = loc;
