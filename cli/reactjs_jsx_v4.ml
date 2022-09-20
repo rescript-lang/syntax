@@ -216,12 +216,8 @@ let recordFromProps ~loc ~removeKey callArguments =
       pexp_loc = loc;
       pexp_attributes = [];
     }
-  | _, [spreadProps] ->
-    {
-      pexp_desc = Pexp_record (fields, Some spreadProps);
-      pexp_loc = loc;
-      pexp_attributes = [];
-    }
+  | _, [spreadProps]
+  (* take the first spreadProps only *)
   | _, spreadProps :: _ ->
     {
       pexp_desc = Pexp_record (fields, Some spreadProps);
