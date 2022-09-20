@@ -513,3 +513,5 @@ let _ = <View style=styles["backgroundImageWrapper"]>
 <> ...<span /> </>
 <> ...[a] </>
 <> ...(1, 2) </>
+
+let _ = <A x="y" {...str} />

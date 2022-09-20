@@ -4129,6 +4129,9 @@ and printJsxProp ~customLayout arg cmtTbl =
     | Nolabel -> Doc.nil
     | Labelled _lbl -> printIdentLike ident
     | Optional _lbl -> Doc.concat [Doc.question; printIdentLike ident])
+  | Asttypes.Labelled "_spreadProps", expr ->
+    let doc = printExpressionWithComments ~customLayout expr cmtTbl in
+    Doc.concat [Doc.lbrace; Doc.dotdotdot; Doc.softLine; doc; Doc.rbrace]
   | lbl, expr ->
     let argLoc, expr =
       match expr.pexp_attributes with

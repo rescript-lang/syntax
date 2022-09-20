@@ -2635,7 +2635,7 @@ and parseJsxProp p =
         {e with pexp_attributes = propLocAttr :: e.pexp_attributes}
       in
       (* using label "spreadProps" to distinguish from others *)
-      let label = Asttypes.Labelled "spreadProps" in
+      let label = Asttypes.Labelled "_spreadProps" in
       match p.Parser.token with
       | Rbrace ->
         Parser.next p;

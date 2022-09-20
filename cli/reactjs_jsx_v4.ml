@@ -188,7 +188,7 @@ let recordFromProps ~loc ~removeKey callArguments =
   let props, propsToSpread =
     removeLastPositionUnitAux callArguments []
     |> List.rev
-    |> List.partition (fun (label, _) -> label <> labelled "spreadProps")
+    |> List.partition (fun (label, _) -> label <> labelled "_spreadProps")
   in
   let props =
     if removeKey then

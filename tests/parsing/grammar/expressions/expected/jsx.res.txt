@@ -578,3 +578,7 @@ let _ =
 ;;(([((span ~children:[] ())[@JSX ])])[@JSX ])
 ;;(([[|a|]])[@JSX ])
 ;;(([(1, 2)])[@JSX ])
+let _ =
+  ((A.createElement ~x:(({js|y|js})[@ns.namedArgLoc ]) ~_spreadProps:((str)
+      [@ns.namedArgLoc ]) ~children:[] ())
+  [@JSX ])
