@@ -41,5 +41,8 @@
    To build certain dependencies in JSX V3 compatibility mode, use `"v3-dependencies"` as in the example:
 
    ```json
-   "jsx": { "version": 4, "v3-dependencies": ["rescript-react-navigation"] }
+   "jsx": {
+    "version": 4,
+    "v3-dependencies": ["rescript-react-native", "rescript-react-navigation"]
+   }
    ```
