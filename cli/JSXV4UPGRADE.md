@@ -38,8 +38,8 @@
 
    d. Dependencies
    Dependencies inherit the jsx configuration of the root project.
-   To preserve the jsx configuration specified in a project, use `"preserve-dependencies"` as in the example:
+   To build certain dependencies in JSX V3 compatibility mode, use `"v3-dependencies"` as in the example:
 
    ```json
-   "jsx": { "version": 4, "preserve-dependencies": ["rescript-react-navigation"] }
+   "jsx": { "version": 4, "v3-dependencies": ["rescript-react-navigation"] }
    ```
