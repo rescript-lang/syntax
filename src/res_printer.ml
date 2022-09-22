@@ -236,14 +236,13 @@ let printCommentsInside cmtTbl loc =
       if singleLine then Doc.text ("//" ^ txt)
       else printMultilineCommentContent txt
     in
-    if isLast then
-      Doc.concat
-        [
-          Doc.indent (Doc.concat [Doc.softLine; Doc.breakParent; content]);
-          Doc.softLine;
-        ]
-    else Doc.indent (Doc.concat [Doc.softLine; Doc.breakParent; content])
+    Doc.concat
+      [
+        Doc.indent (Doc.concat [Doc.softLine; Doc.breakParent; content]);
+        (if isLast then Doc.softLine else Doc.nil);
+      ]
   in
+
   let rec loop acc comments =
     match comments with
     | [] -> Doc.nil
