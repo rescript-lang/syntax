@@ -81,8 +81,12 @@ let x = /* before */ Red /* after Red */(
 ) /* after */
 
 // lists
-let x = /* c0 */ list{/* c1 */} /* c2 */
-/* c0 */ list{/* c1 */} /* c2 */
+let x = /* c0 */ list{
+  /* c1 */
+} /* c2 */
+/* c0 */ list{
+  /* c1 */
+} /* c2 */
 
 let x = /* c0 */ list{/* c1 */ a /* c2 */} /* c3 */
 /* c0 */ list{/* c1 */ a /* c2 */} /* c3 */
@@ -95,8 +99,11 @@ let x = /* c0 */ list{/* c1 */ a /* c2 */, /* c3 */ b /* c4 */, /* c5 */ c /* c6
 
 // Pexp_array
 let x = [/* c0 */ a /* c1 */, /* c2 */ b /* c3 */, /* c4 */ c /* c5 */]
-let x = [/* a */]
-let x = [// test
+let x = [
+  /* a */
+]
+let x = [
+  // test
 ]
 
 // Pexp_record
@@ -108,8 +115,9 @@ let user = /* before */ {
 } // after
 
 // Pexp_record with empty record
-let user = /* before */ {/* comment1 */
-// comment2
+let user = /* before */ {
+  /* comment1 */
+  // comment2
 } // after
 
 // bs object sugar
