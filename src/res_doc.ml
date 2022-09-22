@@ -72,6 +72,10 @@ let equal = Text "="
 let trailingComma = ifBreaks comma nil
 let doubleQuote = Text "\""
 
+let isNil = function
+  | Nil -> true
+  | _ -> false
+
 let propagateForcedBreaks doc =
   let rec walk doc =
     match doc with
