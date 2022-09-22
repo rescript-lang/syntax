@@ -1,8 +1,9 @@
 @@jsxConfig({version: 4, mode: "classic"})
-let c0 = React.createElement(A.make, {...p, x: "x"})
+// Error: spreadProps should be first in order than other props
+// let c0 = <A x="x" {...p} />
 
-// ignore second one
-let c0 = React.createElement(A.make, {...p0, x: "x"})
+// Error: multiple spreadProps not allowed
+// let c0 = <A x="x" {...p0} {...p1} />
 
 // only spread props
 let c1 = React.createElement(A.make, p)
@@ -11,10 +12,11 @@ let c1 = React.createElement(A.make, p)
 let c2 = React.createElement(A.make, {...p, x: "x"})
 
 @@jsxConfig({version: 4, mode: "automatic"})
-let c0 = React.jsx(A.make, {...p, x: "x"})
+// Error: spreadProps should be first in order than other props
+// let c0 = <A x="x" {...p} />
 
-// ignore second one
-let c0 = React.jsx(A.make, {...p0, x: "x"})
+// Error: multiple spreadProps not allowed
+// let c0 = <A x="x" {...p0} {...p1} />
 
 // only spread props
 let c1 = React.jsx(A.make, p)
