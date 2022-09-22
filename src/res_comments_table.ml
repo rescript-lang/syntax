@@ -692,8 +692,7 @@ and walkTypeDeclaration (td : Parsetree.type_declaration) t comments =
     | Ptype_abstract | Ptype_open -> rest
     | Ptype_record labelDeclarations ->
       let () =
-        if List.length labelDeclarations = 0 then
-          attach t.inside td.ptype_loc rest
+        if labelDeclarations = [] then attach t.inside td.ptype_loc rest
         else
           walkList
             (labelDeclarations |> List.map (fun ld -> LabelDeclaration ld))
@@ -1026,7 +1025,7 @@ and walkExpression expr t comments =
   | Pexp_array exprs | Pexp_tuple exprs ->
     walkList (exprs |> List.map (fun e -> Expression e)) t comments
   | Pexp_record (rows, spreadExpr) ->
-    if List.length rows = 0 then attach t.inside expr.pexp_loc comments
+    if rows = [] then attach t.inside expr.pexp_loc comments
     else
       let comments =
         match spreadExpr with

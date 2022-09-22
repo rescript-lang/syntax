@@ -229,6 +229,41 @@ let printLeadingComment ?nextComment comment =
   Doc.concat [content; separator]
 
 let printCommentsInside cmtTbl loc =
+  let printComment ~isLast comment =
+    let singleLine = Comment.isSingleLineComment comment in
+    let content =
+      let txt = Comment.txt comment in
+      if singleLine then Doc.text ("//" ^ txt)
+      else printMultilineCommentContent txt
+    in
+    if isLast then
+      Doc.concat
+        [
+          Doc.indent (Doc.concat [Doc.softLine; Doc.breakParent; content]);
+          Doc.softLine;
+        ]
+    else Doc.indent (Doc.concat [Doc.softLine; Doc.breakParent; content])
+  in
+  let rec loop acc comments =
+    match comments with
+    | [] -> Doc.nil
+    | [comment] ->
+      let cmtDoc = printComment comment ~isLast:true in
+      let doc =
+        Doc.group (Doc.concat [Doc.concat (List.rev (cmtDoc :: acc))])
+      in
+      doc
+    | comment :: rest ->
+      let cmtDoc = printComment comment ~isLast:false in
+      loop (cmtDoc :: acc) rest
+  in
+  match Hashtbl.find cmtTbl.CommentTable.inside loc with
+  | exception Not_found -> Doc.nil
+  | comments ->
+    Hashtbl.remove cmtTbl.inside loc;
+    Doc.group (loop [] comments)
+
+let printCommentsForEmptyFile cmtTbl loc =
   let rec loop acc comments =
     match comments with
     | [] -> Doc.nil
@@ -533,7 +568,7 @@ let customLayoutThreshold = 2
 
 let rec printStructure ~customLayout (s : Parsetree.structure) t =
   match s with
-  | [] -> printCommentsInside t Location.none
+  | [] -> printCommentsForEmptyFile t Location.none
   | structure ->
     printList
       ~getLoc:(fun s -> s.Parsetree.pstr_loc)
@@ -710,14 +745,7 @@ and printModType ~customLayout modType cmtTbl =
       in
       Doc.breakableGroup ~forceBreak:shouldBreak
         (Doc.concat
-           [
-             Doc.lbrace;
-             Doc.indent
-               (Doc.concat
-                  [Doc.softLine; printCommentsInside cmtTbl modType.pmty_loc]);
-             Doc.softLine;
-             Doc.rbrace;
-           ])
+           [Doc.lbrace; printCommentsInside cmtTbl modType.pmty_loc; Doc.rbrace])
     | Pmty_signature signature ->
       let signatureDoc =
         Doc.breakableGroup ~forceBreak:true
@@ -906,7 +934,7 @@ and printWithConstraint ~customLayout
 
 and printSignature ~customLayout signature cmtTbl =
   match signature with
-  | [] -> printCommentsInside cmtTbl Location.none
+  | [] -> printCommentsForEmptyFile cmtTbl Location.none
   | signature ->
     printList
       ~getLoc:(fun s -> s.Parsetree.psig_loc)
@@ -1231,7 +1259,7 @@ and printTypeDeclaration2 ~customLayout ~recFlag
           Doc.text "..";
         ]
     | Ptype_record lds ->
-      if List.length lds = 0 then
+      if lds = [] then
         Doc.concat
           [
             Doc.space;
@@ -2247,13 +2275,7 @@ and printPattern ~customLayout (p : Parsetree.pattern) cmtTbl =
           Doc.concat
             [Doc.lparen; printCommentsInside cmtTbl ppat_loc; Doc.rparen]
         | Some {ppat_desc = Ppat_tuple []; ppat_loc = loc} ->
-          Doc.concat
-            [
-              Doc.lparen;
-              Doc.softLine;
-              printCommentsInside cmtTbl loc;
-              Doc.rparen;
-            ]
+          Doc.concat [Doc.lparen; printCommentsInside cmtTbl loc; Doc.rparen]
         (* Some((1, 2) *)
         | Some {ppat_desc = Ppat_tuple [({ppat_desc = Ppat_tuple _} as arg)]} ->
           Doc.concat
@@ -2305,13 +2327,7 @@ and printPattern ~customLayout (p : Parsetree.pattern) cmtTbl =
           ->
           Doc.text "()"
         | Some {ppat_desc = Ppat_tuple []; ppat_loc = loc} ->
-          Doc.concat
-            [
-              Doc.lparen;
-              Doc.softLine;
-              printCommentsInside cmtTbl loc;
-              Doc.rparen;
-            ]
+          Doc.concat [Doc.lparen; printCommentsInside cmtTbl loc; Doc.rparen]
         (* Some((1, 2) *)
         | Some {ppat_desc = Ppat_tuple [({ppat_desc = Ppat_tuple _} as arg)]} ->
           Doc.concat
@@ -2857,7 +2873,7 @@ and printExpression ~customLayout (e : Parsetree.expression) cmtTbl =
       in
       Doc.group (Doc.concat [variantName; args])
     | Pexp_record (rows, spreadExpr) ->
-      if List.length rows = 0 then
+      if rows = [] then
         Doc.concat
           [Doc.lbrace; printCommentsInside cmtTbl e.pexp_loc; Doc.rbrace]
       else
@@ -5179,14 +5195,7 @@ and printModExpr ~customLayout modExpr cmtTbl =
       in
       Doc.breakableGroup ~forceBreak:shouldBreak
         (Doc.concat
-           [
-             Doc.lbrace;
-             Doc.indent
-               (Doc.concat
-                  [Doc.softLine; printCommentsInside cmtTbl modExpr.pmod_loc]);
-             Doc.softLine;
-             Doc.rbrace;
-           ])
+           [Doc.lbrace; printCommentsInside cmtTbl modExpr.pmod_loc; Doc.rbrace])
     | Pmod_structure structure ->
       Doc.breakableGroup ~forceBreak:true
         (Doc.concat
