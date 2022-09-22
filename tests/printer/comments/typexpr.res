@@ -28,6 +28,11 @@ type fn = {
   f: /* c0 */ 'a /* c1 */ 'b /* c2*/ . /* c3 */ string /* c4 */
 }
 
+type fn = {
+  /* comment1 */
+  // comment2
+}
+
 // Ptyp_arrow
 type add = /* before */ ( /* c0 */ int /* c1 */, /* c2 */ int /* c3 */) => /* before return */ int /* after */
 type add = /* before */ ( /* c0 */ ~a:int /* c1 */, /* c2 */ ~b:int /* c3 */) => /* before return */ int /* after */

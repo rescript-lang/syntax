@@ -1231,23 +1231,34 @@ and printTypeDeclaration2 ~customLayout ~recFlag
           Doc.text "..";
         ]
     | Ptype_record lds ->
-      let manifest =
-        match td.ptype_manifest with
-        | None -> Doc.nil
-        | Some typ ->
-          Doc.concat
-            [
-              Doc.concat [Doc.space; Doc.text equalSign; Doc.space];
-              printTypExpr ~customLayout typ cmtTbl;
-            ]
-      in
-      Doc.concat
-        [
-          manifest;
-          Doc.concat [Doc.space; Doc.text equalSign; Doc.space];
-          printPrivateFlag td.ptype_private;
-          printRecordDeclaration ~customLayout lds cmtTbl;
-        ]
+      if List.length lds = 0 then
+        Doc.concat
+          [
+            Doc.space;
+            Doc.text equalSign;
+            Doc.space;
+            Doc.lbrace;
+            printCommentsInside cmtTbl td.ptype_loc;
+            Doc.rbrace;
+          ]
+      else
+        let manifest =
+          match td.ptype_manifest with
+          | None -> Doc.nil
+          | Some typ ->
+            Doc.concat
+              [
+                Doc.concat [Doc.space; Doc.text equalSign; Doc.space];
+                printTypExpr ~customLayout typ cmtTbl;
+              ]
+        in
+        Doc.concat
+          [
+            manifest;
+            Doc.concat [Doc.space; Doc.text equalSign; Doc.space];
+            printPrivateFlag td.ptype_private;
+            printRecordDeclaration ~customLayout lds cmtTbl;
+          ]
     | Ptype_variant cds ->
       let manifest =
         match td.ptype_manifest with
@@ -2846,59 +2857,63 @@ and printExpression ~customLayout (e : Parsetree.expression) cmtTbl =
       in
       Doc.group (Doc.concat [variantName; args])
     | Pexp_record (rows, spreadExpr) ->
-      let spread =
-        match spreadExpr with
-        | None -> Doc.nil
-        | Some expr ->
-          Doc.concat
-            [
-              Doc.dotdotdot;
-              (let doc =
-                 printExpressionWithComments ~customLayout expr cmtTbl
-               in
-               match Parens.expr expr with
-               | Parens.Parenthesized -> addParens doc
-               | Braced braces -> printBraces doc expr braces
-               | Nothing -> doc);
-              Doc.comma;
-              Doc.line;
-            ]
-      in
-      (* If the record is written over multiple lines, break automatically
-       * `let x = {a: 1, b: 3}` -> same line, break when line-width exceeded
-       * `let x = {
-       *   a: 1,
-       *   b: 2,
-       *  }` -> record is written on multiple lines, break the group *)
-      let forceBreak =
-        e.pexp_loc.loc_start.pos_lnum < e.pexp_loc.loc_end.pos_lnum
-      in
-      let punningAllowed =
-        match (spreadExpr, rows) with
-        | None, [_] -> false (* disallow punning for single-element records *)
-        | _ -> true
-      in
-      Doc.breakableGroup ~forceBreak
-        (Doc.concat
-           [
-             Doc.lbrace;
-             Doc.indent
-               (Doc.concat
-                  [
-                    Doc.softLine;
-                    spread;
-                    Doc.join
-                      ~sep:(Doc.concat [Doc.text ","; Doc.line])
-                      (List.map
-                         (fun row ->
-                           printExpressionRecordRow ~customLayout row cmtTbl
-                             punningAllowed)
-                         rows);
-                  ]);
-             Doc.trailingComma;
-             Doc.softLine;
-             Doc.rbrace;
-           ])
+      if List.length rows = 0 then
+        Doc.concat
+          [Doc.lbrace; printCommentsInside cmtTbl e.pexp_loc; Doc.rbrace]
+      else
+        let spread =
+          match spreadExpr with
+          | None -> Doc.nil
+          | Some expr ->
+            Doc.concat
+              [
+                Doc.dotdotdot;
+                (let doc =
+                   printExpressionWithComments ~customLayout expr cmtTbl
+                 in
+                 match Parens.expr expr with
+                 | Parens.Parenthesized -> addParens doc
+                 | Braced braces -> printBraces doc expr braces
+                 | Nothing -> doc);
+                Doc.comma;
+                Doc.line;
+              ]
+        in
+        (* If the record is written over multiple lines, break automatically
+         * `let x = {a: 1, b: 3}` -> same line, break when line-width exceeded
+         * `let x = {
+         *   a: 1,
+         *   b: 2,
+         *  }` -> record is written on multiple lines, break the group *)
+        let forceBreak =
+          e.pexp_loc.loc_start.pos_lnum < e.pexp_loc.loc_end.pos_lnum
+        in
+        let punningAllowed =
+          match (spreadExpr, rows) with
+          | None, [_] -> false (* disallow punning for single-element records *)
+          | _ -> true
+        in
+        Doc.breakableGroup ~forceBreak
+          (Doc.concat
+             [
+               Doc.lbrace;
+               Doc.indent
+                 (Doc.concat
+                    [
+                      Doc.softLine;
+                      spread;
+                      Doc.join
+                        ~sep:(Doc.concat [Doc.text ","; Doc.line])
+                        (List.map
+                           (fun row ->
+                             printExpressionRecordRow ~customLayout row cmtTbl
+                               punningAllowed)
+                           rows);
+                    ]);
+               Doc.trailingComma;
+               Doc.softLine;
+               Doc.rbrace;
+             ])
     | Pexp_extension extension -> (
       match extension with
       | ( {txt = "bs.obj" | "obj"},

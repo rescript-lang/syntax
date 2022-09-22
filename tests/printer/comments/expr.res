@@ -105,6 +105,11 @@ let user = /* before */ {
   /* c4 */ age /* c5 */ : /* c6 */ 31 /* c7 */,
 } // after
 
+// Pexp_record with empty record
+let user = /* before */ {
+  /* comment1 */
+  // comment2
+} // after
 
 // bs object sugar
 let user = /* before */ {
