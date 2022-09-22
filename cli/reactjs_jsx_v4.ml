@@ -175,6 +175,7 @@ let makeModuleName fileName nestedModules fnName =
 
 (* make record from props and spread props if exists *)
 let recordFromProps ~loc ~removeKey callArguments =
+  let spreadPropsLabel = "_spreadProps" in
   let rec removeLastPositionUnitAux props acc =
     match props with
     | [] -> acc
@@ -185,13 +186,13 @@ let recordFromProps ~loc ~removeKey callArguments =
         "JSX: found non-labelled argument before the last position"
     | ((Labelled txt, {pexp_loc}) as prop) :: rest
     | ((Optional txt, {pexp_loc}) as prop) :: rest ->
-      if txt = "_spreadProps" then
+      if txt = spreadPropsLabel then
         match acc with
         | [] -> removeLastPositionUnitAux rest (prop :: acc)
         | _ ->
           React_jsx_common.raiseError ~loc:pexp_loc
-            "JSX: spread props should be first in order than other props\n\
-            \            and multiple spread props are not allowed."
+            "JSX: use {...p} {x: v} not {x: v} {...p} \n\
+            \     multiple spreads {...p} {...p} not allowed."
       else removeLastPositionUnitAux rest (prop :: acc)
   in
   let props, propsToSpread =
