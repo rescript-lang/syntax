@@ -183,7 +183,16 @@ let recordFromProps ~loc ~removeKey callArguments =
     | (Nolabel, {pexp_loc}) :: _rest ->
       React_jsx_common.raiseError ~loc:pexp_loc
         "JSX: found non-labelled argument before the last position"
-    | prop :: rest -> removeLastPositionUnitAux rest (prop :: acc)
+    | ((Labelled txt, {pexp_loc}) as prop) :: rest
+    | ((Optional txt, {pexp_loc}) as prop) :: rest ->
+      if txt = "_spreadProps" then
+        match acc with
+        | [] -> removeLastPositionUnitAux rest (prop :: acc)
+        | _ ->
+          React_jsx_common.raiseError ~loc:pexp_loc
+            "JSX: spread props should be first in order than other props\n\
+            \            and multiple spread props are not allowed."
+      else removeLastPositionUnitAux rest (prop :: acc)
   in
   let props, propsToSpread =
     removeLastPositionUnitAux callArguments []
