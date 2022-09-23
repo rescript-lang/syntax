@@ -1,8 +1,90 @@
-**Abbreviation**
+**Introduction**
+
+JSX V4, supported in the compiler version introduces a new idiomatic record-based representation of components which is incompatible with V3. Because of this, either the entire project or dependencies need to be compiled in V4 mode, or some compatibility features need to be used to mix V3 and V4 in the same project.
+The V4 representation is part of the spec, so `@react.component` is effectively just an abbreviation for code that can be writtend by hand.
+
+**Turn On V4**
+
+To build an entire project in V4 mode, including all its dependencies, use the new `"jsx"` configuration in `bsconfig.json` instead of the old `"reason"`:
+
+```
+"jsx": { "version": 4 }
+```
+
+> Note that JSX V4 requires the rescript compiler 10.1 or higher, and `rescript-react` version `0.11` or higher. In addition, `react` version `18.2` is required.
+
+**Configuration And Upgrade**
+
+**_Dependency-level config_**
+
+Dependencies inherit the `jsx` configuration of the root project. So if the root project uses V4 then the dependencies are built using V4, and the same for V3.
+To build certain dependencies in V3 compatibility mode, whatever the version used in the root project, use `"v3-dependencies"` as in the example:
+
+```json
+"jsx": {
+ "version": 4,
+ "v3-dependencies": ["rescript-react-native", "rescript-react-navigation"]
+}
+```
+
+In V3 compatibility mode, the listed dependencies are built in V3 mode, and in addition `-open ReatcV3` is added to the compiler options, so that the `ReactV3` compatibility module in rescript-react is used.
+
+**_Classic and Automatic Mode_**
+
+Classic mode is the default and generates calls to `React.createElement` just as with V3.
+
+```json
+"jsx": {
+  "version": 4,
+  "mode": "classic"
+}
+```
+
+Automatic mode is an experimental mode that generate calls to `_jsx` functions (similar to TypeScript's `react-jsx` mode)
+
+```json
+"jsx": {
+  "version": 4,
+  "mode": "automatic"
+}
+```
+
+**_File-level config_**
+
+The top-level attribute `@@jsxConfig` is used to update the `jsx` config for the rest of the file (or until the next config update). Only the values mentioned are updated, the others are left unchanged.
+
+```rescript
+@@jsxConfig({ version: 4, mode: "automatic" })
+
+module Wrapper = {
+  module R1 = {
+    @react.component  // V4 and new _jsx transform
+    let make = () => body
+  }
+
+  @@jsxConfig({ version: 4, mode: "classic" })
+
+  module R2 = {
+    @react.component  // V4 with `React.createElement`
+    let make = () => body
+  }
+}
+
+@@jsxConfig({ version: 3 })
+
+@react.component  // V3
+let make = () => body
+```
+
+**V4 Spec**
+
+This is the specification that decribes how the JSX V4 transformation works.
+
+**_Abbreviation_**
 
 The placement of `@react.component` is an abbreviation as described below.
 
-**Normal Case**
+**_Normal Case_**
 
 ```rescript
 @react.component
@@ -13,7 +95,7 @@ let make = (~x, ~y, ~z) => body
 let make = @react.component (~x, ~y, ~z) => body
 ```
 
-**Forward Ref**
+**_Forward Ref_**
 
 ```rescript
 @react.component
@@ -28,12 +110,7 @@ let make = React.forwardRef({
 })
 ```
 
-**Conversion**
-
-Conversion applies to an arrow function definition where all the arguments are labelled.
-It produces a type definition and a new function.
-
-**Definition**
+**_Component Definition_**
 
 ```rescript
 @react.component (~x, ~y=3+x, ?z) => body
@@ -51,7 +128,7 @@ type props<'x, 'y, 'z> = {x: 'x, y?: 'y, z?: 'z}
 }
 ```
 
-**Application**
+**_Component Application_**
 
 ```rescript
 <Comp x>
@@ -67,11 +144,11 @@ React.createElement(Comp.make, {x, y:7, ?z})
 React.createElement(Comp.make, Jsx.addKeyProp({x}, "7"))
 ```
 
-**New "jsx" transform**
+**_New experimental automatic mode_**
 
-The V4 ppx supports [the new "jsx" transform](https://reactjs.org/blog/2020/09/22/introducing-the-new-jsx-transform.html) of React.js.
+The V4 ppx supports [the new jsx transform](https://reactjs.org/blog/2020/09/22/introducing-the-new-jsx-transform.html) of React.js.
 
-The "jsx" transform affects component application but not the definition.
+The jsx transform only affects component application, but not the definition.
 
 ```rescript
 <Comp x>
@@ -95,7 +172,7 @@ type domProps = {
 }
 ```
 
-**Interface And External**
+**_Interface And External_**
 
 ```rescript
 @react.component (~x: int, ~y: int=?, ~z: int=?) => React.element
@@ -109,12 +186,12 @@ props<int, int, int> => React.element
 
 Since an external is a function declaration, it follows the same rule.
 
-**Component Name**
+**_Component Name_**
 
 Use the V3 convention for names, and make sure the generated
 function has the name of the enclosing module/file.
 
-**Fragment**
+**_Fragments_**
 
 ```rescript
 <> comp1 comp2 comp3 </>
@@ -128,34 +205,7 @@ ReactDOMRe.createElement(ReasonReact.fragment, [comp1, comp2, comp3])
 React.jsxs(React.jsxFragment, {children: [comp1, comp2, comp3]})
 ```
 
-**File-level config**
-
-The top-level attribute `@@jsxConfig` is used to update the jsx config for the rest of the file (or until the next config update). Only the values mentioned are updated, the others are left unchanged.
-
-```rescript
-@@jsxConfig({ version: 4, mode: "automatic" })
-
-module Wrapper = {
-  module R1 = {
-    @react.component  // V4 & new jsx transform
-    let make = () => body
-  }
-
-  @@jsxConfig({ version: 4, mode: "classic" })
-
-  module R2 = {
-    @react.component  // V4 with `React.createElement`
-    let make = () => body
-  }
-}
-
-@@jsxConfig({ version: 3 })
-
-@react.component  // V3
-let make = () => body
-```
-
-**Spread props**
+**_Spread props_**
 
 V4 ppx supports the spread props `{...p}`.
 
