@@ -175,6 +175,7 @@ let makeModuleName fileName nestedModules fnName =
 
 (* make record from props and spread props if exists *)
 let recordFromProps ~loc ~removeKey callArguments =
+  let spreadPropsLabel = "_spreadProps" in
   let rec removeLastPositionUnitAux props acc =
     match props with
     | [] -> acc
@@ -183,7 +184,16 @@ let recordFromProps ~loc ~removeKey callArguments =
     | (Nolabel, {pexp_loc}) :: _rest ->
       React_jsx_common.raiseError ~loc:pexp_loc
         "JSX: found non-labelled argument before the last position"
-    | prop :: rest -> removeLastPositionUnitAux rest (prop :: acc)
+    | ((Labelled txt, {pexp_loc}) as prop) :: rest
+    | ((Optional txt, {pexp_loc}) as prop) :: rest ->
+      if txt = spreadPropsLabel then
+        match acc with
+        | [] -> removeLastPositionUnitAux rest (prop :: acc)
+        | _ ->
+          React_jsx_common.raiseError ~loc:pexp_loc
+            "JSX: use {...p} {x: v} not {x: v} {...p} \n\
+            \     multiple spreads {...p} {...p} not allowed."
+      else removeLastPositionUnitAux rest (prop :: acc)
   in
   let props, propsToSpread =
     removeLastPositionUnitAux callArguments []
@@ -208,20 +218,17 @@ let recordFromProps ~loc ~removeKey callArguments =
   let spreadFields =
     propsToSpread |> List.map (fun (_, expression) -> expression)
   in
-  match spreadFields with
-  | [] ->
+  match (fields, spreadFields) with
+  | [], [spreadProps] | [], spreadProps :: _ -> spreadProps
+  | _, [] ->
     {
       pexp_desc = Pexp_record (fields, None);
       pexp_loc = loc;
       pexp_attributes = [];
     }
-  | [spreadProps] ->
-    {
-      pexp_desc = Pexp_record (fields, Some spreadProps);
-      pexp_loc = loc;
-      pexp_attributes = [];
-    }
-  | spreadProps :: _ ->
+  | _, [spreadProps]
+  (* take the first spreadProps only *)
+  | _, spreadProps :: _ ->
     {
       pexp_desc = Pexp_record (fields, Some spreadProps);
       pexp_loc = loc;
