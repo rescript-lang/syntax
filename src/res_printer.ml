@@ -742,9 +742,11 @@ and printModType ~customLayout modType cmtTbl =
       let shouldBreak =
         modType.pmty_loc.loc_start.pos_lnum < modType.pmty_loc.loc_end.pos_lnum
       in
-      Doc.breakableGroup ~forceBreak:shouldBreak
-        (Doc.concat
-           [Doc.lbrace; printCommentsInside cmtTbl modType.pmty_loc; Doc.rbrace])
+      let doc = printCommentsInside cmtTbl modType.pmty_loc in
+      if Doc.isNil doc then
+        Doc.breakableGroup ~forceBreak:shouldBreak
+          (Doc.concat [Doc.lbrace; Doc.softLine; Doc.softLine; Doc.rbrace])
+      else Doc.concat [Doc.lbrace; doc; Doc.rbrace]
     | Pmty_signature signature ->
       let signatureDoc =
         Doc.breakableGroup ~forceBreak:true
