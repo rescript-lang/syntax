@@ -235,31 +235,27 @@ let printLeadingComment ?nextComment comment =
   }   
 *)
 let printCommentsInside cmtTbl loc =
-  let printComment ~isLast comment =
+  let printComment comment =
     let singleLine = Comment.isSingleLineComment comment in
     let content =
       let txt = Comment.txt comment in
       if singleLine then Doc.text ("//" ^ txt)
       else printMultilineCommentContent txt
     in
-    Doc.concat
-      [
-        Doc.indent (Doc.concat [Doc.softLine; Doc.breakParent; content]);
-        (if isLast then Doc.softLine else Doc.nil);
-      ]
+    Doc.concat [Doc.indent (Doc.concat [Doc.softLine; content])]
   in
-
   let rec loop acc comments =
     match comments with
     | [] -> Doc.nil
     | [comment] ->
-      let cmtDoc = printComment comment ~isLast:true in
+      let cmtDoc = Doc.concat [printComment comment; Doc.softLine] in
       let doc =
-        Doc.group (Doc.concat [Doc.concat (List.rev (cmtDoc :: acc))])
+        Doc.breakableGroup ~forceBreak:true
+          (Doc.concat [Doc.concat (List.rev (cmtDoc :: acc))])
       in
       doc
     | comment :: rest ->
-      let cmtDoc = printComment comment ~isLast:false in
+      let cmtDoc = printComment comment in
       loop (cmtDoc :: acc) rest
   in
   match Hashtbl.find cmtTbl.CommentTable.inside loc with
