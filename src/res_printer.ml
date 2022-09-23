@@ -3974,6 +3974,17 @@ and printJsxExpression ~customLayout lident args cmtTbl =
   let name = printJsxName lident in
   let formattedProps, children = printJsxProps ~customLayout args cmtTbl in
   (* <div className="test" /> *)
+  let insideComments =
+    match children with
+    | Some
+        {
+          Parsetree.pexp_desc =
+            Pexp_construct ({txt = Longident.Lident "[]"}, None);
+          pexp_loc = loc;
+        } ->
+      printCommentsInside cmtTbl loc
+    | _ -> Doc.nil
+  in
   let isSelfClosing =
     match children with
     | Some
@@ -3981,7 +3992,7 @@ and printJsxExpression ~customLayout lident args cmtTbl =
           Parsetree.pexp_desc =
             Pexp_construct ({txt = Longident.Lident "[]"}, None);
         } ->
-      true
+      Doc.isNil insideComments
     | _ -> false
   in
   let lineSep =
@@ -4007,14 +4018,13 @@ and printJsxExpression ~customLayout lident args cmtTbl =
                         Pexp_construct ({txt = Longident.Lident "[]"}, None);
                       pexp_loc = loc;
                     } ->
-                  let doc = printCommentsInside cmtTbl loc in
+                  let doc =
+                    printComments
+                      (if isSelfClosing then Doc.text "/>" else Doc.nil)
+                      cmtTbl loc
+                  in
                   Doc.concat
-                    [
-                      (* printCommentsInside will automatically break the parent so there is no need to add Doc.line*)
-                      (if Doc.isNil doc then Doc.line else Doc.nil);
-                      printComments doc cmtTbl loc;
-                      Doc.text "/>";
-                    ]
+                    [(if isSelfClosing then Doc.line else Doc.softLine); doc]
                 | _ -> Doc.nil);
               ]);
          (if isSelfClosing then Doc.nil
@@ -4022,17 +4032,22 @@ and printJsxExpression ~customLayout lident args cmtTbl =
            Doc.concat
              [
                Doc.greaterThan;
-               Doc.indent
-                 (Doc.concat
-                    [
-                      Doc.line;
-                      (match children with
-                      | Some childrenExpression ->
-                        printJsxChildren ~customLayout childrenExpression
-                          ~sep:lineSep cmtTbl
-                      | None -> Doc.nil);
-                    ]);
-               lineSep;
+               (if Doc.isNil insideComments then
+                Doc.concat
+                  [
+                    Doc.indent
+                      (Doc.concat
+                         [
+                           Doc.line;
+                           (match children with
+                           | Some childrenExpression ->
+                             printJsxChildren ~customLayout childrenExpression
+                               ~sep:lineSep cmtTbl
+                           | None -> Doc.nil);
+                         ]);
+                    lineSep;
+                  ]
+               else insideComments);
                Doc.text "</";
                name;
                Doc.greaterThan;
