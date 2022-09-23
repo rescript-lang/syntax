@@ -4018,13 +4018,11 @@ and printJsxExpression ~customLayout lident args cmtTbl =
                         Pexp_construct ({txt = Longident.Lident "[]"}, None);
                       pexp_loc = loc;
                     } ->
-                  let doc =
-                    printComments
-                      (if isSelfClosing then Doc.text "/>" else Doc.nil)
-                      cmtTbl loc
-                  in
-                  Doc.concat
-                    [(if isSelfClosing then Doc.line else Doc.softLine); doc]
+                  if isSelfClosing then
+                    Doc.concat
+                      [Doc.line; printComments (Doc.text "/>") cmtTbl loc]
+                  else
+                    Doc.concat [Doc.softLine; printComments Doc.nil cmtTbl loc]
                 | _ -> Doc.nil);
               ]);
          (if isSelfClosing then Doc.nil
