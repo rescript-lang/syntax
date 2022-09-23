@@ -24,7 +24,7 @@ module V4C = {
   @react.component
   let make = ({a, b, _}: props<'a, 'b>) => {
     Js.log("This function should be named 'TopLevel.react'")
-    ReactDOMRe.createDOMElementVariadic("div", [])
+    ReactDOM.createDOMElementVariadic("div", [])
   }
   let make = {
     let \"TopLevel$V4C" = (props: props<_>) => make(props)

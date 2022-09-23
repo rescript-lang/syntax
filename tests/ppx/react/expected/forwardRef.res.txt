@@ -77,12 +77,12 @@ module V4C = {
       {?className, children, _}: props<'className, 'children, ReactRef.currentDomRef>,
       ref: Js.Nullable.t<ReactRef.currentDomRef>,
     ) =>
-      ReactDOMRe.createDOMElementVariadic(
+      ReactDOM.createDOMElementVariadic(
         "div",
         [
-          ReactDOMRe.createDOMElementVariadic(
+          ReactDOM.createDOMElementVariadic(
             "input",
-            ~props=ReactDOMRe.domProps(
+            ~props=ReactDOM.domProps(
               ~type_="text",
               ~className?,
               ~ref=?{Js.Nullable.toOption(ref)->Belt.Option.map(React.Ref.domRef)},
@@ -105,7 +105,7 @@ module V4C = {
   let make = (_: props) => {
     let input = React.useRef(Js.Nullable.null)
 
-    ReactDOMRe.createDOMElementVariadic(
+    ReactDOM.createDOMElementVariadic(
       "div",
       [
         React.createElement(
