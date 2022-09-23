@@ -15,8 +15,7 @@ module HasChildren = {
   type props<'children> = {children: 'children}
 
   @react.component
-  let make = ({children, _}: props<'children>) =>
-    ReactDOMRe.createElement(ReasonReact.fragment, [children])
+  let make = ({children, _}: props<'children>) => ReactDOM.createElement(React.fragment, [children])
   let make = {
     let \"RemovedKeyProp$HasChildren" = (props: props<_>) => make(props)
 
@@ -27,8 +26,8 @@ type props = {}
 
 @react.component
 let make = (_: props) =>
-  ReactDOMRe.createElement(
-    ReasonReact.fragment,
+  ReactDOM.createElement(
+    React.fragment,
     [
       React.createElementWithKey(Foo.make, {x: "x", y: "y"}, "k"),
       React.createElement(Foo.make, {x: "x", y: "y"}),

@@ -21,7 +21,7 @@ module V4C = {
 
   @react.component
   let make = ({msg, _}: props<'msg>) => {
-    ReactDOMRe.createDOMElementVariadic("div", [{msg->React.string}])
+    ReactDOM.createDOMElementVariadic("div", [{msg->React.string}])
   }
   let make = {
     let \"FileLevelConfig$V4C" = (props: props<_>) => make(props)
