@@ -154,3 +154,23 @@ module Wrapper = {
 @react.component  // V3
 let make = () => body
 ```
+
+**Spread props**
+
+V4 ppx supports the spread props `{...p}`.
+
+```rescript
+module A = {
+  @react.component
+  let make = (~x, ~y) => body
+}
+
+let p: A.props<_> = {x: "x", y: "y"}
+
+<A {...p}>
+<A {...p} x="X">
+
+// not allowed
+<A x="X" {...p}>
+<A {...p} {...p1}>
+```
