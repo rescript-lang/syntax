@@ -228,6 +228,12 @@ let printLeadingComment ?nextComment comment =
   in
   Doc.concat [content; separator]
 
+(*
+  This function is used for printing comments inside an empty block 
+  let foo = {
+    // comment
+  }   
+*)
 let printCommentsInside cmtTbl loc =
   let printComment ~isLast comment =
     let singleLine = Comment.isSingleLineComment comment in
@@ -262,7 +268,8 @@ let printCommentsInside cmtTbl loc =
     Hashtbl.remove cmtTbl.inside loc;
     Doc.group (loop [] comments)
 
-let printCommentsForEmptyFile cmtTbl loc =
+(* This function is used for printing comments inside an empty file *)
+let printCommentsInsideFile cmtTbl loc =
   let rec loop acc comments =
     match comments with
     | [] -> Doc.nil
@@ -567,7 +574,7 @@ let customLayoutThreshold = 2
 
 let rec printStructure ~customLayout (s : Parsetree.structure) t =
   match s with
-  | [] -> printCommentsForEmptyFile t Location.none
+  | [] -> printCommentsInsideFile t Location.none
   | structure ->
     printList
       ~getLoc:(fun s -> s.Parsetree.pstr_loc)
@@ -739,11 +746,12 @@ and printModType ~customLayout modType cmtTbl =
           printLongidentLocation longident cmtTbl;
         ]
     | Pmty_signature [] ->
-      let shouldBreak =
-        modType.pmty_loc.loc_start.pos_lnum < modType.pmty_loc.loc_end.pos_lnum
-      in
       let doc = printCommentsInside cmtTbl modType.pmty_loc in
       if Doc.isNil doc then
+        let shouldBreak =
+          modType.pmty_loc.loc_start.pos_lnum
+          < modType.pmty_loc.loc_end.pos_lnum
+        in
         Doc.breakableGroup ~forceBreak:shouldBreak
           (Doc.concat [Doc.lbrace; Doc.softLine; Doc.softLine; Doc.rbrace])
       else Doc.concat [Doc.lbrace; doc; Doc.rbrace]
@@ -935,7 +943,7 @@ and printWithConstraint ~customLayout
 
 and printSignature ~customLayout signature cmtTbl =
   match signature with
-  | [] -> printCommentsForEmptyFile cmtTbl Location.none
+  | [] -> printCommentsInsideFile cmtTbl Location.none
   | signature ->
     printList
       ~getLoc:(fun s -> s.Parsetree.psig_loc)
