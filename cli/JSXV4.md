@@ -135,6 +135,39 @@ module FancyInput = {
   let make = React.forwardRef((
     ~className=?,
     ~children,
+    ref_, // argument
+  ) =>
+    <div>
+      <input
+        type_="text"
+        ?className
+        ref=?{ref_->Js.Nullable.toOption->Belt.Option.map(ReactDOM.Ref.domRef)}
+      />
+      children
+    </div>
+  )
+}
+
+@react.component
+let make = () => {
+  let input = React.useRef(Js.Nullable.null)
+
+  <div>
+    <FancyInput ref=input> // prop
+      <button onClick> {React.string("Click to focus")} </button>
+    </FancyInput>
+  </div>
+}
+```
+
+In this example, there is an inconsistency between `ref` as prop and `ref_` as argument. With JSX V4, `ref` is only allowed as an argument.
+
+```rescript
+module FancyInput = {
+  @react.component
+  let make = React.forwardRef((
+    ~className=?,
+    ~children,
     ref, // only `ref` is allowed
   ) =>
     <div>
@@ -147,25 +180,18 @@ module FancyInput = {
     </div>
   )
 }
-```
 
-In V4, use this instead:
+@react.component
+let make = () => {
+  let input = React.useRef(Js.Nullable.null)
 
-```rescript
-module FancyInput = {
-  @react.component
-  let make = () => {
-    let input = React.useRef(Js.Nullable.null)
-
-    <div>
-      <FancyInput ref=input> // only `ref` is allowed
-        <button onClick> {React.string("Click to focus")} </button>
-      </FancyInput>
-    </div>
-  }
+  <div>
+    <FancyInput ref=input>
+      <button onClick> {React.string("Click to focus")} </button>
+    </FancyInput>
+  </div>
 }
 ```
-
 
 ## V4 Spec
 
