@@ -127,6 +127,8 @@ module Context = {
 
 #### `React.forwardRef`(Discouraged)
 
+`forwardRef` is discouraged, but sometimes used in existing V3 code such as this example:
+
 ```rescript
 module FancyInput = {
   @react.component
@@ -145,18 +147,25 @@ module FancyInput = {
     </div>
   )
 }
+```
 
-@react.component
-let make = () => {
-  let input = React.useRef(Js.Nullable.null)
+In V4, use this instead:
 
-  <div>
-    <FancyInput ref=input> // only `ref` is allowed
-      <button onClick> {React.string("Click to focus")} </button>
-    </FancyInput>
-  </div>
+```rescript
+module FancyInput = {
+  @react.component
+  let make = () => {
+    let input = React.useRef(Js.Nullable.null)
+
+    <div>
+      <FancyInput ref=input> // only `ref` is allowed
+        <button onClick> {React.string("Click to focus")} </button>
+      </FancyInput>
+    </div>
+  }
 }
 ```
+
 
 ## V4 Spec
 
