@@ -243,8 +243,7 @@ let printCommentsInside cmtTbl loc =
   in
   let rec loop acc comments =
     let forceBreak =
-      List.exists Comment.isSingleLineComment comments
-      || loc.Location.loc_start.pos_lnum <> loc.Location.loc_end.pos_lnum
+      loc.Location.loc_start.pos_lnum <> loc.Location.loc_end.pos_lnum
     in
     match comments with
     | [] -> Doc.nil
