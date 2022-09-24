@@ -108,6 +108,8 @@ module M = {
 
 #### `React.Context`
 
+Rewrite this:
+
 ```rescript
 module Context = {
   let context = React.createContext(() => ())
@@ -118,9 +120,19 @@ module Context = {
     @react.component
     let make = (~value, ~children) => {
       React.createElement(provider, {"value": value, "children": children}) // Error
-      // Fix : use the record
-      React.createElement(provider, {value, children}) // OK
     }
+  }
+}
+```
+
+To this:
+
+```rescript
+module Context = {
+  let context = React.createContext(() => ())
+
+  module Provider = {
+    let make = React.Context.provider(context)
   }
 }
 ```
