@@ -111,9 +111,6 @@ let user = /* before */ {
   // comment2
 } // after
 
-let user = /* before */ {/* comment1 */
-} // after
-
 let user = /* before */ {/* comment1 */ /* comments2 */} // after
 
 // bs object sugar

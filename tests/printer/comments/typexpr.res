@@ -33,10 +33,7 @@ type fn = {
   // comment2
 }
 
-type fn = {/* comment1 */
-}
-
-type fn = { /* comment1 */ /*comment2*/}
+type fn = {/* comment1 */ /* comment2 */}
 
 // Ptyp_arrow
 type add = /* before */ ( /* c0 */ int /* c1 */, /* c2 */ int /* c3 */) => /* before return */ int /* after */

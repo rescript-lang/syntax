@@ -33,10 +33,6 @@ type fn = {
   // comment2
 }
 
-type fn = {
-  /* comment1 */
-}
-
 type fn = {/* comment1 */ /* comment2 */}
 
 // Ptyp_arrow
