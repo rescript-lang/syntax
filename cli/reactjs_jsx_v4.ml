@@ -751,7 +751,7 @@ let transformStructureItem ~config mapper item =
         in
         (* type props<'x, 'y> = { x: 'x, y?: 'y, ... } *)
         let propsRecordType =
-          makePropsRecordType "props" Location.none namedTypeList
+          makePropsRecordType "props" pstr_loc namedTypeList
         in
         (* can't be an arrow because it will defensively uncurry *)
         let newExternalType =
@@ -975,7 +975,7 @@ let transformStructureItem ~config mapper item =
           let vbMatchList = List.map vbMatch namedArgWithDefaultValueList in
           (* type props = { ... } *)
           let propsRecordType =
-            makePropsRecordType "props" emptyLoc namedTypeList
+            makePropsRecordType "props" pstr_loc namedTypeList
           in
           let innerExpression =
             Exp.apply
@@ -1197,7 +1197,7 @@ let transformSignatureItem ~config _mapper item =
           (makePropsTypeParams namedTypeList)
       in
       let propsRecordType =
-        makePropsRecordTypeSig "props" Location.none
+        makePropsRecordTypeSig "props" psig_loc
           ((* If there is Nolabel arg, regard the type as ref in forwardRef *)
            (if !hasForwardRef then [(true, "ref", [], refType Location.none)]
            else [])
