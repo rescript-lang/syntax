@@ -148,6 +148,8 @@ module FancyInput = {
 
 @react.component
 let make = () => {
+  let input = React.useRef(Js.Nullable.null)
+
   <div>
     <FancyInput ref=input> // only `ref` is allowed
       <button onClick> {React.string("Click to focus")} </button>
