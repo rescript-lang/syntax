@@ -1,4 +1,6 @@
-type props<'msg> = {msg: 'msg} // test React JSX file
+type props<'msg> = { // test React JSX file
+  msg: 'msg,
+}
 
 @react.component
 let make = ({msg, _}: props<'msg>) => {

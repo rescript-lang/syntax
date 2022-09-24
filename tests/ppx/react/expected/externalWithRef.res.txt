@@ -18,7 +18,10 @@ module V3 = {
 @@jsxConfig({version: 4, mode: "classic"})
 
 module V4C = {
-  type props<'x, 'ref> = {x: 'x, ref?: 'ref}
+  type props<'x, 'ref> = {
+    x: 'x,
+    ref?: 'ref,
+  }
 
   @module("componentForwardRef")
   external make: React.componentLike<props<string, ReactDOM.Ref.currentDomRef>, React.element> =
@@ -28,7 +31,10 @@ module V4C = {
 @@jsxConfig({version: 4, mode: "automatic"})
 
 module V4C = {
-  type props<'x, 'ref> = {x: 'x, ref?: 'ref}
+  type props<'x, 'ref> = {
+    x: 'x,
+    ref?: 'ref,
+  }
 
   @module("componentForwardRef")
   external make: React.componentLike<props<string, ReactDOM.Ref.currentDomRef>, React.element> =
