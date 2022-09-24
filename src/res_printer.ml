@@ -228,12 +228,7 @@ let printLeadingComment ?nextComment comment =
   in
   Doc.concat [content; separator]
 
-(*
-  This function is used for printing comments inside an empty block 
-  let foo = {
-    // comment
-  }   
-*)
+(* This function is used for printing comments inside an empty block *)
 let printCommentsInside cmtTbl loc =
   let printComment comment =
     let singleLine = Comment.isSingleLineComment comment in
