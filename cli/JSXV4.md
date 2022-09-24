@@ -257,6 +257,8 @@ type props<'x, 'y, 'z> = {x: 'x, y?: 'y, z?: 'z}
 }
 ```
 
+If there is any type with the same name of `props`, it needs to be renamed to avoid the error of the multiple definitions of the type name.
+
 ### Component Application
 
 ```rescript
