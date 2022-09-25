@@ -269,22 +269,22 @@ type props<'x, 'y, 'z> = {x: 'x, y?: 'y, z?: 'z}
 }
 ```
 
-> Note: this implicit definition of type `props` means that there cannot be other type definitions of `prop` in the same scope, or it will be a compiler error about multiple definitions of the type name.
+> Note: this implicit definition of type `props` means that there cannot be other type definitions of `props` in the same scope, or it will be a compiler error about multiple definitions of the type name.
 
 ### Transformation for Component Application
 
 ```rescript
 <Comp x>
 // is transformed to
-React.createElement(Comp.make, {x})
+React.createElement(Comp.make, {x: x})
 
 <Comp x y=7 ?z>
 // is transformed to
-React.createElement(Comp.make, {x, y:7, ?z})
+React.createElement(Comp.make, {x, y: 7, ?z})
 
 <Comp x key="7">
 // is transformed to
-React.createElement(Comp.make, Jsx.addKeyProp({x}, "7"))
+React.createElement(Comp.make, Jsx.addKeyProp({x: x}, "7"))
 ```
 
 ### New experimental automatic mode
@@ -296,7 +296,7 @@ The jsx transform only affects component application, but not the definition.
 ```rescript
 <Comp x>
 // is transformed to
-React.jsx(Comp.make, {x})
+React.jsx(Comp.make, {x: x})
 ```
 
 ```rescript
