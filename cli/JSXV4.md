@@ -207,31 +207,41 @@ let make = () => {
 
 ## V4 Spec
 
-This is the specification that decribes how the JSX V4 transformation works.
+This is the specification that decribes the two JSX V4 transformations:
 
-### Abbreviation
+- For component definition `@react.component let make = ...`
+- For component application `<Foo x y />`
 
-The placement of `@react.component` is an abbreviation as described below.
+The transformations are optional in that it is possible to write the resulting code manually instead of using them.
 
-### Normal Case
+### Pre-transformation for component definition
+
+To simplify the description of component definition, a pre-transformation
+is used to move `@react.component` to a place where the actual transformations operate.
+
+#### Normal Case
 
 ```rescript
 @react.component
 let make = (~x, ~y, ~z) => body
+```
 
-// is an abbreviation for
+is pre-transformed to
 
+```rescript
 let make = @react.component (~x, ~y, ~z) => body
 ```
 
-### Forward Ref
+#### Forward Ref
 
 ```rescript
 @react.component
 let make = React.forwardRef((~x, ~y, ref) => body)
+```
 
-// is an abbreviation for
+is pre-transformed to
 
+```rescript
 let make = React.forwardRef({
   let fn =
     @react.component (~x, ~y) => ref => body
@@ -239,13 +249,15 @@ let make = React.forwardRef({
 })
 ```
 
-### Component Definition
+### Transformation for Component Definition
 
 ```rescript
 @react.component (~x, ~y=3+x, ?z) => body
+```
 
-// is converted to
+is transformed to
 
+```rescript
 type props<'x, 'y, 'z> = {x: 'x, y?: 'y, z?: 'z}
 
 ({x, y, z}: props<_>) => {
@@ -257,21 +269,21 @@ type props<'x, 'y, 'z> = {x: 'x, y?: 'y, z?: 'z}
 }
 ```
 
-If there is any type with the same name of `props`, it needs to be renamed to avoid the error of the multiple definitions of the type name.
+> Note: this implicit definition of type `props` means that there cannot be other type definitions of `prop` in the same scope, or it will be a compiler error about multiple definitions of the type name.
 
-### Component Application
+### Transformation for Component Application
 
 ```rescript
 <Comp x>
-// is converted to
+// is transformed to
 React.createElement(Comp.make, {x})
 
 <Comp x y=7 ?z>
-// is converted to
+// is transformed to
 React.createElement(Comp.make, {x, y:7, ?z})
 
 <Comp x key="7">
-// is converted to
+// is transformed to
 React.createElement(Comp.make, Jsx.addKeyProp({x}, "7"))
 ```
 
@@ -283,13 +295,13 @@ The jsx transform only affects component application, but not the definition.
 
 ```rescript
 <Comp x>
-// is converted to
+// is transformed to
 React.jsx(Comp.make, {x})
 ```
 
 ```rescript
 <div name="div" />
-// is converted to
+// is transformed to
 ReactDOM.jsx("div", { name: "div" })
 ```
 
@@ -308,7 +320,7 @@ type domProps = {
 ```rescript
 @react.component (~x: int, ~y: int=?, ~z: int=?) => React.element
 
-// is converted to
+// is transformed to
 
 type props<'x, 'y, 'z> = {x: 'x, y?: 'y, z?: 'z}
 
@@ -319,7 +331,7 @@ Since an external is a function declaration, it follows the same rule.
 
 ### Component Name
 
-Use the V3 convention for names, and make sure the generated
+The convention for names is the same one used in V3: the generated
 function has the name of the enclosing module/file.
 
 ### Fragments
@@ -327,7 +339,7 @@ function has the name of the enclosing module/file.
 ```rescript
 <> comp1 comp2 comp3 </>
 
-// is converted to
+// is transformed to
 
 // v4
 ReactDOMRe.createElement(ReasonReact.fragment, [comp1, comp2, comp3])
@@ -336,9 +348,9 @@ ReactDOMRe.createElement(ReasonReact.fragment, [comp1, comp2, comp3])
 React.jsxs(React.jsxFragment, {children: [comp1, comp2, comp3]})
 ```
 
-### Spread props
+### Spread props (new feature)
 
-V4 ppx supports the spread props `{...p}`.
+V4 introduces support for the spread operator for props: `{...p}`.
 
 ```rescript
 module A = {
