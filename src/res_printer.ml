@@ -113,6 +113,12 @@ let hasNestedJsxOrMoreThanOneChild expr =
   in
   loop false expr
 
+let hasCommentsInside tbl loc =
+  match Hashtbl.find tbl.CommentTable.inside loc with
+  | [] -> false
+  | _ -> true
+  | exception Not_found -> false
+
 let printMultilineCommentContent txt =
   (* Turns
    *         |* first line
@@ -236,10 +242,10 @@ let printCommentsInside cmtTbl loc =
     if singleLine then Doc.text ("//" ^ txt)
     else printMultilineCommentContent txt
   in
+  let forceBreak =
+    loc.Location.loc_start.pos_lnum <> loc.Location.loc_end.pos_lnum
+  in
   let rec loop acc comments =
-    let forceBreak =
-      loc.Location.loc_start.pos_lnum <> loc.Location.loc_end.pos_lnum
-    in
     match comments with
     | [] -> Doc.nil
     | [comment] ->
@@ -258,10 +264,10 @@ let printCommentsInside cmtTbl loc =
   | exception Not_found -> Doc.nil
   | comments ->
     Hashtbl.remove cmtTbl.inside loc;
-    Doc.group (loop [] comments)
+    loop [] comments
 
 (* This function is used for printing comments inside an empty file *)
-let printCommentsInsideFile cmtTbl loc =
+let printCommentsInsideFile cmtTbl =
   let rec loop acc comments =
     match comments with
     | [] -> Doc.nil
@@ -275,10 +281,10 @@ let printCommentsInsideFile cmtTbl loc =
       let cmtDoc = printLeadingComment ~nextComment comment in
       loop (cmtDoc :: acc) rest
   in
-  match Hashtbl.find cmtTbl.CommentTable.inside loc with
+  match Hashtbl.find cmtTbl.CommentTable.inside Location.none with
   | exception Not_found -> Doc.nil
   | comments ->
-    Hashtbl.remove cmtTbl.inside loc;
+    Hashtbl.remove cmtTbl.inside Location.none;
     Doc.group (loop [] comments)
 
 let printLeadingComments node tbl loc =
@@ -566,7 +572,7 @@ let customLayoutThreshold = 2
 
 let rec printStructure ~customLayout (s : Parsetree.structure) t =
   match s with
-  | [] -> printCommentsInsideFile t Location.none
+  | [] -> printCommentsInsideFile t
   | structure ->
     printList
       ~getLoc:(fun s -> s.Parsetree.pstr_loc)
@@ -738,15 +744,16 @@ and printModType ~customLayout modType cmtTbl =
           printLongidentLocation longident cmtTbl;
         ]
     | Pmty_signature [] ->
-      let doc = printCommentsInside cmtTbl modType.pmty_loc in
-      if Doc.isNil doc then
+      if hasCommentsInside cmtTbl modType.pmty_loc then
+        let doc = printCommentsInside cmtTbl modType.pmty_loc in
+        Doc.concat [Doc.lbrace; doc; Doc.rbrace]
+      else
         let shouldBreak =
           modType.pmty_loc.loc_start.pos_lnum
           < modType.pmty_loc.loc_end.pos_lnum
         in
         Doc.breakableGroup ~forceBreak:shouldBreak
           (Doc.concat [Doc.lbrace; Doc.softLine; Doc.softLine; Doc.rbrace])
-      else Doc.concat [Doc.lbrace; doc; Doc.rbrace]
     | Pmty_signature signature ->
       let signatureDoc =
         Doc.breakableGroup ~forceBreak:true
@@ -935,7 +942,7 @@ and printWithConstraint ~customLayout
 
 and printSignature ~customLayout signature cmtTbl =
   match signature with
-  | [] -> printCommentsInsideFile cmtTbl Location.none
+  | [] -> printCommentsInsideFile cmtTbl
   | signature ->
     printList
       ~getLoc:(fun s -> s.Parsetree.psig_loc)
@@ -3974,16 +3981,16 @@ and printJsxExpression ~customLayout lident args cmtTbl =
   let name = printJsxName lident in
   let formattedProps, children = printJsxProps ~customLayout args cmtTbl in
   (* <div className="test" /> *)
-  let insideComments =
+  let hasChildren =
     match children with
     | Some
         {
           Parsetree.pexp_desc =
             Pexp_construct ({txt = Longident.Lident "[]"}, None);
-          pexp_loc = loc;
         } ->
-      printCommentsInside cmtTbl loc
-    | _ -> Doc.nil
+      false
+    | None -> false
+    | _ -> true
   in
   let isSelfClosing =
     match children with
@@ -3991,15 +3998,32 @@ and printJsxExpression ~customLayout lident args cmtTbl =
         {
           Parsetree.pexp_desc =
             Pexp_construct ({txt = Longident.Lident "[]"}, None);
+          pexp_loc = loc;
         } ->
-      Doc.isNil insideComments
+      not (hasCommentsInside cmtTbl loc)
     | _ -> false
   in
-  let lineSep =
-    match children with
-    | Some expr ->
-      if hasNestedJsxOrMoreThanOneChild expr then Doc.hardLine else Doc.line
-    | None -> Doc.line
+  let printChildren children =
+    let lineSep =
+      match children with
+      | Some expr ->
+        if hasNestedJsxOrMoreThanOneChild expr then Doc.hardLine else Doc.line
+      | None -> Doc.line
+    in
+    Doc.concat
+      [
+        Doc.indent
+          (Doc.concat
+             [
+               Doc.line;
+               (match children with
+               | Some childrenExpression ->
+                 printJsxChildren ~customLayout childrenExpression ~sep:lineSep
+                   cmtTbl
+               | None -> Doc.nil);
+             ]);
+        lineSep;
+      ]
   in
   Doc.group
     (Doc.concat
@@ -4030,22 +4054,17 @@ and printJsxExpression ~customLayout lident args cmtTbl =
            Doc.concat
              [
                Doc.greaterThan;
-               (if Doc.isNil insideComments then
-                Doc.concat
-                  [
-                    Doc.indent
-                      (Doc.concat
-                         [
-                           Doc.line;
-                           (match children with
-                           | Some childrenExpression ->
-                             printJsxChildren ~customLayout childrenExpression
-                               ~sep:lineSep cmtTbl
-                           | None -> Doc.nil);
-                         ]);
-                    lineSep;
-                  ]
-               else insideComments);
+               (if hasChildren then printChildren children
+               else
+                 match children with
+                 | Some
+                     {
+                       Parsetree.pexp_desc =
+                         Pexp_construct ({txt = Longident.Lident "[]"}, None);
+                       pexp_loc = loc;
+                     } ->
+                   printCommentsInside cmtTbl loc
+                 | _ -> Doc.nil);
                Doc.text "</";
                name;
                Doc.greaterThan;

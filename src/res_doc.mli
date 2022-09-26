@@ -42,8 +42,6 @@ val equal : t
 val trailingComma : t
 val doubleQuote : t [@@live]
 
-val isNil : t -> bool
-
 (*
  * `willBreak doc` checks whether `doc` contains forced line breaks.
  * This is more or less a "workaround" to make the parent of a `customLayout` break.
