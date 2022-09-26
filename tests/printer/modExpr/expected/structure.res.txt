@@ -8,7 +8,6 @@ module Empty = {}
 
 module Empty = {
   // TODO: convince management to implement this
-
 }
 
 module Empty = {/* test */}

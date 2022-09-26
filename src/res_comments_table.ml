@@ -692,9 +692,11 @@ and walkTypeDeclaration (td : Parsetree.type_declaration) t comments =
     | Ptype_abstract | Ptype_open -> rest
     | Ptype_record labelDeclarations ->
       let () =
-        walkList
-          (labelDeclarations |> List.map (fun ld -> LabelDeclaration ld))
-          t rest
+        if labelDeclarations = [] then attach t.inside td.ptype_loc rest
+        else
+          walkList
+            (labelDeclarations |> List.map (fun ld -> LabelDeclaration ld))
+            t rest
       in
       []
     | Ptype_variant constructorDeclarations ->
@@ -1023,22 +1025,26 @@ and walkExpression expr t comments =
   | Pexp_array exprs | Pexp_tuple exprs ->
     walkList (exprs |> List.map (fun e -> Expression e)) t comments
   | Pexp_record (rows, spreadExpr) ->
-    let comments =
-      match spreadExpr with
-      | None -> comments
-      | Some expr ->
-        let leading, inside, trailing = partitionByLoc comments expr.pexp_loc in
-        attach t.leading expr.pexp_loc leading;
-        walkExpression expr t inside;
-        let afterExpr, rest =
-          partitionAdjacentTrailing expr.pexp_loc trailing
-        in
-        attach t.trailing expr.pexp_loc afterExpr;
-        rest
-    in
-    walkList
-      (rows |> List.map (fun (li, e) -> ExprRecordRow (li, e)))
-      t comments
+    if rows = [] then attach t.inside expr.pexp_loc comments
+    else
+      let comments =
+        match spreadExpr with
+        | None -> comments
+        | Some expr ->
+          let leading, inside, trailing =
+            partitionByLoc comments expr.pexp_loc
+          in
+          attach t.leading expr.pexp_loc leading;
+          walkExpression expr t inside;
+          let afterExpr, rest =
+            partitionAdjacentTrailing expr.pexp_loc trailing
+          in
+          attach t.trailing expr.pexp_loc afterExpr;
+          rest
+      in
+      walkList
+        (rows |> List.map (fun (li, e) -> ExprRecordRow (li, e)))
+        t comments
   | Pexp_field (expr, longident) ->
     let leading, inside, trailing = partitionByLoc comments expr.pexp_loc in
     let trailing =

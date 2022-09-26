@@ -113,6 +113,11 @@ let hasNestedJsxOrMoreThanOneChild expr =
   in
   loop false expr
 
+let hasCommentsInside tbl loc =
+  match Hashtbl.find_opt tbl.CommentTable.inside loc with
+  | None -> false
+  | _ -> true
+
 let printMultilineCommentContent txt =
   (* Turns
    *         |* first line
@@ -228,7 +233,40 @@ let printLeadingComment ?nextComment comment =
   in
   Doc.concat [content; separator]
 
+(* This function is used for printing comments inside an empty block *)
 let printCommentsInside cmtTbl loc =
+  let printComment comment =
+    let singleLine = Comment.isSingleLineComment comment in
+    let txt = Comment.txt comment in
+    if singleLine then Doc.text ("//" ^ txt)
+    else printMultilineCommentContent txt
+  in
+  let forceBreak =
+    loc.Location.loc_start.pos_lnum <> loc.Location.loc_end.pos_lnum
+  in
+  let rec loop acc comments =
+    match comments with
+    | [] -> Doc.nil
+    | [comment] ->
+      let cmtDoc = printComment comment in
+      let cmtsDoc = Doc.concat (Doc.softLine :: List.rev (cmtDoc :: acc)) in
+      let doc =
+        Doc.breakableGroup ~forceBreak
+          (Doc.concat [Doc.ifBreaks (Doc.indent cmtsDoc) cmtsDoc; Doc.softLine])
+      in
+      doc
+    | comment :: rest ->
+      let cmtDoc = Doc.concat [printComment comment; Doc.line] in
+      loop (cmtDoc :: acc) rest
+  in
+  match Hashtbl.find cmtTbl.CommentTable.inside loc with
+  | exception Not_found -> Doc.nil
+  | comments ->
+    Hashtbl.remove cmtTbl.inside loc;
+    loop [] comments
+
+(* This function is used for printing comments inside an empty file *)
+let printCommentsInsideFile cmtTbl =
   let rec loop acc comments =
     match comments with
     | [] -> Doc.nil
@@ -242,10 +280,10 @@ let printCommentsInside cmtTbl loc =
       let cmtDoc = printLeadingComment ~nextComment comment in
       loop (cmtDoc :: acc) rest
   in
-  match Hashtbl.find cmtTbl.CommentTable.inside loc with
+  match Hashtbl.find cmtTbl.CommentTable.inside Location.none with
   | exception Not_found -> Doc.nil
   | comments ->
-    Hashtbl.remove cmtTbl.inside loc;
+    Hashtbl.remove cmtTbl.inside Location.none;
     Doc.group (loop [] comments)
 
 let printLeadingComments node tbl loc =
@@ -533,7 +571,7 @@ let customLayoutThreshold = 2
 
 let rec printStructure ~customLayout (s : Parsetree.structure) t =
   match s with
-  | [] -> printCommentsInside t Location.none
+  | [] -> printCommentsInsideFile t
   | structure ->
     printList
       ~getLoc:(fun s -> s.Parsetree.pstr_loc)
@@ -705,19 +743,16 @@ and printModType ~customLayout modType cmtTbl =
           printLongidentLocation longident cmtTbl;
         ]
     | Pmty_signature [] ->
-      let shouldBreak =
-        modType.pmty_loc.loc_start.pos_lnum < modType.pmty_loc.loc_end.pos_lnum
-      in
-      Doc.breakableGroup ~forceBreak:shouldBreak
-        (Doc.concat
-           [
-             Doc.lbrace;
-             Doc.indent
-               (Doc.concat
-                  [Doc.softLine; printCommentsInside cmtTbl modType.pmty_loc]);
-             Doc.softLine;
-             Doc.rbrace;
-           ])
+      if hasCommentsInside cmtTbl modType.pmty_loc then
+        let doc = printCommentsInside cmtTbl modType.pmty_loc in
+        Doc.concat [Doc.lbrace; doc; Doc.rbrace]
+      else
+        let shouldBreak =
+          modType.pmty_loc.loc_start.pos_lnum
+          < modType.pmty_loc.loc_end.pos_lnum
+        in
+        Doc.breakableGroup ~forceBreak:shouldBreak
+          (Doc.concat [Doc.lbrace; Doc.softLine; Doc.softLine; Doc.rbrace])
     | Pmty_signature signature ->
       let signatureDoc =
         Doc.breakableGroup ~forceBreak:true
@@ -906,7 +941,7 @@ and printWithConstraint ~customLayout
 
 and printSignature ~customLayout signature cmtTbl =
   match signature with
-  | [] -> printCommentsInside cmtTbl Location.none
+  | [] -> printCommentsInsideFile cmtTbl
   | signature ->
     printList
       ~getLoc:(fun s -> s.Parsetree.psig_loc)
@@ -1231,23 +1266,34 @@ and printTypeDeclaration2 ~customLayout ~recFlag
           Doc.text "..";
         ]
     | Ptype_record lds ->
-      let manifest =
-        match td.ptype_manifest with
-        | None -> Doc.nil
-        | Some typ ->
-          Doc.concat
-            [
-              Doc.concat [Doc.space; Doc.text equalSign; Doc.space];
-              printTypExpr ~customLayout typ cmtTbl;
-            ]
-      in
-      Doc.concat
-        [
-          manifest;
-          Doc.concat [Doc.space; Doc.text equalSign; Doc.space];
-          printPrivateFlag td.ptype_private;
-          printRecordDeclaration ~customLayout lds cmtTbl;
-        ]
+      if lds = [] then
+        Doc.concat
+          [
+            Doc.space;
+            Doc.text equalSign;
+            Doc.space;
+            Doc.lbrace;
+            printCommentsInside cmtTbl td.ptype_loc;
+            Doc.rbrace;
+          ]
+      else
+        let manifest =
+          match td.ptype_manifest with
+          | None -> Doc.nil
+          | Some typ ->
+            Doc.concat
+              [
+                Doc.concat [Doc.space; Doc.text equalSign; Doc.space];
+                printTypExpr ~customLayout typ cmtTbl;
+              ]
+        in
+        Doc.concat
+          [
+            manifest;
+            Doc.concat [Doc.space; Doc.text equalSign; Doc.space];
+            printPrivateFlag td.ptype_private;
+            printRecordDeclaration ~customLayout lds cmtTbl;
+          ]
     | Ptype_variant cds ->
       let manifest =
         match td.ptype_manifest with
@@ -2236,13 +2282,7 @@ and printPattern ~customLayout (p : Parsetree.pattern) cmtTbl =
           Doc.concat
             [Doc.lparen; printCommentsInside cmtTbl ppat_loc; Doc.rparen]
         | Some {ppat_desc = Ppat_tuple []; ppat_loc = loc} ->
-          Doc.concat
-            [
-              Doc.lparen;
-              Doc.softLine;
-              printCommentsInside cmtTbl loc;
-              Doc.rparen;
-            ]
+          Doc.concat [Doc.lparen; printCommentsInside cmtTbl loc; Doc.rparen]
         (* Some((1, 2) *)
         | Some {ppat_desc = Ppat_tuple [({ppat_desc = Ppat_tuple _} as arg)]} ->
           Doc.concat
@@ -2294,13 +2334,7 @@ and printPattern ~customLayout (p : Parsetree.pattern) cmtTbl =
           ->
           Doc.text "()"
         | Some {ppat_desc = Ppat_tuple []; ppat_loc = loc} ->
-          Doc.concat
-            [
-              Doc.lparen;
-              Doc.softLine;
-              printCommentsInside cmtTbl loc;
-              Doc.rparen;
-            ]
+          Doc.concat [Doc.lparen; printCommentsInside cmtTbl loc; Doc.rparen]
         (* Some((1, 2) *)
         | Some {ppat_desc = Ppat_tuple [({ppat_desc = Ppat_tuple _} as arg)]} ->
           Doc.concat
@@ -2846,59 +2880,63 @@ and printExpression ~customLayout (e : Parsetree.expression) cmtTbl =
       in
       Doc.group (Doc.concat [variantName; args])
     | Pexp_record (rows, spreadExpr) ->
-      let spread =
-        match spreadExpr with
-        | None -> Doc.nil
-        | Some expr ->
-          Doc.concat
-            [
-              Doc.dotdotdot;
-              (let doc =
-                 printExpressionWithComments ~customLayout expr cmtTbl
-               in
-               match Parens.expr expr with
-               | Parens.Parenthesized -> addParens doc
-               | Braced braces -> printBraces doc expr braces
-               | Nothing -> doc);
-              Doc.comma;
-              Doc.line;
-            ]
-      in
-      (* If the record is written over multiple lines, break automatically
-       * `let x = {a: 1, b: 3}` -> same line, break when line-width exceeded
-       * `let x = {
-       *   a: 1,
-       *   b: 2,
-       *  }` -> record is written on multiple lines, break the group *)
-      let forceBreak =
-        e.pexp_loc.loc_start.pos_lnum < e.pexp_loc.loc_end.pos_lnum
-      in
-      let punningAllowed =
-        match (spreadExpr, rows) with
-        | None, [_] -> false (* disallow punning for single-element records *)
-        | _ -> true
-      in
-      Doc.breakableGroup ~forceBreak
-        (Doc.concat
-           [
-             Doc.lbrace;
-             Doc.indent
-               (Doc.concat
-                  [
-                    Doc.softLine;
-                    spread;
-                    Doc.join
-                      ~sep:(Doc.concat [Doc.text ","; Doc.line])
-                      (List.map
-                         (fun row ->
-                           printExpressionRecordRow ~customLayout row cmtTbl
-                             punningAllowed)
-                         rows);
-                  ]);
-             Doc.trailingComma;
-             Doc.softLine;
-             Doc.rbrace;
-           ])
+      if rows = [] then
+        Doc.concat
+          [Doc.lbrace; printCommentsInside cmtTbl e.pexp_loc; Doc.rbrace]
+      else
+        let spread =
+          match spreadExpr with
+          | None -> Doc.nil
+          | Some expr ->
+            Doc.concat
+              [
+                Doc.dotdotdot;
+                (let doc =
+                   printExpressionWithComments ~customLayout expr cmtTbl
+                 in
+                 match Parens.expr expr with
+                 | Parens.Parenthesized -> addParens doc
+                 | Braced braces -> printBraces doc expr braces
+                 | Nothing -> doc);
+                Doc.comma;
+                Doc.line;
+              ]
+        in
+        (* If the record is written over multiple lines, break automatically
+         * `let x = {a: 1, b: 3}` -> same line, break when line-width exceeded
+         * `let x = {
+         *   a: 1,
+         *   b: 2,
+         *  }` -> record is written on multiple lines, break the group *)
+        let forceBreak =
+          e.pexp_loc.loc_start.pos_lnum < e.pexp_loc.loc_end.pos_lnum
+        in
+        let punningAllowed =
+          match (spreadExpr, rows) with
+          | None, [_] -> false (* disallow punning for single-element records *)
+          | _ -> true
+        in
+        Doc.breakableGroup ~forceBreak
+          (Doc.concat
+             [
+               Doc.lbrace;
+               Doc.indent
+                 (Doc.concat
+                    [
+                      Doc.softLine;
+                      spread;
+                      Doc.join
+                        ~sep:(Doc.concat [Doc.text ","; Doc.line])
+                        (List.map
+                           (fun row ->
+                             printExpressionRecordRow ~customLayout row cmtTbl
+                               punningAllowed)
+                           rows);
+                    ]);
+               Doc.trailingComma;
+               Doc.softLine;
+               Doc.rbrace;
+             ])
     | Pexp_extension extension -> (
       match extension with
       | ( {txt = "bs.obj" | "obj"},
@@ -3942,21 +3980,49 @@ and printJsxExpression ~customLayout lident args cmtTbl =
   let name = printJsxName lident in
   let formattedProps, children = printJsxProps ~customLayout args cmtTbl in
   (* <div className="test" /> *)
-  let isSelfClosing =
+  let hasChildren =
     match children with
     | Some
         {
           Parsetree.pexp_desc =
             Pexp_construct ({txt = Longident.Lident "[]"}, None);
         } ->
-      true
+      false
+    | None -> false
+    | _ -> true
+  in
+  let isSelfClosing =
+    match children with
+    | Some
+        {
+          Parsetree.pexp_desc =
+            Pexp_construct ({txt = Longident.Lident "[]"}, None);
+          pexp_loc = loc;
+        } ->
+      not (hasCommentsInside cmtTbl loc)
     | _ -> false
   in
-  let lineSep =
-    match children with
-    | Some expr ->
-      if hasNestedJsxOrMoreThanOneChild expr then Doc.hardLine else Doc.line
-    | None -> Doc.line
+  let printChildren children =
+    let lineSep =
+      match children with
+      | Some expr ->
+        if hasNestedJsxOrMoreThanOneChild expr then Doc.hardLine else Doc.line
+      | None -> Doc.line
+    in
+    Doc.concat
+      [
+        Doc.indent
+          (Doc.concat
+             [
+               Doc.line;
+               (match children with
+               | Some childrenExpression ->
+                 printJsxChildren ~customLayout childrenExpression ~sep:lineSep
+                   cmtTbl
+               | None -> Doc.nil);
+             ]);
+        lineSep;
+      ]
   in
   Doc.group
     (Doc.concat
@@ -3975,10 +4041,11 @@ and printJsxExpression ~customLayout lident args cmtTbl =
                         Pexp_construct ({txt = Longident.Lident "[]"}, None);
                       pexp_loc = loc;
                     } ->
-                  let doc =
-                    Doc.concat [printCommentsInside cmtTbl loc; Doc.text "/>"]
-                  in
-                  Doc.concat [Doc.line; printComments doc cmtTbl loc]
+                  if isSelfClosing then
+                    Doc.concat
+                      [Doc.line; printComments (Doc.text "/>") cmtTbl loc]
+                  else
+                    Doc.concat [Doc.softLine; printComments Doc.nil cmtTbl loc]
                 | _ -> Doc.nil);
               ]);
          (if isSelfClosing then Doc.nil
@@ -3986,17 +4053,17 @@ and printJsxExpression ~customLayout lident args cmtTbl =
            Doc.concat
              [
                Doc.greaterThan;
-               Doc.indent
-                 (Doc.concat
-                    [
-                      Doc.line;
-                      (match children with
-                      | Some childrenExpression ->
-                        printJsxChildren ~customLayout childrenExpression
-                          ~sep:lineSep cmtTbl
-                      | None -> Doc.nil);
-                    ]);
-               lineSep;
+               (if hasChildren then printChildren children
+               else
+                 match children with
+                 | Some
+                     {
+                       Parsetree.pexp_desc =
+                         Pexp_construct ({txt = Longident.Lident "[]"}, None);
+                       pexp_loc = loc;
+                     } ->
+                   printCommentsInside cmtTbl loc
+                 | _ -> Doc.nil);
                Doc.text "</";
                name;
                Doc.greaterThan;
@@ -5164,14 +5231,7 @@ and printModExpr ~customLayout modExpr cmtTbl =
       in
       Doc.breakableGroup ~forceBreak:shouldBreak
         (Doc.concat
-           [
-             Doc.lbrace;
-             Doc.indent
-               (Doc.concat
-                  [Doc.softLine; printCommentsInside cmtTbl modExpr.pmod_loc]);
-             Doc.softLine;
-             Doc.rbrace;
-           ])
+           [Doc.lbrace; printCommentsInside cmtTbl modExpr.pmod_loc; Doc.rbrace])
     | Pmod_structure structure ->
       Doc.breakableGroup ~forceBreak:true
         (Doc.concat

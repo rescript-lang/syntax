@@ -18,10 +18,8 @@ module type Foo = {
 
 module type Foo = {
   // trailing
-
 }
 
 module type Foo = {
   // Sunny clouds
-
 }

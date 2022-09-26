@@ -23,7 +23,8 @@ let /* here */ Black /* there */ = color
 let /* here */ Black(/* inside */) /* there */ = color
 let Black(/* inside */ /* inside2 */) = color
 let Black(/* inside */ /* inside2 */ /* inside 3 */) = color
-let Black(// singleLineComment
+let Black(
+  // singleLineComment
 ) = color
 
 let module(/* c0 */ X /* c1 */: /* c2 */ X_int /* c3 */) /* c4 */ = x
