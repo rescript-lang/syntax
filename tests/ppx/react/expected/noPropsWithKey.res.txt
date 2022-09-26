@@ -3,7 +3,7 @@
 module V4CA = {
   type props = {}
 
-  @react.component let make = (_: props) => ReactDOMRe.createDOMElementVariadic("div", [])
+  @react.component let make = (_: props) => ReactDOM.createDOMElementVariadic("div", [])
   let make = {
     let \"NoPropsWithKey$V4CA" = props => make(props)
 
@@ -23,8 +23,8 @@ module V4C = {
 
   @react.component
   let make = (_: props) =>
-    ReactDOMRe.createElement(
-      ReasonReact.fragment,
+    ReactDOM.createElement(
+      React.fragment,
       [
         React.createElementWithKey(V4CA.make, {}, "k"),
         React.createElementWithKey(V4CB.make, {}, "k"),

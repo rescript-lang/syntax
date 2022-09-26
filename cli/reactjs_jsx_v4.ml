@@ -549,10 +549,7 @@ let transformLowercaseCall3 ~config mapper jsxExprLoc callExprLoc attrs
         let propsCall =
           Exp.apply
             (Exp.ident
-               {
-                 loc = Location.none;
-                 txt = Ldot (Lident "ReactDOMRe", "domProps");
-               })
+               {loc = Location.none; txt = Ldot (Lident "ReactDOM", "domProps")})
             (nonEmptyProps
             |> List.map (fun (label, expression) ->
                    (label, mapper.expr mapper expression)))
@@ -560,18 +557,18 @@ let transformLowercaseCall3 ~config mapper jsxExprLoc callExprLoc attrs
         [
           (* "div" *)
           (nolabel, componentNameExpr);
-          (* ReactDOMRe.domProps(~className=blabla, ~foo=bar, ()) *)
+          (* ReactDOM.domProps(~className=blabla, ~foo=bar, ()) *)
           (labelled "props", propsCall);
           (* [|moreCreateElementCallsHere|] *)
           (nolabel, childrenExpr);
         ]
     in
     Exp.apply ~loc:jsxExprLoc ~attrs
-      (* ReactDOMRe.createElement *)
+      (* ReactDOM.createElement *)
       (Exp.ident
          {
            loc = Location.none;
-           txt = Ldot (Lident "ReactDOMRe", createElementCall);
+           txt = Ldot (Lident "ReactDOM", createElementCall);
          })
       args
 
@@ -754,7 +751,7 @@ let transformStructureItem ~config mapper item =
         in
         (* type props<'x, 'y> = { x: 'x, y?: 'y, ... } *)
         let propsRecordType =
-          makePropsRecordType "props" Location.none namedTypeList
+          makePropsRecordType "props" pstr_loc namedTypeList
         in
         (* can't be an arrow because it will defensively uncurry *)
         let newExternalType =
@@ -978,7 +975,7 @@ let transformStructureItem ~config mapper item =
           let vbMatchList = List.map vbMatch namedArgWithDefaultValueList in
           (* type props = { ... } *)
           let propsRecordType =
-            makePropsRecordType "props" emptyLoc namedTypeList
+            makePropsRecordType "props" pstr_loc namedTypeList
           in
           let innerExpression =
             Exp.apply
@@ -1200,7 +1197,7 @@ let transformSignatureItem ~config _mapper item =
           (makePropsTypeParams namedTypeList)
       in
       let propsRecordType =
-        makePropsRecordTypeSig "props" Location.none
+        makePropsRecordTypeSig "props" psig_loc
           ((* If there is Nolabel arg, regard the type as ref in forwardRef *)
            (if !hasForwardRef then [(true, "ref", [], refType Location.none)]
            else [])
@@ -1244,7 +1241,7 @@ let transformJsxCall ~config mapper callExpression callArguments jsxExprLoc
         callArguments
     (* div(~prop1=foo, ~prop2=bar, ~children=[bla], ()) *)
     (* turn that into
-       ReactDOMRe.createElement(~props=ReactDOMRe.props(~props1=foo, ~props2=bar, ()), [|bla|]) *)
+       ReactDOM.createElement(~props=ReactDOM.props(~props1=foo, ~props2=bar, ()), [|bla|]) *)
     | {loc; txt = Lident id} ->
       transformLowercaseCall3 ~config mapper jsxExprLoc loc attrs callArguments
         id
@@ -1306,7 +1303,7 @@ let expr ~config mapper expression =
         | "automatic" ->
           Exp.ident ~loc {loc; txt = Ldot (Lident "React", "jsxFragment")}
         | "classic" | _ ->
-          Exp.ident ~loc {loc; txt = Ldot (Lident "ReasonReact", "fragment")}
+          Exp.ident ~loc {loc; txt = Ldot (Lident "React", "fragment")}
       in
       let childrenExpr = transformChildrenIfList ~mapper listItems in
       let args =
@@ -1337,15 +1334,14 @@ let expr ~config mapper expression =
       Exp.apply
         ~loc (* throw away the [@JSX] attribute and keep the others, if any *)
         ~attrs:nonJSXAttributes
-        (* ReactDOMRe.createElement *)
+        (* ReactDOM.createElement *)
         (match config.mode with
         | "automatic" ->
           if countOfChildren childrenExpr > 1 then
             Exp.ident ~loc {loc; txt = Ldot (Lident "React", "jsxs")}
           else Exp.ident ~loc {loc; txt = Ldot (Lident "React", "jsx")}
         | "classic" | _ ->
-          Exp.ident ~loc
-            {loc; txt = Ldot (Lident "ReactDOMRe", "createElement")})
+          Exp.ident ~loc {loc; txt = Ldot (Lident "ReactDOM", "createElement")})
         args)
   (* Delegate to the default mapper, a deep identity traversal *)
   | e -> default_mapper.expr mapper e
