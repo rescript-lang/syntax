@@ -114,10 +114,9 @@ let hasNestedJsxOrMoreThanOneChild expr =
   loop false expr
 
 let hasCommentsInside tbl loc =
-  match Hashtbl.find tbl.CommentTable.inside loc with
-  | [] -> false
+  match Hashtbl.find_opt tbl.CommentTable.inside loc with
+  | None -> false
   | _ -> true
-  | exception Not_found -> false
 
 let printMultilineCommentContent txt =
   (* Turns
