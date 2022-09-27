@@ -29,6 +29,8 @@ To build certain dependencies in V3 compatibility mode, whatever the version use
 
 In V3 compatibility mode, the listed dependencies are built in V3 mode, and in addition `-open ReatcV3` is added to the compiler options, so that the `ReactV3` compatibility module in rescript-react is used.
 
+> Note: do not add @rescript/react to the v3-dependencies, or it will cause a cyclic dependencies error.
+
 ### Classic and Automatic Mode
 
 Classic mode is the default and generates calls to `React.createElement` just as with V3.
