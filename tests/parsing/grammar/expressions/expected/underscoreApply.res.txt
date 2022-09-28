@@ -15,3 +15,5 @@ let l1 =
 let l2 =
   ([Some 1; None; Some 2] |> (List.map (fun __x -> optParam ?v:__x ()))) |>
     List.length
+;;fun __x ->
+    underscoreWithComments (fun x -> ((something ())[@ns.braces ])) __x

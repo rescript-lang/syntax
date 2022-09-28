@@ -510,11 +510,13 @@ let processUnderscoreApplication args =
     | _ -> arg
   in
   let args = List.map check_arg args in
-  let wrap exp_apply =
+  let wrap (exp_apply : Parsetree.expression) =
     match !exp_question with
     | Some {pexp_loc = loc} ->
       let pattern =
-        Ast_helper.Pat.mk (Ppat_var (Location.mkloc hidden_var loc)) ~loc
+        Ast_helper.Pat.mk
+          (Ppat_var (Location.mkloc hidden_var loc))
+          ~loc:Location.none
       in
       Ast_helper.Exp.mk (Pexp_fun (Nolabel, None, pattern, exp_apply)) ~loc
     | None -> exp_apply

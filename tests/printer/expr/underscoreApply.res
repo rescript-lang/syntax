@@ -63,3 +63,12 @@ Array.get(_, 1) + Array.get(_, 0)
 let f = Array.get(_, 0)
 
 let photo = pricedRoom["room"]["photos"] |> filterNone |> Array.get(_, 0)
+
+underscoreWithComments(
+  // Comment 1
+  x => {
+    // Comment 2
+    something()
+  },
+  _,
+)
