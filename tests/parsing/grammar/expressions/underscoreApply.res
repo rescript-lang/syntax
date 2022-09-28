@@ -19,3 +19,12 @@ let l1 =
 
 let l2 =
   list{Some(1), None, Some(2)} |> List.map(optParam(~v=?_, ())) |> List.length
+
+underscoreWithComments(
+  // Comment 1
+  x => {
+    // Comment 2
+    something()
+  },
+  _,
+)
