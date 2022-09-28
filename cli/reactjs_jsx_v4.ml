@@ -378,6 +378,9 @@ let transformUppercaseCall3 ~config modulePath mapper jsxExprLoc callExprLoc
   let keyProp =
     args |> List.filter (fun (arg_label, _) -> "key" = getLabel arg_label)
   in
+  let makeID =
+    Exp.ident ~loc:callExprLoc {txt = ident ~suffix:"make"; loc = callExprLoc}
+  in
   match config.mode with
   (* The new jsx transform *)
   | "automatic" ->
@@ -397,12 +400,7 @@ let transformUppercaseCall3 ~config modulePath mapper jsxExprLoc callExprLoc
         ( Exp.ident {loc = Location.none; txt = Ldot (Lident "React", "jsxs")},
           [] )
     in
-    Exp.apply ~attrs jsxExpr
-      ([
-         (nolabel, Exp.ident {txt = ident ~suffix:"make"; loc = callExprLoc});
-         (nolabel, props);
-       ]
-      @ key)
+    Exp.apply ~attrs jsxExpr ([(nolabel, makeID); (nolabel, props)] @ key)
   | _ -> (
     match (!childrenArg, keyProp) with
     | None, (_, keyExpr) :: _ ->
@@ -412,19 +410,12 @@ let transformUppercaseCall3 ~config modulePath mapper jsxExprLoc callExprLoc
              loc = Location.none;
              txt = Ldot (Lident "React", "createElementWithKey");
            })
-        [
-          (nolabel, Exp.ident {txt = ident ~suffix:"make"; loc = callExprLoc});
-          (nolabel, props);
-          (nolabel, keyExpr);
-        ]
+        [(nolabel, makeID); (nolabel, props); (nolabel, keyExpr)]
     | None, [] ->
       Exp.apply ~attrs
         (Exp.ident
            {loc = Location.none; txt = Ldot (Lident "React", "createElement")})
-        [
-          (nolabel, Exp.ident {txt = ident ~suffix:"make"; loc = callExprLoc});
-          (nolabel, props);
-        ]
+        [(nolabel, makeID); (nolabel, props)]
     | Some children, (_, keyExpr) :: _ ->
       Exp.apply ~attrs
         (Exp.ident
@@ -433,7 +424,7 @@ let transformUppercaseCall3 ~config modulePath mapper jsxExprLoc callExprLoc
              txt = Ldot (Lident "React", "createElementVariadicWithKey");
            })
         [
-          (nolabel, Exp.ident {txt = ident ~suffix:"make"; loc = callExprLoc});
+          (nolabel, makeID);
           (nolabel, props);
           (nolabel, children);
           (nolabel, keyExpr);
@@ -445,11 +436,7 @@ let transformUppercaseCall3 ~config modulePath mapper jsxExprLoc callExprLoc
              loc = Location.none;
              txt = Ldot (Lident "React", "createElementVariadic");
            })
-        [
-          (nolabel, Exp.ident {txt = ident ~suffix:"make"; loc = callExprLoc});
-          (nolabel, props);
-          (nolabel, children);
-        ])
+        [(nolabel, makeID); (nolabel, props); (nolabel, children)])
 
 let transformLowercaseCall3 ~config mapper jsxExprLoc callExprLoc attrs
     callArguments id =
