@@ -29,7 +29,7 @@
 - Fix printing of optional fields in records https://github.com/rescript-lang/rescript-compiler/issues/5654
 - Fix printing of comments inside empty blocks https://github.com/rescript-lang/syntax/pull/647
 - Fix location issue in error messages with JSX V4 where the multiple props types are defined https://github.com/rescript-lang/syntax/pull/655
-- Fix location issue in make function in JSX V4 that breaks dead code elimination
+- Fix location issue in make function in JSX V4 that breaks dead code elimination https://github.com/rescript-lang/syntax/pull/660
 
 ## ReScript 10.0
 
