@@ -1320,19 +1320,15 @@ and walkExpression expr t comments =
                | Asttypes.Nolabel -> false
                | _ -> true)
       in
-      let children =
-        match
-          arguments
-          |> List.find_opt (fun (label, _) ->
-                 label = Asttypes.Labelled "children")
-        with
-        | None -> None
-        | Some (_, e) -> Some e
+      let maybeChildren =
+        arguments
+        |> List.find_opt (fun (label, _) ->
+               label = Asttypes.Labelled "children")
       in
-      match children with
+      match maybeChildren with
       | None -> ()
-      | Some childrenExpr ->
-        let leading, inside, _ = partitionByLoc after childrenExpr.pexp_loc in
+      | Some (_, children) ->
+        let leading, inside, _ = partitionByLoc after children.pexp_loc in
         if props = [] then
           let afterExpr, _ =
             partitionAdjacentTrailing callExpr.pexp_loc after
@@ -1340,7 +1336,7 @@ and walkExpression expr t comments =
           attach t.trailing callExpr.pexp_loc afterExpr
         else
           walkList (props |> List.map (fun (_, e) -> ExprArgument e)) t leading;
-        walkExpression childrenExpr t inside)
+        walkExpression children t inside)
     else
       let afterExpr, rest = partitionAdjacentTrailing callExpr.pexp_loc after in
       attach t.trailing callExpr.pexp_loc afterExpr;
