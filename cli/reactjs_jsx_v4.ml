@@ -27,7 +27,8 @@ let getLabel str =
   | Optional str | Labelled str -> str
   | Nolabel -> ""
 
-let optionalAttr = [({txt = "ns.optional"; loc = Location.none}, PStr [])]
+let optionalAttr = ({txt = "ns.optional"; loc = Location.none}, PStr [])
+let optionalAttrs = [optionalAttr]
 
 let constantString ~loc str =
   Ast_helper.Exp.constant ~loc (Pconst_string (str, None))
@@ -211,7 +212,7 @@ let recordFromProps ~loc ~removeKey callArguments =
     let id = getLabel arg_label in
     if isOptional arg_label then
       ( {txt = Lident id; loc = pexp_loc},
-        {pexpr with pexp_attributes = optionalAttr} )
+        {pexpr with pexp_attributes = optionalAttrs} )
     else ({txt = Lident id; loc = pexp_loc}, pexpr)
   in
   let fields = props |> List.map processProp in
@@ -288,9 +289,9 @@ let makeLabelDecls ~loc namedTypeList =
   namedTypeList
   |> List.map (fun (isOptional, label, _, interiorType) ->
          if label = "key" then
-           Type.field ~loc ~attrs:optionalAttr {txt = label; loc} interiorType
+           Type.field ~loc ~attrs:optionalAttrs {txt = label; loc} interiorType
          else if isOptional then
-           Type.field ~loc ~attrs:optionalAttr {txt = label; loc}
+           Type.field ~loc ~attrs:optionalAttrs {txt = label; loc}
              (Typ.var @@ safeTypeFromValue @@ Labelled label)
          else
            Type.field ~loc {txt = label; loc}
@@ -543,19 +544,25 @@ let transformLowercaseCall3 ~config mapper jsxExprLoc callExprLoc attrs
           (nolabel, childrenExpr);
         ]
       | nonEmptyProps ->
-        let propsCall =
-          Exp.apply
-            (Exp.ident
-               {loc = Location.none; txt = Ldot (Lident "ReactDOM", "domProps")})
+        let propsRecord =
+          Exp.record
             (nonEmptyProps
-            |> List.map (fun (label, expression) ->
-                   (label, mapper.expr mapper expression)))
+            |> List.filter_map (fun (label, expression) ->
+                   match label with
+                   | Labelled txt | Optional txt ->
+                     Some
+                       ( {txt = Lident txt; loc = Location.none},
+                         if isOptional label then
+                           Exp.attr (mapper.expr mapper expression) optionalAttr
+                         else mapper.expr mapper expression )
+                   | Nolabel -> None))
+            None
         in
         [
           (* "div" *)
           (nolabel, componentNameExpr);
           (* ReactDOM.domProps(~className=blabla, ~foo=bar, ()) *)
-          (labelled "props", propsCall);
+          (labelled "props", propsRecord);
           (* [|moreCreateElementCallsHere|] *)
           (nolabel, childrenExpr);
         ]
@@ -688,14 +695,14 @@ let argToType ~newtypes ~(typeConstraints : core_type option) types
   in
   match (type_, name, default) with
   | Some type_, name, _ when isOptional name ->
-    (true, getLabel name, [], {type_ with ptyp_attributes = optionalAttr})
+    (true, getLabel name, [], {type_ with ptyp_attributes = optionalAttrs})
     :: types
   | Some type_, name, _ -> (false, getLabel name, [], type_) :: types
   | None, name, _ when isOptional name ->
     ( true,
       getLabel name,
       [],
-      Typ.var ~loc ~attrs:optionalAttr (safeTypeFromValue name) )
+      Typ.var ~loc ~attrs:optionalAttrs (safeTypeFromValue name) )
     :: types
   | None, name, _ when isLabelled name ->
     (false, getLabel name, [], Typ.var ~loc (safeTypeFromValue name)) :: types
@@ -1052,7 +1059,7 @@ let transformStructureItem ~config mapper item =
                      {
                        patternWithoutConstraint with
                        ppat_attributes =
-                         (if isOptional arg_label then optionalAttr else [])
+                         (if isOptional arg_label then optionalAttrs else [])
                          @ pattern.ppat_attributes;
                      } )
                   :: patternsWithLabel)
@@ -1068,7 +1075,7 @@ let transformStructureItem ~config mapper item =
                        {
                          pattern with
                          ppat_attributes =
-                           optionalAttr @ pattern.ppat_attributes;
+                           optionalAttrs @ pattern.ppat_attributes;
                        } )
                     :: patternsWithNolabel)
                     expr

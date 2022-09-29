@@ -1,0 +1,9 @@
+@@jsxConfig({version: 4, mode: "classic"})
+
+let _ = ReactDOM.createDOMElementVariadic("div", [])
+let _ = ReactDOM.createDOMElementVariadic("div", ~props={key: "k"}, [])
+let _ = ReactDOM.createDOMElementVariadic("div", ~props={x: x}, [])
+let _ = ReactDOM.createDOMElementVariadic(
+  "div",
+  [ReactDOM.createDOMElementVariadic("p", [{React.string(x)}])],
+)
