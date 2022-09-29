@@ -1333,12 +1333,11 @@ and walkExpression expr t comments =
       | None -> ()
       | Some childrenExpr ->
         let leading, inside, _ = partitionByLoc after childrenExpr.pexp_loc in
-        if props = [] then (
+        if props = [] then
           let afterExpr, _ =
             partitionAdjacentTrailing callExpr.pexp_loc after
           in
-          attach t.trailing callExpr.pexp_loc afterExpr;
-          walkExpression childrenExpr t inside)
+          attach t.trailing callExpr.pexp_loc afterExpr
         else
           walkList (props |> List.map (fun (_, e) -> ExprArgument e)) t leading;
         walkExpression childrenExpr t inside)
