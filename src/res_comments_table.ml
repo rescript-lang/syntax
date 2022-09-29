@@ -114,19 +114,6 @@ let partitionLeadingTrailing comments loc =
   in
   loop ([], []) comments
 
-let partitionLeading comments loc =
-  let rec loop leading comments =
-    let open Location in
-    match comments with
-    | comment :: rest ->
-      let cmtLoc = Comment.loc comment in
-      if cmtLoc.loc_end.pos_cnum <= loc.loc_start.pos_cnum then
-        loop (comment :: leading) rest
-      else loop leading rest
-    | [] -> List.rev leading
-  in
-  loop [] comments
-
 let partitionByOnSameLine loc comments =
   let rec loop (onSameLine, onOtherLine) comments =
     let open Location in
