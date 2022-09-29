@@ -9,7 +9,7 @@ module Cite = {
 
 <A
   value=""
-// Comment
+  // Comment
 />
 
 <A /* comment */ />

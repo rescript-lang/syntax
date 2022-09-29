@@ -1,5 +1,6 @@
 module Comment = Res_comment
 module Doc = Res_doc
+module ParsetreeViewer = Res_parsetree_viewer
 
 type t = {
   leading: (Location.t, Comment.t list) Hashtbl.t;
@@ -112,6 +113,19 @@ let partitionLeadingTrailing comments loc =
     | [] -> (List.rev leading, List.rev trailing)
   in
   loop ([], []) comments
+
+let partitionLeading comments loc =
+  let rec loop leading comments =
+    let open Location in
+    match comments with
+    | comment :: rest ->
+      let cmtLoc = Comment.loc comment in
+      if cmtLoc.loc_end.pos_cnum <= loc.loc_start.pos_cnum then
+        loop (comment :: leading) rest
+      else loop leading rest
+    | [] -> List.rev leading
+  in
+  loop [] comments
 
 let partitionByOnSameLine loc comments =
   let rec loop (onSameLine, onOtherLine) comments =
@@ -1310,9 +1324,30 @@ and walkExpression expr t comments =
         walkExpression callExpr t inside;
         after)
     in
-    let afterExpr, rest = partitionAdjacentTrailing callExpr.pexp_loc after in
-    attach t.trailing callExpr.pexp_loc afterExpr;
-    walkList (arguments |> List.map (fun (_, e) -> ExprArgument e)) t rest
+    if ParsetreeViewer.isJsxExpression expr then (
+      let props =
+        arguments
+        |> List.filter (fun (label, _) ->
+               match label with
+               | Asttypes.Labelled "children" -> false
+               | Asttypes.Nolabel -> false
+               | _ -> true)
+      in
+      let _, children =
+        arguments
+        |> List.find (fun (label, _) -> label = Asttypes.Labelled "children")
+      in
+      let leading, inside, _ = partitionByLoc after children.pexp_loc in
+      if props = [] then (
+        let afterExpr, _ = partitionAdjacentTrailing callExpr.pexp_loc after in
+        attach t.trailing callExpr.pexp_loc afterExpr;
+        walkExpression children t inside)
+      else walkList (props |> List.map (fun (_, e) -> ExprArgument e)) t leading;
+      walkExpression children t inside)
+    else
+      let afterExpr, rest = partitionAdjacentTrailing callExpr.pexp_loc after in
+      attach t.trailing callExpr.pexp_loc afterExpr;
+      walkList (arguments |> List.map (fun (_, e) -> ExprArgument e)) t rest
   | Pexp_fun (_, _, _, _) | Pexp_newtype _ -> (
     let _, parameters, returnExpr = funExpr expr in
     let comments =
