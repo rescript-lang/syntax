@@ -1320,17 +1320,28 @@ and walkExpression expr t comments =
                | Asttypes.Nolabel -> false
                | _ -> true)
       in
-      let _, children =
-        arguments
-        |> List.find (fun (label, _) -> label = Asttypes.Labelled "children")
+      let children =
+        match
+          arguments
+          |> List.find_opt (fun (label, _) ->
+                 label = Asttypes.Labelled "children")
+        with
+        | None -> None
+        | Some (_, e) -> Some e
       in
-      let leading, inside, _ = partitionByLoc after children.pexp_loc in
-      if props = [] then (
-        let afterExpr, _ = partitionAdjacentTrailing callExpr.pexp_loc after in
-        attach t.trailing callExpr.pexp_loc afterExpr;
-        walkExpression children t inside)
-      else walkList (props |> List.map (fun (_, e) -> ExprArgument e)) t leading;
-      walkExpression children t inside)
+      match children with
+      | None -> ()
+      | Some childrenExpr ->
+        let leading, inside, _ = partitionByLoc after childrenExpr.pexp_loc in
+        if props = [] then (
+          let afterExpr, _ =
+            partitionAdjacentTrailing callExpr.pexp_loc after
+          in
+          attach t.trailing callExpr.pexp_loc afterExpr;
+          walkExpression childrenExpr t inside)
+        else
+          walkList (props |> List.map (fun (_, e) -> ExprArgument e)) t leading;
+        walkExpression childrenExpr t inside)
     else
       let afterExpr, rest = partitionAdjacentTrailing callExpr.pexp_loc after in
       attach t.trailing callExpr.pexp_loc afterExpr;
