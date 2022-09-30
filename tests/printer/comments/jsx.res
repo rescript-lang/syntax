@@ -20,6 +20,19 @@ module Cite = {
   // Comment
 </A>
 
+<A
+// comment1
+// comment 2
+/>
+
+<A
+// comment1
+value=""
+// comment2
+>
+  <B /* comment3 */ />
+</A>
+
 <div>
   // Must not jump inside braces
   {React.string("Hello, World!")}

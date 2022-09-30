@@ -4039,20 +4039,15 @@ and printJsxExpression ~customLayout lident args cmtTbl =
                     {
                       Parsetree.pexp_desc =
                         Pexp_construct ({txt = Longident.Lident "[]"}, None);
-                      pexp_loc = loc;
-                    } ->
-                  if isSelfClosing then
-                    Doc.concat
-                      [Doc.line; printComments (Doc.text "/>") cmtTbl loc]
-                  else
-                    Doc.concat [Doc.softLine; printComments Doc.nil cmtTbl loc]
-                | _ -> Doc.nil);
+                    }
+                  when isSelfClosing ->
+                  Doc.concat [Doc.line; Doc.text "/>"]
+                | _ -> Doc.concat [Doc.softLine; Doc.greaterThan]);
               ]);
          (if isSelfClosing then Doc.nil
          else
            Doc.concat
              [
-               Doc.greaterThan;
                (if hasChildren then printChildren children
                else
                  match children with

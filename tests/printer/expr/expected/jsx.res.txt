@@ -104,7 +104,8 @@ let avatarSection =
           onMouseLeave={_ => setHoveringAdmin(false)}
           onClick={_e => {
             stopImpersonating(csrfToken)
-          }}>
+          }}
+        >
           <Avatar user={viewer} size={45} />
         </div>
       : React.nullElement}

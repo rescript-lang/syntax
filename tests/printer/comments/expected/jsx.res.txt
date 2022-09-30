@@ -9,13 +9,26 @@ module Cite = {
 
 <A
   value=""
-// Comment
+  // Comment
 />
 
 <A /* comment */ />
 
 <A>
   // Comment
+</A>
+
+<A
+// comment1
+// comment 2
+/>
+
+<A
+  // comment1
+  value=""
+  // comment2
+>
+  <B /* comment3 */ />
 </A>
 
 <div>
