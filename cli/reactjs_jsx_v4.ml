@@ -545,18 +545,7 @@ let transformLowercaseCall3 ~config mapper jsxExprLoc callExprLoc attrs
         ]
       | nonEmptyProps ->
         let propsRecord =
-          Exp.record
-            (nonEmptyProps
-            |> List.filter_map (fun (label, expression) ->
-                   match label with
-                   | Labelled txt | Optional txt ->
-                     Some
-                       ( {txt = Lident txt; loc = Location.none},
-                         if isOptional label then
-                           Exp.attr (mapper.expr mapper expression) optionalAttr
-                         else mapper.expr mapper expression )
-                   | Nolabel -> None))
-            None
+          recordFromProps ~loc:Location.none ~removeKey:false nonEmptyProps
         in
         [
           (* "div" *)

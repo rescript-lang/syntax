@@ -7,3 +7,9 @@ let _ = ReactDOM.createDOMElementVariadic(
   "div",
   [ReactDOM.createDOMElementVariadic("p", [{React.string(x)}])],
 )
+let _ = ReactDOM.createDOMElementVariadic("div", ~props=str, [])
+let _ = ReactDOM.createDOMElementVariadic("div", ~props={...str, x: "x"}, [])
+
+// syntax error
+// let _ = <div x="x" {...str} />
+// let _ = <div {...str} {...str} />
