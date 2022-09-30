@@ -20,20 +20,10 @@ module Cite = {
 
 <A
   // comment1
-  foo="1"
+  value=""
   // comment2
 >
-  // comment3
-  <B
-    // comment5
-    foo="1"
-    // comment6
-  >
-    // comment7
-    <C />
-    // comment8
-  </B>
-  // comment4
+  <B /* comment3 */ />
 </A>
 
 <div>
