@@ -1326,10 +1326,17 @@ and walkExpression expr t comments =
                label = Asttypes.Labelled "children")
       in
       match maybeChildren with
+      (* There is no need to deal with this situation as the children cannot be NONE *)
       | None -> ()
       | Some (_, children) ->
         let leading, inside, _ = partitionByLoc after children.pexp_loc in
         if props = [] then
+          (* All comments inside a tag are trailing comments of the tag if there are no props
+             <A
+             // comment
+             // comment
+             />
+          *)
           let afterExpr, _ =
             partitionAdjacentTrailing callExpr.pexp_loc after
           in
