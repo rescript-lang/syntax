@@ -22,6 +22,11 @@ module Cite = {
 
 <A
 // comment1
+// comment 2
+/>
+
+<A
+// comment1
 value=""
 // comment2
 >
