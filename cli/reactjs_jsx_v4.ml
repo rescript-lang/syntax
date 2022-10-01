@@ -1010,7 +1010,7 @@ let transformStructureItem ~config mapper item =
             | {ppat_desc = Ppat_constraint (pattern, _)} ->
               stripConstraintUnpack ~label pattern
             | {ppat_desc = Ppat_unpack _; ppat_loc} ->
-              (* remove unback e.g. model: module(T) *)
+              (* remove unpack e.g. model: module(T) *)
               Pat.var ~loc:ppat_loc {txt = label; loc = ppat_loc}
             | _ -> pattern
           in
