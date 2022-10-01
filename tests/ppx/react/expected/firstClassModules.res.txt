@@ -82,3 +82,27 @@ module Select = {
     \"FirstClassModules$Select"
   }
 }
+
+module External = {
+  module type T = {
+    type key
+    type t
+  }
+  type props<'model, 'selected, 'onChange, 'items> = {
+    model: 'model,
+    selected: 'selected,
+    onChange: 'onChange,
+    items: 'items,
+  }
+
+  @module("c")
+  external make: React.componentLike<
+    props<
+      module(T with type t = 'a and type key = 'key),
+      option<'key>,
+      (option<'key> => unit),
+      array<'a>,
+    >,
+    React.element,
+  > = "default"
+}

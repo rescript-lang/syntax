@@ -39,3 +39,18 @@ module Select = {
     <div />
   }
 }
+
+module External = {
+  module type T = {
+    type key
+    type t
+  }
+
+  @react.component @module("c")
+  external make: (
+    ~model: module(T with type t = 'a and type key = 'key),
+    ~selected: option<'key>,
+    ~onChange: option<'key> => unit,
+    ~items: array<'a>,
+  ) => React.element = "default"
+}
