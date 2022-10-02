@@ -1005,9 +1005,13 @@ let transformStructureItem ~config mapper item =
                 ]
                 (Exp.ident ~loc:pstr_loc {loc = emptyLoc; txt = Lident txt})
           in
-          let stripConstraint pattern =
+          let rec stripConstraintUnpack ~label pattern =
             match pattern with
-            | {ppat_desc = Ppat_constraint (pattern, _)} -> pattern
+            | {ppat_desc = Ppat_constraint (pattern, _)} ->
+              stripConstraintUnpack ~label pattern
+            | {ppat_desc = Ppat_unpack _; ppat_loc} ->
+              (* remove unpack e.g. model: module(T) *)
+              Pat.var ~loc:ppat_loc {txt = label; loc = ppat_loc}
             | _ -> pattern
           in
           let rec returnedExpression patternsWithLabel patternsWithNolabel
@@ -1029,7 +1033,9 @@ let transformStructureItem ~config mapper item =
             | Pexp_fun
                 (arg_label, _default, ({ppat_loc; ppat_desc} as pattern), expr)
               -> (
-              let patternWithoutConstraint = stripConstraint pattern in
+              let patternWithoutConstraint =
+                stripConstraintUnpack ~label:(getLabel arg_label) pattern
+              in
               if isLabelled arg_label || isOptional arg_label then
                 returnedExpression
                   (( {loc = ppat_loc; txt = Lident (getLabel arg_label)},
