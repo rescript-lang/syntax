@@ -44,7 +44,7 @@ let () = switch something(. x, y) {
 
 let () = {
   // ok
-  let dontDoThisAhome = (. a, b, . c, d, . e, f) => a + b + c + d + e + f
+  let dontDoThisAhome = (. a, b) => (. c, d) => (. e, f) => a + b + c + d + e + f
   // ok
   dontDoThisAhome(. a, b)(. c, d)(. e, f)
 }

@@ -293,3 +293,7 @@ let query = (~url, ()): (unit => unit => unit) => {
 let query = (~url, ()): (unit => unit => unit => unit) => {
   () => () => () => Js.log("Queried " ++ url)
 }
+
+let f = (. a) => (. b) => a + b
+let f = (. a, b) => (. b, c) => a + b + c + d
+let f = (. a, b) => (. b , c) => (. e , f, g) => a + b + c + d  + e + f + g
