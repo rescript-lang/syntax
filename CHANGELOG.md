@@ -33,6 +33,7 @@
 - Fix parsing (hence pretty printing) of expressions with underscore `_` and comments.
 - Fix printing of comments inside JSX tag https://github.com/rescript-lang/syntax/pull/664
 - Fix issue where formatter erases tail comments inside JSX tag https://github.com/rescript-lang/syntax/issues/663
+- Fix issue where the JSX prop has type annotation of the first class module https://github.com/rescript-lang/syntax/pull/666
 
 ## ReScript 10.0
 
