@@ -34,6 +34,10 @@
 - Fix printing of comments inside JSX tag https://github.com/rescript-lang/syntax/pull/664
 - Fix issue where formatter erases tail comments inside JSX tag https://github.com/rescript-lang/syntax/issues/663
 
+#### :eyeglasses: Spec Compliance
+
+- Functions with consecutive dots now print as multiple arrow functions like in JavaScript.
+
 ## ReScript 10.0
 
 - Fix printing for inline nullary functor types [#477](https://github.com/rescript-lang/syntax/pull/477)
