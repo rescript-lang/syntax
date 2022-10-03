@@ -11,7 +11,7 @@ let arrowType ct =
       process attrsBefore (arg :: acc) typ2
     | {
      ptyp_desc = Ptyp_arrow (Nolabel, _typ1, _typ2);
-     ptyp_attributes = [({txt = "bs" | "res.async"}, _)];
+     ptyp_attributes = [({txt = "bs"}, _)];
     } ->
       (* stop here, the uncurried attribute always indicates the beginning of an arrow function
          * e.g. `(. int) => (. int)` instead of `(. int, . int)` *)
