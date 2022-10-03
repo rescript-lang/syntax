@@ -10,11 +10,12 @@ let arrowType ct =
       let arg = ([], lbl, typ1) in
       process attrsBefore (arg :: acc) typ2
     | {
-     ptyp_desc = Ptyp_arrow ((Nolabel as lbl), typ1, typ2);
-     ptyp_attributes = [({txt = "bs" | "res.async"}, _)] as attrs;
+     ptyp_desc = Ptyp_arrow (Nolabel, _typ1, _typ2);
+     ptyp_attributes = [({txt = "bs"}, _)];
     } ->
-      let arg = (attrs, lbl, typ1) in
-      process attrsBefore (arg :: acc) typ2
+      (* stop here, the uncurried attribute always indicates the beginning of an arrow function
+         * e.g. `(. int) => (. int)` instead of `(. int, . int)` *)
+      (attrsBefore, List.rev acc, typ)
     | {ptyp_desc = Ptyp_arrow (Nolabel, _typ1, _typ2); ptyp_attributes = _attrs}
       as returnType ->
       let args = List.rev acc in
@@ -156,12 +157,10 @@ let funExpr expr =
       let stringLocs, returnExpr = collectNewTypes [stringLoc] rest in
       let param = NewTypes {attrs; locs = stringLocs} in
       collect attrsBefore (param :: acc) returnExpr
-    | {
-     pexp_desc = Pexp_fun (lbl, defaultExpr, pattern, returnExpr);
-     pexp_attributes = [({txt = "bs"}, _)] as attrs;
-    } ->
-      let parameter = Parameter {attrs; lbl; defaultExpr; pat = pattern} in
-      collect attrsBefore (parameter :: acc) returnExpr
+    | {pexp_desc = Pexp_fun _; pexp_attributes = [({txt = "bs"}, _)]} ->
+      (* stop here, the uncurried attribute always indicates the beginning of an arrow function
+       * e.g. `(. a) => (. b)` instead of `(. a, . b)` *)
+      (attrsBefore, List.rev acc, expr)
     | {
      pexp_desc =
        Pexp_fun

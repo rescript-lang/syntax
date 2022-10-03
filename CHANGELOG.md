@@ -35,6 +35,10 @@
 - Fix issue where formatter erases tail comments inside JSX tag https://github.com/rescript-lang/syntax/issues/663
 - Fix issue where the JSX prop has type annotation of the first class module https://github.com/rescript-lang/syntax/pull/666
 
+#### :eyeglasses: Spec Compliance
+
+- Functions with consecutive dots now print as multiple arrow functions like in JavaScript.
+
 ## ReScript 10.0
 
 - Fix printing for inline nullary functor types [#477](https://github.com/rescript-lang/syntax/pull/477)
