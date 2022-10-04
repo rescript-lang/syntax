@@ -459,7 +459,17 @@ let transformLowercaseCall3 ~config mapper jsxExprLoc callExprLoc attrs
       recursivelyTransformedArgsForMake
       @
       match childrenExpr with
-      | Exact children -> [(labelled "children", children)]
+      | Exact children ->
+        [
+          ( labelled "children",
+            Exp.apply ~attrs:optionalAttr
+              (Exp.ident
+                 {
+                   txt = Ldot (Lident "ReactDOM", "someElement");
+                   loc = Location.none;
+                 })
+              [(Nolabel, children)] );
+        ]
       | ListLiteral {pexp_desc = Pexp_array list} when list = [] -> []
       | ListLiteral expression ->
         (* this is a hack to support react components that introspect into their children *)
