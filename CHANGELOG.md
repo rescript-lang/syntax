@@ -39,6 +39,10 @@
 
 - Functions with consecutive dots now print as multiple arrow functions like in JavaScript.
 
+#### :nail_care Polish
+
+- Change the internal representation of props for the lowercase components to record. https://github.com/rescript-lang/syntax/pull/665
+
 ## ReScript 10.0
 
 - Fix printing for inline nullary functor types [#477](https://github.com/rescript-lang/syntax/pull/477)
