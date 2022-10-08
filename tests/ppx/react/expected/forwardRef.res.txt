@@ -82,12 +82,11 @@ module V4C = {
         [
           ReactDOM.createDOMElementVariadic(
             "input",
-            ~props=ReactDOM.domProps(
-              ~type_="text",
-              ~className?,
-              ~ref=?{Js.Nullable.toOption(ref)->Belt.Option.map(React.Ref.domRef)},
-              (),
-            ),
+            ~props={
+              type_: "text",
+              ?className,
+              ref: ?Js.Nullable.toOption(ref)->Belt.Option.map(React.Ref.domRef),
+            },
             [],
           ),
           children,
