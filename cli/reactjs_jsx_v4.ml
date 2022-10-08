@@ -463,7 +463,7 @@ let transformLowercaseCall3 ~config mapper jsxExprLoc callExprLoc attrs
       | Exact children ->
         [
           ( labelled "children",
-            Exp.apply ~attrs:optionalAttr
+            Exp.apply ~attrs:optionalAttrs
               (Exp.ident
                  {
                    txt = Ldot (Lident "ReactDOM", "someElement");
