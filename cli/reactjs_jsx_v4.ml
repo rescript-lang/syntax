@@ -708,7 +708,19 @@ let argToConcreteType types (name, _loc, type_) =
   | name when isOptional name -> (true, getLabel name, [], type_) :: types
   | _ -> types
 
+let check_string_int_attribute_iter =
+  let attribute _ ({txt; loc}, _) =
+    if txt = "string" || txt = "int" then
+      React_jsx_common.raiseError ~loc
+        "@string and @int attributes not supported. See \
+         https://github.com/rescript-lang/rescript-compiler/issues/5724"
+  in
+
+  {Ast_iterator.default_iterator with attribute}
+
 let transformStructureItem ~config mapper item =
+  check_string_int_attribute_iter.structure_item check_string_int_attribute_iter
+    item;
   match item with
   (* external *)
   | {
@@ -1158,6 +1170,8 @@ let transformStructureItem ~config mapper item =
   | _ -> [item]
 
 let transformSignatureItem ~config _mapper item =
+  check_string_int_attribute_iter.signature_item check_string_int_attribute_iter
+    item;
   match item with
   | {
       psig_loc;
