@@ -34,6 +34,7 @@
 - Fix printing of comments inside JSX tag https://github.com/rescript-lang/syntax/pull/664
 - Fix issue where formatter erases tail comments inside JSX tag https://github.com/rescript-lang/syntax/issues/663
 - Fix issue where the JSX prop has type annotation of the first class module https://github.com/rescript-lang/syntax/pull/666
+- Emit an error when a `@string` or `@int` attribute is used in a V4 component https://github.com/rescript-lang/rescript-compiler/issues/5724
 
 #### :eyeglasses: Spec Compliance
 
