@@ -3722,7 +3722,8 @@ and parseListExpr ~startPos p =
            if spread then
              Parser.err p (Diagnostics.message ErrorMessages.listExprSpread);
            expr)
-    |> List.rev in
+    |> List.rev
+  in
   let listExprs =
     parseCommaDelimitedReversedList p ~grammar:Grammar.ListExpr ~closing:Rbrace
       ~f:parseSpreadExprRegion
@@ -3734,8 +3735,7 @@ and parseListExpr ~startPos p =
     let exprs = check_all_non_spread_exp exprs in
     makeListExpression loc exprs (Some expr)
   | exprs ->
-    let exprs = check_all_non_spread_exp exprs 
-    in
+    let exprs = check_all_non_spread_exp exprs in
     makeListExpression loc exprs None
 
 (* Overparse ... and give a nice error message *)
