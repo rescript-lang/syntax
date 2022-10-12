@@ -3716,6 +3716,13 @@ and parseSpreadExprRegion p =
   | _ -> None
 
 and parseListExpr ~startPos p =
+  let check_all_non_spread_exp exprs =
+    exprs
+    |> List.map (fun (spread, expr) ->
+           if spread then
+             Parser.err p (Diagnostics.message ErrorMessages.listExprSpread);
+           expr)
+    |> List.rev in
   let listExprs =
     parseCommaDelimitedReversedList p ~grammar:Grammar.ListExpr ~closing:Rbrace
       ~f:parseSpreadExprRegion
@@ -3724,16 +3731,10 @@ and parseListExpr ~startPos p =
   let loc = mkLoc startPos p.prevEndPos in
   match listExprs with
   | (true, expr) :: exprs ->
-    let exprs = exprs |> List.map snd |> List.rev in
+    let exprs = check_all_non_spread_exp exprs in
     makeListExpression loc exprs (Some expr)
   | exprs ->
-    let exprs =
-      exprs
-      |> List.map (fun (spread, expr) ->
-             if spread then
-               Parser.err p (Diagnostics.message ErrorMessages.listExprSpread);
-             expr)
-      |> List.rev
+    let exprs = check_all_non_spread_exp exprs 
     in
     makeListExpression loc exprs None
 
