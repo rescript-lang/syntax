@@ -719,8 +719,6 @@ let check_string_int_attribute_iter =
   {Ast_iterator.default_iterator with attribute}
 
 let transformStructureItem ~config mapper item =
-  check_string_int_attribute_iter.structure_item check_string_int_attribute_iter
-    item;
   match item with
   (* external *)
   | {
@@ -736,6 +734,8 @@ let transformStructureItem ~config mapper item =
         React_jsx_common.raiseErrorMultipleReactComponent ~loc:pstr_loc
       else (
         config.hasReactComponent <- true;
+        check_string_int_attribute_iter.structure_item
+          check_string_int_attribute_iter item;
         let rec getPropTypes types ({ptyp_loc; ptyp_desc} as fullType) =
           match ptyp_desc with
           | Ptyp_arrow (name, type_, ({ptyp_desc = Ptyp_arrow _} as rest))
@@ -1170,8 +1170,6 @@ let transformStructureItem ~config mapper item =
   | _ -> [item]
 
 let transformSignatureItem ~config _mapper item =
-  check_string_int_attribute_iter.signature_item check_string_int_attribute_iter
-    item;
   match item with
   | {
       psig_loc;
@@ -1184,6 +1182,8 @@ let transformSignatureItem ~config _mapper item =
       if config.React_jsx_common.hasReactComponent then
         React_jsx_common.raiseErrorMultipleReactComponent ~loc:psig_loc
       else config.hasReactComponent <- true;
+      check_string_int_attribute_iter.signature_item
+        check_string_int_attribute_iter item;
       let hasForwardRef = ref false in
       let rec getPropTypes types ({ptyp_loc; ptyp_desc} as fullType) =
         match ptyp_desc with
