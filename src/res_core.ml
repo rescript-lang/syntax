@@ -3724,13 +3724,13 @@ and parseListExpr ~startPos p =
            expr)
     |> List.rev
   in
-  let listExprs =
+  let listExprsRev =
     parseCommaDelimitedReversedList p ~grammar:Grammar.ListExpr ~closing:Rbrace
       ~f:parseSpreadExprRegion
   in
   Parser.expect Rbrace p;
   let loc = mkLoc startPos p.prevEndPos in
-  match listExprs with
+  match listExprsRev with
   | (true, expr) :: exprs ->
     let exprs = check_all_non_spread_exp exprs in
     makeListExpression loc exprs (Some expr)
