@@ -3731,8 +3731,7 @@ and parseListExpr ~startPos p =
   Parser.expect Rbrace p;
   let loc = mkLoc startPos p.prevEndPos in
   match listExprsRev with
-  | (true, (* spread expression *)
-           expr) :: exprs ->
+  | (true (* spread expression *), expr) :: exprs ->
     let exprs = check_all_non_spread_exp exprs in
     makeListExpression loc exprs (Some expr)
   | exprs ->
