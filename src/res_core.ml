@@ -85,9 +85,9 @@ module ErrorMessages = struct
     "Lists can only have one `...` spread, and at the end.\n\
      Explanation: lists are singly-linked list, where a node contains a value \
      and points to the next node. `list{a, ...bc}` efficiently creates a new \
-     item and links `bc` as its next nodes. `list{...bc, a}` would be expensive, \
-     as it'd need to traverse `bc` and prepend each item to `a` one by one. We \
-     therefore disallow such syntax sugar.\n\
+     item and links `bc` as its next nodes. `list{...bc, a}` would be \
+     expensive, as it'd need to traverse `bc` and prepend each item to `a` one \
+     by one. We therefore disallow such syntax sugar.\n\
      Solution: directly use `concat`."
 
   let variantIdent =
