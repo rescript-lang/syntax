@@ -50,7 +50,7 @@ module ErrorMessages = struct
   let listPatternSpread =
     "List pattern matches only supports one `...` spread, at the end.\n\
      Explanation: a list spread at the tail is efficient, but a spread in the \
-     middle would create new list[s]; out of performance concern, our pattern \
+     middle would create new list{s}; out of performance concern, our pattern \
      matching currently guarantees to never create new intermediate data."
 
   let recordPatternSpread =
@@ -84,8 +84,8 @@ module ErrorMessages = struct
   let listExprSpread =
     "Lists can only have one `...` spread, and at the end.\n\
      Explanation: lists are singly-linked list, where a node contains a value \
-     and points to the next node. `list[a, ...bc]` efficiently creates a new \
-     item and links `bc` as its next nodes. `[...bc, a]` would be expensive, \
+     and points to the next node. `list{a, ...bc}` efficiently creates a new \
+     item and links `bc` as its next nodes. `{...bc, a}` would be expensive, \
      as it'd need to traverse `bc` and prepend each item to `a` one by one. We \
      therefore disallow such syntax sugar.\n\
      Solution: directly use `concat`."
