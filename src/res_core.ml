@@ -50,7 +50,7 @@ module ErrorMessages = struct
   let listPatternSpread =
     "List pattern matches only supports one `...` spread, at the end.\n\
      Explanation: a list spread at the tail is efficient, but a spread in the \
-     middle would create new list[s]; out of performance concern, our pattern \
+     middle would create new lists; out of performance concern, our pattern \
      matching currently guarantees to never create new intermediate data."
 
   let recordPatternSpread =
@@ -84,8 +84,8 @@ module ErrorMessages = struct
   let listExprSpread =
     "Lists can only have one `...` spread, and at the end.\n\
      Explanation: lists are singly-linked list, where a node contains a value \
-     and points to the next node. `list[a, ...bc]` efficiently creates a new \
-     item and links `bc` as its next nodes. `[...bc, a]` would be expensive, \
+     and points to the next node. `list{a, ...bc}` efficiently creates a new \
+     item and links `bc` as its next nodes. `list{...bc, a}` would be expensive, \
      as it'd need to traverse `bc` and prepend each item to `a` one by one. We \
      therefore disallow such syntax sugar.\n\
      Solution: directly use `concat`."
@@ -3716,25 +3716,27 @@ and parseSpreadExprRegion p =
   | _ -> None
 
 and parseListExpr ~startPos p =
-  let listExprs =
+  let check_all_non_spread_exp exprs =
+    exprs
+    |> List.map (fun (spread, expr) ->
+           if spread then
+             Parser.err p (Diagnostics.message ErrorMessages.listExprSpread);
+           expr)
+    |> List.rev
+  in
+  let listExprsRev =
     parseCommaDelimitedReversedList p ~grammar:Grammar.ListExpr ~closing:Rbrace
       ~f:parseSpreadExprRegion
   in
   Parser.expect Rbrace p;
   let loc = mkLoc startPos p.prevEndPos in
-  match listExprs with
-  | (true, expr) :: exprs ->
-    let exprs = exprs |> List.map snd |> List.rev in
+  match listExprsRev with
+  | (true, (* spread expression *)
+           expr) :: exprs ->
+    let exprs = check_all_non_spread_exp exprs in
     makeListExpression loc exprs (Some expr)
   | exprs ->
-    let exprs =
-      exprs
-      |> List.map (fun (spread, expr) ->
-             if spread then
-               Parser.err p (Diagnostics.message ErrorMessages.listExprSpread);
-             expr)
-      |> List.rev
-    in
+    let exprs = check_all_non_spread_exp exprs in
     makeListExpression loc exprs None
 
 (* Overparse ... and give a nice error message *)
