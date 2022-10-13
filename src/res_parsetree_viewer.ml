@@ -167,8 +167,15 @@ let funExpr expr =
          (((Labelled _ | Optional _) as lbl), defaultExpr, pattern, returnExpr);
      pexp_attributes = attrs;
     } ->
-      let parameter = Parameter {attrs; lbl; defaultExpr; pat = pattern} in
-      collect attrsBefore (parameter :: acc) returnExpr
+      (* Normally attributes are attached to the labelled argument, e.g. (@foo ~x) => ...
+         In the case of `@res.async`, pass the attribute to the outside *)
+      let attrs_async, attrs_other =
+        attrs |> List.partition (fun ({Location.txt}, _) -> txt = "res.async")
+      in
+      let parameter =
+        Parameter {attrs = attrs_other; lbl; defaultExpr; pat = pattern}
+      in
+      collect (attrs_async @ attrsBefore) (parameter :: acc) returnExpr
     | expr -> (attrsBefore, List.rev acc, expr)
   in
   match expr with
