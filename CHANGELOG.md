@@ -34,7 +34,7 @@
 - Fix printing of comments inside JSX tag https://github.com/rescript-lang/syntax/pull/664
 - Fix issue where formatter erases tail comments inside JSX tag https://github.com/rescript-lang/syntax/issues/663
 - Fix issue where the JSX prop has type annotation of the first class module https://github.com/rescript-lang/syntax/pull/666
-- Fix issue where the syntax error caused by non-last spread doesn't report when its last element is a spread https://github.com/rescript-lang/syntax/pull/673/
+- Fix issue where a spread `...x` in non-last position would not be reported as syntax error https://github.com/rescript-lang/syntax/pull/673/
 
 #### :eyeglasses: Spec Compliance
 
