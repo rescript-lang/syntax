@@ -73,6 +73,13 @@ let processFunctionAttributes attrs =
   in
   process false false [] attrs
 
+let hasAsyncAttribute attrs =
+  List.exists
+    (function
+      | {Location.txt = "res.async"}, _ -> true
+      | _ -> false)
+    attrs
+
 let hasAwaitAttribute attrs =
   List.exists
     (function
@@ -177,6 +184,17 @@ let funExpr expr =
       pexp_attributes = attrs;
     } as expr ->
     collect attrs [] {expr with pexp_attributes = []}
+  | {
+      pexp_desc = Pexp_fun (_, _defaultExpr, _pattern, _returnExpr);
+      pexp_attributes = attrs;
+    } as expr
+    when hasAsyncAttribute attrs ->
+    let asyncAttr =
+      List.filter
+        (fun (({txt}, _) : Parsetree.attribute) -> txt = "res.async")
+        attrs
+    in
+    collect asyncAttr [] {expr with pexp_attributes = []}
   | expr -> collect [] [] expr
 
 let processBracesAttr expr =
