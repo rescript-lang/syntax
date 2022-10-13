@@ -81,3 +81,6 @@ let _ = await {
     let x = 1
     Js.Promise.resolve(x)
 }
+
+let _ = async (~x) => x
+let _ = async (~x, ~y) => x + y
