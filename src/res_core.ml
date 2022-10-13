@@ -3732,7 +3732,7 @@ and parseListExpr ~startPos p =
   let loc = mkLoc startPos p.prevEndPos in
   match listExprsRev with
   | (true, (* spread expression *)
-     expr) :: exprs ->
+           expr) :: exprs ->
     let exprs = check_all_non_spread_exp exprs in
     makeListExpression loc exprs (Some expr)
   | exprs ->
