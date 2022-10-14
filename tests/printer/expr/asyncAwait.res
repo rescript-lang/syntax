@@ -82,13 +82,14 @@ let _ = await {
     Js.Promise.resolve(x)
 }
 
-let f = async (~x, ~y) => x + y
-let f = async (@foo ~x, @bar ~y) => x + y
-let f = @foo async ( @bar ~x as @zz z, ~y) => x + y
-let f = async x => x
-let f = async x => async y => 3
-let f = async (~x) => async y => 3
-let f = async x => async (~y) => 3
-let f = async (~x) => async (~y) => 3
-let f = x => async (~y) => 3
-let f = x => async y => 3
+let f1 = async (~x, ~y) => x + y
+let f2 = async (@foo ~x, @bar ~y) => x + y
+let f3 = @foo async (@bar ~x as @zz z, ~y) => x + y
+let f4 = async x => x
+let f5 = async x => async y => 3
+let f6 = async (~x1, ~x2) => async y => 3
+let f7 = async x => async (~y) => 3
+let f8 = async (~x1, ~x2) => async (~y) => 3
+let f9 = x => async (~y) => 3
+let f10 = x => async y => 3
+let f11 = (. ~x) => (. ~y) => 3
