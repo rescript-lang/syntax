@@ -40,6 +40,7 @@
 - Fix issue where the JSX prop has type annotation of the first class module https://github.com/rescript-lang/syntax/pull/666
 - Fix issue where a spread `...x` in non-last position would not be reported as syntax error https://github.com/rescript-lang/syntax/pull/673/
 - Fix issue where the formatter would delete `async` in a function with labelled arguments.
+- Fix several printing issues with `async` including an infinite loop https://github.com/rescript-lang/syntax/pull/680
 
 #### :eyeglasses: Spec Compliance
 
