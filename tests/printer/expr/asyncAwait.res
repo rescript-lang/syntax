@@ -85,3 +85,8 @@ let _ = await {
 let f = async (~x, ~y) => x + y
 let f = async (@foo ~x, @bar ~y) => x + y
 let f = @foo async ( @bar ~x as @zz z, ~y) => x + y
+let f = async x => x
+let f = async x => async y => 3
+let f = async (~x) => async y => 3
+let f = async x => async (~y) => 3
+let f = async (~x) => async (~y) => 3
