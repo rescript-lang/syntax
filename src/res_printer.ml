@@ -3987,13 +3987,14 @@ and printJsxExpression ~customLayout lident args cmtTbl =
              | Asttypes.Nolabel -> false
              | _ -> true)
     in
-    let getLast elements =
-      match List.rev elements with
+    let rec getLastElement elements =
+      match elements with
       | [] -> None
-      | last :: _ -> Some last
+      | [element] -> Some element
+      | _ :: rest -> getLastElement rest
     in
     let tailComment =
-      match getLast props with
+      match getLastElement props with
       | None -> None
       | Some (_, expr) -> (
         let loc =
@@ -4004,7 +4005,7 @@ and printJsxExpression ~customLayout lident args cmtTbl =
         in
         match Hashtbl.find_opt cmtTbl.CommentTable.trailing loc with
         | None -> None
-        | Some comments -> getLast comments)
+        | Some comments -> getLastElement comments)
     in
     match tailComment with
     | None -> false
@@ -4075,9 +4076,9 @@ and printJsxExpression ~customLayout lident args cmtTbl =
                   when isSelfClosing ->
                   Doc.concat [Doc.line; Doc.text "/>"]
                 | _ ->
-                  (* print_endline (string_of_bool hasTailSingleLineComment); *)
                   Doc.concat
                     [
+                      (* print > on new line if last comment is single line comment *)
                       (if hasTailSingleLineComment then Doc.softLine
                       else Doc.nil);
                       Doc.greaterThan;
