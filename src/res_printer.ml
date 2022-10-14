@@ -3978,6 +3978,38 @@ and printPexpApply ~customLayout expr cmtTbl =
 
 and printJsxExpression ~customLayout lident args cmtTbl =
   let name = printJsxName lident in
+  let hasTailSingleLineComment =
+    let props =
+      args
+      |> List.filter (fun (label, _) ->
+             match label with
+             | Asttypes.Labelled "children" -> false
+             | Asttypes.Nolabel -> false
+             | _ -> true)
+    in
+    let getLast elements =
+      match List.rev elements with
+      | [] -> None
+      | last :: _ -> Some last
+    in
+    let tailComment =
+      match getLast props with
+      | None -> None
+      | Some (_, expr) -> (
+        let loc =
+          match expr.Parsetree.pexp_attributes with
+          | ({Location.txt = "ns.namedArgLoc"; loc}, _) :: _attrs ->
+            {loc with loc_end = expr.pexp_loc.loc_end}
+          | _ -> expr.pexp_loc
+        in
+        match Hashtbl.find_opt cmtTbl.CommentTable.trailing loc with
+        | None -> None
+        | Some comments -> getLast comments)
+    in
+    match tailComment with
+    | None -> false
+    | Some comment -> Comment.isSingleLineComment comment
+  in
   let formattedProps, children = printJsxProps ~customLayout args cmtTbl in
   (* <div className="test" /> *)
   let hasChildren =
@@ -4042,7 +4074,14 @@ and printJsxExpression ~customLayout lident args cmtTbl =
                     }
                   when isSelfClosing ->
                   Doc.concat [Doc.line; Doc.text "/>"]
-                | _ -> Doc.concat [Doc.softLine; Doc.greaterThan]);
+                | _ ->
+                  (* print_endline (string_of_bool hasTailSingleLineComment); *)
+                  Doc.concat
+                    [
+                      (if hasTailSingleLineComment then Doc.softLine
+                      else Doc.nil);
+                      Doc.greaterThan;
+                    ]);
               ]);
          (if isSelfClosing then Doc.nil
          else
