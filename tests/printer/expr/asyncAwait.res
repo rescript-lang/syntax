@@ -90,3 +90,5 @@ let f = async x => async y => 3
 let f = async (~x) => async y => 3
 let f = async x => async (~y) => 3
 let f = async (~x) => async (~y) => 3
+let f = x => async (~y) => 3
+let f = x => async y => 3
