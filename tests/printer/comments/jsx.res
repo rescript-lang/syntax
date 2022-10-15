@@ -33,6 +33,29 @@ value=""
   <B /* comment3 */ />
 </A>
 
+<A
+  value=""
+  /* comment */
+>
+  <B/>
+</A>
+
+<A
+// comment
+>
+  <B />
+</A>
+
+<A
+/* comment */
+>
+  <B />
+</A>
+
+<A /* comment */>
+  <B />
+</A>
+
 <div>
   // Must not jump inside braces
   {React.string("Hello, World!")}
