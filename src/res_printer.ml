@@ -113,6 +113,21 @@ let hasNestedJsxOrMoreThanOneChild expr =
   in
   loop false expr
 
+let hasTailSingleLineComment tbl loc =
+  let rec getLastElement elements =
+    match elements with
+    | [] -> None
+    | [element] -> Some element
+    | _ :: rest -> getLastElement rest
+  in
+  match Hashtbl.find_opt tbl.CommentTable.trailing loc with
+  | None -> false
+  | Some comments -> (
+    let lastComment = getLastElement comments in
+    match lastComment with
+    | None -> false
+    | Some comment -> Comment.isSingleLineComment comment)
+
 let hasCommentsInside tbl loc =
   match Hashtbl.find_opt tbl.CommentTable.inside loc with
   | None -> false
@@ -4042,7 +4057,19 @@ and printJsxExpression ~customLayout lident args cmtTbl =
                     }
                   when isSelfClosing ->
                   Doc.text "/>"
-                | _ -> Doc.greaterThan);
+                | _ ->
+                  (* if last trailing comment of tag is single line comment then put > on the next line
+                     <A
+                     // single line comment
+                     >
+                     </A>
+                  *)
+                  if hasTailSingleLineComment cmtTbl lident.Asttypes.loc then
+                    Doc.concat [Doc.softLine; Doc.greaterThan]
+                  else
+                    Doc.ifBreaks
+                      (Doc.lineSuffix Doc.greaterThan)
+                      Doc.greaterThan);
               ]);
          (if isSelfClosing then Doc.nil
          else
@@ -4172,7 +4199,6 @@ and printJsxProps ~customLayout args cmtTbl :
            Pexp_construct ({txt = Longident.Lident "()"}, None);
        } );
     ] ->
-      (* we always put /> on a new line when a self-closing tag breaks *)
       let doc = if isSelfClosing children then Doc.line else Doc.nil in
       (doc, Some children)
     | ((_, expr) as lastProp)
@@ -4184,28 +4210,13 @@ and printJsxProps ~customLayout args cmtTbl :
                  Pexp_construct ({txt = Longident.Lident "()"}, None);
              } );
          ] ->
-      let hasTailSingleLineComment =
-        let rec getLastElement elements =
-          match elements with
-          | [] -> None
-          | [element] -> Some element
-          | _ :: rest -> getLastElement rest
-        in
-        let tailComment =
-          let loc =
-            match expr.Parsetree.pexp_attributes with
-            | ({Location.txt = "ns.namedArgLoc"; loc}, _) :: _attrs ->
-              {loc with loc_end = expr.pexp_loc.loc_end}
-            | _ -> expr.pexp_loc
-          in
-          match Hashtbl.find_opt cmtTbl.CommentTable.trailing loc with
-          | None -> None
-          | Some comments -> getLastElement comments
-        in
-        match tailComment with
-        | None -> false
-        | Some comment -> Comment.isSingleLineComment comment
+      let loc =
+        match expr.Parsetree.pexp_attributes with
+        | ({Location.txt = "ns.namedArgLoc"; loc}, _) :: _attrs ->
+          {loc with loc_end = expr.pexp_loc.loc_end}
+        | _ -> expr.pexp_loc
       in
+      let tailSingleLineCommentPresent = hasTailSingleLineComment cmtTbl loc in
       let propDoc = printJsxProp ~customLayout lastProp cmtTbl in
       let formattedProps =
         Doc.concat
@@ -4218,7 +4229,7 @@ and printJsxProps ~customLayout args cmtTbl :
                      (Doc.join ~sep:Doc.line (propDoc :: props |> List.rev));
                  ]);
             (* print > on new line if last comment is single line comment *)
-            (match (isSelfClosing children, hasTailSingleLineComment) with
+            (match (isSelfClosing children, tailSingleLineCommentPresent) with
             (* we always put /> on a new line when a self-closing tag breaks *)
             | true, _ -> Doc.line
             | false, true -> Doc.softLine
