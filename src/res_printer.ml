@@ -3978,39 +3978,6 @@ and printPexpApply ~customLayout expr cmtTbl =
 
 and printJsxExpression ~customLayout lident args cmtTbl =
   let name = printJsxName lident in
-  let hasTailSingleLineComment =
-    let props =
-      args
-      |> List.filter (fun (label, _) ->
-             match label with
-             | Asttypes.Labelled "children" -> false
-             | Asttypes.Nolabel -> false
-             | _ -> true)
-    in
-    let rec getLastElement elements =
-      match elements with
-      | [] -> None
-      | [element] -> Some element
-      | _ :: rest -> getLastElement rest
-    in
-    let tailComment =
-      match getLastElement props with
-      | None -> None
-      | Some (_, expr) -> (
-        let loc =
-          match expr.Parsetree.pexp_attributes with
-          | ({Location.txt = "ns.namedArgLoc"; loc}, _) :: _attrs ->
-            {loc with loc_end = expr.pexp_loc.loc_end}
-          | _ -> expr.pexp_loc
-        in
-        match Hashtbl.find_opt cmtTbl.CommentTable.trailing loc with
-        | None -> None
-        | Some comments -> getLastElement comments)
-    in
-    match tailComment with
-    | None -> false
-    | Some comment -> Comment.isSingleLineComment comment
-  in
   let formattedProps, children = printJsxProps ~customLayout args cmtTbl in
   (* <div className="test" /> *)
   let hasChildren =
@@ -4074,15 +4041,8 @@ and printJsxExpression ~customLayout lident args cmtTbl =
                         Pexp_construct ({txt = Longident.Lident "[]"}, None);
                     }
                   when isSelfClosing ->
-                  Doc.concat [Doc.line; Doc.text "/>"]
-                | _ ->
-                  Doc.concat
-                    [
-                      (* print > on new line if last comment is single line comment *)
-                      (if hasTailSingleLineComment then Doc.softLine
-                      else Doc.nil);
-                      Doc.greaterThan;
-                    ]);
+                  Doc.text "/>"
+                | _ -> Doc.greaterThan);
               ]);
          (if isSelfClosing then Doc.nil
          else
@@ -4180,6 +4140,27 @@ and printJsxChildren ~customLayout (childrenExpr : Parsetree.expression) ~sep
 
 and printJsxProps ~customLayout args cmtTbl :
     Doc.t * Parsetree.expression option =
+  (* This function was introduced because we have different formatting behavior for self-closing tags and other tags
+     we always put /> on a new line for self-closing tag when it breaks
+     <A
+      a=""
+     />
+
+     <A
+     a="">
+      <B />
+     </A>
+     we should remove this function once the format is unified
+  *)
+  let isSelfClosing children =
+    match children with
+    | {
+     Parsetree.pexp_desc = Pexp_construct ({txt = Longident.Lident "[]"}, None);
+     pexp_loc = loc;
+    } ->
+      not (hasCommentsInside cmtTbl loc)
+    | _ -> false
+  in
   let rec loop props args =
     match args with
     | [] -> (Doc.nil, None)
@@ -4191,13 +4172,58 @@ and printJsxProps ~customLayout args cmtTbl :
            Pexp_construct ({txt = Longident.Lident "()"}, None);
        } );
     ] ->
+      (* we always put /> on a new line when a self-closing tag breaks *)
+      let doc = if isSelfClosing children then Doc.line else Doc.nil in
+      (doc, Some children)
+    | ((_, expr) as lastProp)
+      :: [
+           (Asttypes.Labelled "children", children);
+           ( Asttypes.Nolabel,
+             {
+               Parsetree.pexp_desc =
+                 Pexp_construct ({txt = Longident.Lident "()"}, None);
+             } );
+         ] ->
+      let hasTailSingleLineComment =
+        let rec getLastElement elements =
+          match elements with
+          | [] -> None
+          | [element] -> Some element
+          | _ :: rest -> getLastElement rest
+        in
+        let tailComment =
+          let loc =
+            match expr.Parsetree.pexp_attributes with
+            | ({Location.txt = "ns.namedArgLoc"; loc}, _) :: _attrs ->
+              {loc with loc_end = expr.pexp_loc.loc_end}
+            | _ -> expr.pexp_loc
+          in
+          match Hashtbl.find_opt cmtTbl.CommentTable.trailing loc with
+          | None -> None
+          | Some comments -> getLastElement comments
+        in
+        match tailComment with
+        | None -> false
+        | Some comment -> Comment.isSingleLineComment comment
+      in
+      let propDoc = printJsxProp ~customLayout lastProp cmtTbl in
       let formattedProps =
-        Doc.indent
-          (match props with
-          | [] -> Doc.nil
-          | props ->
-            Doc.concat
-              [Doc.line; Doc.group (Doc.join ~sep:Doc.line (props |> List.rev))])
+        Doc.concat
+          [
+            Doc.indent
+              (Doc.concat
+                 [
+                   Doc.line;
+                   Doc.group
+                     (Doc.join ~sep:Doc.line (propDoc :: props |> List.rev));
+                 ]);
+            (* print > on new line if last comment is single line comment *)
+            (match (isSelfClosing children, hasTailSingleLineComment) with
+            (* we always put /> on a new line when a self-closing tag breaks *)
+            | true, _ -> Doc.line
+            | false, true -> Doc.softLine
+            | false, false -> Doc.nil);
+          ]
       in
       (formattedProps, Some children)
     | arg :: args ->
