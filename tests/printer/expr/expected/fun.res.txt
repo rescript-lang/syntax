@@ -73,7 +73,7 @@ let f = @attr (@attrOnA a, @attrOnB b) => @attr2 (@attrOnC c, @attrOnD d) => ()
 let f = @attr (. a, b) => @attr2 (. c, d) => ()
 
 let f = (@attr ~a, @attr ~b) => ()
-let f = (. @attr ~a, . @attr ~b) => ()
+let f = (. @attr ~a) => (. @attr ~b) => ()
 
 let f = (
   thisIsAVeryLongNaaaaaaaaaaaaaaaaaaameeeeeeeeeeeee,

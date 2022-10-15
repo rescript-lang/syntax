@@ -4698,7 +4698,7 @@ and printExprFunParameters ~customLayout ~inCallback ~async ~uncurried
     let txtDoc =
       let var = printIdentLike stringLoc.txt in
       let var = if hasConstraint then addParens var else var in
-      if async then addAsync (Doc.concat [Doc.lparen; var; Doc.rparen]) else var
+      if async then addAsync var else var
     in
     printComments txtDoc cmtTbl stringLoc.loc
   (* let f = () => () *)

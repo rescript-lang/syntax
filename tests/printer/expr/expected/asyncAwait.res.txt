@@ -8,7 +8,7 @@ let sequentialAwait = async () => {
 
 let f = async () => ()
 let f = async (. ()) => ()
-let f = async (f) => f()
+let f = async f => f()
 let f = async (a, b) => a + b
 let f = async (. a, b) => a + b
 
@@ -104,6 +104,17 @@ let _ = await {
   Js.Promise.resolve(x)
 }
 
-let f = async (~x, ~y) => x + y
-let f = async (@foo ~x, @bar ~y) => x + y
-let f = async (@bar @foo ~x as @zz z, ~y) => x + y
+let f1 = async (~x, ~y) => x + y
+let f2 = async (@foo ~x, @bar ~y) => x + y
+let f3 = async (@bar @foo ~x as @zz z, ~y) => x + y
+let f4 = async x => x
+let f5 = async x => async y => 3
+let f6 = async (~x1, ~x2) => async y => 3
+let f7 = async x => async (~y) => 3
+let f8 = async (~x1, ~x2) => async (~y) => 3
+let f9 = x => async (~y) => 3
+let f10 = x => async y => 3
+let f11 = (. ~x) => (. ~y) => 3
+
+let f12 = @a x => 3
+let f13 = (@a @b ~x) => 3
