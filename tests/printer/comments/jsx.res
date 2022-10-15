@@ -52,6 +52,10 @@ value=""
   <B />
 </A>
 
+<A /* comment */>
+  <B />
+</A>
+
 <div>
   // Must not jump inside braces
   {React.string("Hello, World!")}
