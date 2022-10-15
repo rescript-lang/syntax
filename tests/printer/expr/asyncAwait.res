@@ -93,3 +93,6 @@ let f8 = async (~x1, ~x2) => async (~y) => 3
 let f9 = x => async (~y) => 3
 let f10 = x => async y => 3
 let f11 = (. ~x) => (. ~y) => 3
+
+let f12 = @a (@b x) => 3
+let f13 = @a @b (~x) => 3
