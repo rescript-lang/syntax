@@ -50,3 +50,10 @@ let x = <>
   // before b
   {b} // after b
 </>
+
+    <ChatComponents.Sidebar
+      variant={own ? #Own : #Other}
+      restricted
+      spaceBetweenButtons={message.location->Option.isSome}>
+      {children}
+    </ChatComponents.Sidebar>
