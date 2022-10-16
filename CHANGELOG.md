@@ -41,6 +41,7 @@
 - Fix issue where a spread `...x` in non-last position would not be reported as syntax error https://github.com/rescript-lang/syntax/pull/673/
 - Fix issue where the formatter would delete `async` in a function with labelled arguments.
 - Fix several printing issues with `async` including an infinite loop https://github.com/rescript-lang/syntax/pull/680
+- Fix issue where certain JSX expressions would be formatted differenctly in compiler 10.1.0-rc.1 https://github.com/rescript-lang/syntax/issues/675
 
 #### :eyeglasses: Spec Compliance
 
