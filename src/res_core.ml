@@ -1458,6 +1458,12 @@ and parseTernaryExpr leftOperand p =
 and parseEs6ArrowExpression ?context ?parameters p =
   let startPos = p.Parser.startPos in
   Parser.leaveBreadcrumb p Grammar.Es6ArrowExpr;
+  (* Parsing function parameters and attributes:
+     1. Basically, attributes outside of `(...)` are added to the function, except
+     the uncurried attribute `(.)` is added to the function. e.g. async, uncurried
+
+     2. Attributes inside `(...)` are added to the arguments regardless of whether
+     labeled, optional or nolabeled *)
   let parameters =
     match parameters with
     | Some params -> params
