@@ -3608,19 +3608,28 @@ and printBinaryExpression ~customLayout (expr : Parsetree.expression) cmtTbl =
               ParsetreeViewer.hasAwaitAttribute expr.pexp_attributes
             in
             let doc =
-              Doc.concat
-                [
-                  (if isAwait then Doc.text "await " else Doc.nil);
-                  leftPrinted;
-                  printBinaryOperator ~inlineRhs:false operator;
-                  rightPrinted;
-                ]
+              if isAwait then
+                Doc.concat
+                  [
+                    Doc.text "await ";
+                    Doc.lparen;
+                    leftPrinted;
+                    printBinaryOperator ~inlineRhs:false operator;
+                    rightPrinted;
+                    Doc.rparen;
+                  ]
+              else
+                Doc.concat
+                  [
+                    leftPrinted;
+                    printBinaryOperator ~inlineRhs:false operator;
+                    rightPrinted;
+                  ]
             in
+
             let doc =
-              if
-                isAwait
-                || ((not isLhs) && Parens.rhsBinaryExprOperand operator expr)
-              then Doc.concat [Doc.lparen; doc; Doc.rparen]
+              if (not isLhs) && Parens.rhsBinaryExprOperand operator expr then
+                Doc.concat [Doc.lparen; doc; Doc.rparen]
               else doc
             in
             printComments doc cmtTbl expr.pexp_loc
