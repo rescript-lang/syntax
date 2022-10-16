@@ -96,3 +96,6 @@ let f11 = (. ~x) => (. ~y) => 3
 
 let f12 = @a (@b x) => 3
 let f13 = @a @b (~x) => 3
+
+let aw = (await (server->start))->foo
+let aw = (@foo (server->start))->foo
