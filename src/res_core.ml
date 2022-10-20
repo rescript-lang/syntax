@@ -3718,24 +3718,28 @@ and parseSpreadExprRegionWithLoc p =
 
 and parseListExpr ~startPos p =
   let split_by_spread exprs =
-    let rec loop exprs acc =
-      match exprs, acc with
-      | [], acc -> acc
-      | (true, expr, startPos, endPos) :: exprs, _ ->
-         (* find a spread expression, prepend a new sublist *)
-         loop exprs (([], Some expr, startPos, endPos) :: acc)
-      | (false, expr, startPos, _endPos) :: exprs, ((no_spreads, spread, _accStartPos, accEndPos) :: acc) ->
-         (* find a non-spread expression, and the accumulated is not empty,
-          * prepend to the first sublist, and update the loc first sublist *)
-         loop exprs ((expr :: no_spreads, spread, startPos, accEndPos) :: acc)
-      | (false, expr, startPos, endPos) :: exprs, [] ->
-         (* find a non-spread expression, and the accumulated is empty *)
-         loop exprs [[expr] , None, startPos, endPos] in
-    loop exprs [] in
+    List.fold_left
+      (fun acc curr ->
+        match (curr, acc) with
+        | (true, expr, startPos, endPos), _ ->
+          (* find a spread expression, prepend a new sublist *)
+          ([], Some expr, startPos, endPos) :: acc
+        | ( (false, expr, startPos, _endPos),
+            (no_spreads, spread, _accStartPos, accEndPos) :: acc ) ->
+          (* find a non-spread expression, and the accumulated is not empty,
+           * prepend to the first sublist, and update the loc first sublist *)
+          (expr :: no_spreads, spread, startPos, accEndPos) :: acc
+        | (false, expr, startPos, endPos), [] ->
+          (* find a non-spread expression, and the accumulated is empty *)
+          [([expr], None, startPos, endPos)])
+      [] exprs
+  in
   let make_sub_expr = function
     | exprs, Some spread, startPos, endPos ->
-       makeListExpression (mkLoc startPos endPos) exprs (Some spread)
-    | exprs, None, startPos, endPos -> makeListExpression (mkLoc startPos endPos) exprs None in
+      makeListExpression (mkLoc startPos endPos) exprs (Some spread)
+    | exprs, None, startPos, endPos ->
+      makeListExpression (mkLoc startPos endPos) exprs None
+  in
   let listExprsRev =
     parseCommaDelimitedReversedList p ~grammar:Grammar.ListExpr ~closing:Rbrace
       ~f:parseSpreadExprRegionWithLoc
@@ -3744,22 +3748,23 @@ and parseListExpr ~startPos p =
   let loc = mkLoc startPos p.prevEndPos in
   match split_by_spread listExprsRev with
   | [] -> makeListExpression loc [] None
-  | [exprs, Some spread, _, _] -> makeListExpression loc exprs (Some spread)
-  | [exprs, None, _, _] -> makeListExpression loc exprs None
+  | [(exprs, Some spread, _, _)] -> makeListExpression loc exprs (Some spread)
+  | [(exprs, None, _, _)] -> makeListExpression loc exprs None
   | exprs ->
-     let listExprs = List.map
-                       make_sub_expr
-                       exprs in
-     Ast_helper.Exp.(apply ~loc
-                       (Ast_helper.Exp.ident ~loc
-                          (Location.mkloc (Longident.(Ldot (Ldot (Lident "Belt", "List"), "concatMany"))) loc))
-                       [Asttypes.Nolabel, Ast_helper.Exp.array ~loc listExprs])
-  (* | (true (\* spread expression *\), expr, _) :: exprs ->
-   *   let exprs = check_all_non_spread_exp exprs in
-   *   makeListExpression loc exprs (Some expr)
-   * | exprs ->
-   *   let exprs = check_all_non_spread_exp exprs in
-   *   makeListExpression loc exprs None *)
+    let listExprs = List.map make_sub_expr exprs in
+    Ast_helper.Exp.apply ~loc
+      (Ast_helper.Exp.ident ~loc
+         (Location.mkloc
+            (Longident.Ldot
+               (Longident.Ldot (Longident.Lident "Belt", "List"), "concatMany"))
+            loc))
+      [(Asttypes.Nolabel, Ast_helper.Exp.array ~loc listExprs)]
+(* | (true (\* spread expression *\), expr, _) :: exprs ->
+ *   let exprs = check_all_non_spread_exp exprs in
+ *   makeListExpression loc exprs (Some expr)
+ * | exprs ->
+ *   let exprs = check_all_non_spread_exp exprs in
+ *   makeListExpression loc exprs None *)
 
 (* Overparse ... and give a nice error message *)
 and parseNonSpreadExp ~msg p =
