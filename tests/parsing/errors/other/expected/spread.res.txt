@@ -50,20 +50,6 @@ Solution: you need to pull out each field you want explicitly.
 
 
   Syntax error!
-  tests/parsing/errors/other/spread.res:8:1-3
-
-   6 │ 
-   7 │ let myList = list{...x, ...y}
-   8 │ let list{...x, ...y} = myList
-   9 │ 
-  10 │ type t = {...a}
-
-  Lists can only have one `...` spread, and at the end.
-Explanation: lists are singly-linked list, where a node contains a value and points to the next node. `list{a, ...bc}` efficiently creates a new item and links `bc` as its next nodes. `list{...bc, a}` would be expensive, as it'd need to traverse `bc` and prepend each item to `a` one by one. We therefore disallow such syntax sugar.
-Solution: directly use `concat`.
-
-
-  Syntax error!
   tests/parsing/errors/other/spread.res:8:13-22
 
    6 │ 
@@ -114,7 +100,7 @@ let arr = [|x;y|]
 let [|arr;_|] = [|1;2;3|]
 let record = { x with y }
 let { x; y } = myRecord
-let myList = x :: y
+let myList = Belt.List.concatMany [|x;y|]
 let x::y = myList
 type nonrec t = < a  > 
 type nonrec t =

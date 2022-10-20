@@ -3753,7 +3753,7 @@ and parseListExpr ~startPos p =
      Ast_helper.Exp.(apply ~loc
                        (Ast_helper.Exp.ident ~loc
                           (Location.mkloc (Longident.(Ldot (Ldot (Lident "Belt", "List"), "concatMany"))) loc))
-                       [Asttypes.Nolabel, makeListExpression loc listExprs None])
+                       [Asttypes.Nolabel, Ast_helper.Exp.array ~loc listExprs])
   (* | (true (\* spread expression *\), expr, _) :: exprs ->
    *   let exprs = check_all_non_spread_exp exprs in
    *   makeListExpression loc exprs (Some expr)
