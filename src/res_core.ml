@@ -81,7 +81,7 @@ module ErrorMessages = struct
      ...b}` wouldn't make sense, as `b` would override every field of `a` \
      anyway."
 
-  let listExprSpread =
+  let _listExprSpread =
     "Lists can only have one `...` spread, and at the end.\n\
      Explanation: lists are singly-linked list, where a node contains a value \
      and points to the next node. `list{a, ...bc}` efficiently creates a new \
@@ -3705,38 +3705,61 @@ and parseTupleExpr ~first ~startPos p =
   let loc = mkLoc startPos p.prevEndPos in
   Ast_helper.Exp.tuple ~loc exprs
 
-and parseSpreadExprRegion p =
+and parseSpreadExprRegionWithLoc p =
+  let startPos = p.Parser.prevEndPos in
   match p.Parser.token with
   | DotDotDot ->
     Parser.next p;
     let expr = parseConstrainedOrCoercedExpr p in
-    Some (true, expr)
+    Some (true, expr, startPos, p.prevEndPos)
   | token when Grammar.isExprStart token ->
-    Some (false, parseConstrainedOrCoercedExpr p)
+    Some (false, parseConstrainedOrCoercedExpr p, startPos, p.prevEndPos)
   | _ -> None
 
 and parseListExpr ~startPos p =
-  let check_all_non_spread_exp exprs =
-    exprs
-    |> List.map (fun (spread, expr) ->
-           if spread then
-             Parser.err p (Diagnostics.message ErrorMessages.listExprSpread);
-           expr)
-    |> List.rev
-  in
+  let split_by_spread exprs =
+    let rec loop exprs acc =
+      match exprs, acc with
+      | [], acc -> acc
+      | (true, expr, startPos, endPos) :: exprs, _ ->
+         (* find a spread expression, prepend a new sublist *)
+         loop exprs (([], Some expr, startPos, endPos) :: acc)
+      | (false, expr, startPos, _endPos) :: exprs, ((no_spreads, spread, _accStartPos, accEndPos) :: acc) ->
+         (* find a non-spread expression, and the accumulated is not empty,
+          * prepend to the first sublist, and update the loc first sublist *)
+         loop exprs ((expr :: no_spreads, spread, startPos, accEndPos) :: acc)
+      | (false, expr, startPos, endPos) :: exprs, [] ->
+         (* find a non-spread expression, and the accumulated is empty *)
+         loop exprs [[expr] , None, startPos, endPos] in
+    loop exprs [] in
+  let make_sub_expr = function
+    | exprs, Some spread, startPos, endPos ->
+       makeListExpression (mkLoc startPos endPos) exprs (Some spread)
+    | exprs, None, startPos, endPos -> makeListExpression (mkLoc startPos endPos) exprs None in
   let listExprsRev =
     parseCommaDelimitedReversedList p ~grammar:Grammar.ListExpr ~closing:Rbrace
-      ~f:parseSpreadExprRegion
+      ~f:parseSpreadExprRegionWithLoc
   in
   Parser.expect Rbrace p;
   let loc = mkLoc startPos p.prevEndPos in
-  match listExprsRev with
-  | (true (* spread expression *), expr) :: exprs ->
-    let exprs = check_all_non_spread_exp exprs in
-    makeListExpression loc exprs (Some expr)
+  match split_by_spread listExprsRev with
+  | [] -> makeListExpression loc [] None
+  | [exprs, Some spread, _, _] -> makeListExpression loc exprs (Some spread)
+  | [exprs, None, _, _] -> makeListExpression loc exprs None
   | exprs ->
-    let exprs = check_all_non_spread_exp exprs in
-    makeListExpression loc exprs None
+     let listExprs = List.map
+                       make_sub_expr
+                       exprs in
+     Ast_helper.Exp.(apply ~loc
+                       (Ast_helper.Exp.ident ~loc
+                          (Location.mkloc (Longident.(Ldot (Ldot (Lident "Belt", "List"), "concatMany"))) loc))
+                       [Asttypes.Nolabel, makeListExpression loc listExprs None])
+  (* | (true (\* spread expression *\), expr, _) :: exprs ->
+   *   let exprs = check_all_non_spread_exp exprs in
+   *   makeListExpression loc exprs (Some expr)
+   * | exprs ->
+   *   let exprs = check_all_non_spread_exp exprs in
+   *   makeListExpression loc exprs None *)
 
 (* Overparse ... and give a nice error message *)
 and parseNonSpreadExp ~msg p =
