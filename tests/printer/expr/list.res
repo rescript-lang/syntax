@@ -3,6 +3,8 @@ let x = list{1}
 let x = list{1, 2}
 let x = list{1, 2, 3}
 let x = list{1, 2, ...x, 3, ...x}
+let x = Belt.List.concatMany([list{1, 2, ...x}, [list{3, ...x}]])
+
 
 let x = list{
   superLoooooooooooooooooooooooooooooongIiiiiiiiiideeeentifieeeeeeeeeeeeeeeeer,
@@ -20,7 +22,17 @@ let x = list{
   ...superLoooooooooooooooooooooooooooooongListHere,
 }
 
-
+let x = Belt.List.concatMany([
+  list{
+    superLoooooooooooooooooooooooooooooongIiiiiiiiiideeeentifieeeeeeeeeeeeeeeeer,
+    superLoooooooooooooooooooooooooooooongIiiiiiiiiideeeentifieeeeeeeeeeeeeeeeer,
+    ...superLoooooooooooooooooooooooooooooongListHere,
+  },
+  list{
+    superLoooooooooooooooooooooooooooooongIiiiiiiiiideeeentifieeeeeeeeeeeeeeeeer,
+    ...superLoooooooooooooooooooooooooooooongListHere,
+  },
+])
 
 
 let x = list{
