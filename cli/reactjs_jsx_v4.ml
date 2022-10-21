@@ -387,49 +387,47 @@ let transformUppercaseCall3 ~config modulePath mapper jsxExprLoc callExprLoc
   | "automatic" ->
     let jsxExpr, key =
       match (!childrenArg, keyProp) with
-      | None, (_, keyExpr) :: _ ->
+      | None, key :: _ ->
         ( Exp.ident
-            {loc = Location.none; txt = Ldot (Lident "React", "jsxKeyed")},
-          [(nolabel, keyExpr)] )
+            {loc = Location.none; txt = Ldot (Lident "React", "jsxWithKey")},
+          [key] )
       | None, [] ->
-        (Exp.ident {loc = Location.none; txt = Ldot (Lident "React", "jsx")}, [])
-      | Some _, (_, keyExpr) :: _ ->
         ( Exp.ident
-            {loc = Location.none; txt = Ldot (Lident "React", "jsxsKeyed")},
-          [(nolabel, keyExpr)] )
+            {loc = Location.none; txt = Ldot (Lident "React", "jsxWithKey")},
+          [] )
+      | Some _, key :: _ ->
+        ( Exp.ident
+            {loc = Location.none; txt = Ldot (Lident "React", "jsxsWithKey")},
+          [key] )
       | Some _, [] ->
-        ( Exp.ident {loc = Location.none; txt = Ldot (Lident "React", "jsxs")},
+        ( Exp.ident
+            {loc = Location.none; txt = Ldot (Lident "React", "jsxsWithKey")},
           [] )
     in
-    Exp.apply ~attrs jsxExpr ([(nolabel, makeID); (nolabel, props)] @ key)
+    Exp.apply ~attrs jsxExpr (key @ [(nolabel, makeID); (nolabel, props)])
   | _ -> (
     match (!childrenArg, keyProp) with
-    | None, (_, keyExpr) :: _ ->
+    | None, key :: _ ->
       Exp.apply ~attrs
         (Exp.ident
            {
              loc = Location.none;
              txt = Ldot (Lident "React", "createElementWithKey");
            })
-        [(nolabel, makeID); (nolabel, props); (nolabel, keyExpr)]
+        [key; (nolabel, makeID); (nolabel, props)]
     | None, [] ->
       Exp.apply ~attrs
         (Exp.ident
            {loc = Location.none; txt = Ldot (Lident "React", "createElement")})
         [(nolabel, makeID); (nolabel, props)]
-    | Some children, (_, keyExpr) :: _ ->
+    | Some children, key :: _ ->
       Exp.apply ~attrs
         (Exp.ident
            {
              loc = Location.none;
              txt = Ldot (Lident "React", "createElementVariadicWithKey");
            })
-        [
-          (nolabel, makeID);
-          (nolabel, props);
-          (nolabel, children);
-          (nolabel, keyExpr);
-        ]
+        [key; (nolabel, makeID); (nolabel, props); (nolabel, children)]
     | Some children, [] ->
       Exp.apply ~attrs
         (Exp.ident
