@@ -3004,7 +3004,6 @@ and printExpression ~customLayout (e : Parsetree.expression) cmtTbl =
          let spreadDoc = makeSpreadDoc commaBeforeSpread spread in
          Doc.concat
            [
-             Doc.softLine;
              Doc.join
                ~sep:(Doc.concat [Doc.text ","; Doc.line])
                (List.map
@@ -3024,8 +3023,17 @@ and printExpression ~customLayout (e : Parsetree.expression) cmtTbl =
          (Doc.concat
             [
               Doc.text "list{";
-              Doc.indent (Doc.join ~sep:(Doc.concat [Doc.text ","; Doc.line])
-                            (List.map makeSubListDoc (List.map ParsetreeViewer.collectListExpressions subLists)));
+              Doc.indent
+                (Doc.concat
+                   [
+                     Doc.softLine;
+                     (Doc.join
+                        ~sep:(Doc.concat [Doc.text ","; Doc.line])
+                        (List.map
+                           makeSubListDoc
+                           (List.map ParsetreeViewer.collectListExpressions subLists)));
+                   ]
+                );
               Doc.trailingComma;
               Doc.softLine;
               Doc.rbrace;
