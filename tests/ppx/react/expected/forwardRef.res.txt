@@ -167,7 +167,10 @@ module V4A = {
       "div",
       {
         children: ?ReactDOM.someElement(
-          React.jsx(FancyInput.make, {ref: input, children: {React.string("Click to focus")}}),
+          React.jsxWithKey(
+            FancyInput.make,
+            {ref: input, children: {React.string("Click to focus")}},
+          ),
         ),
       },
     )

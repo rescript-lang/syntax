@@ -26,8 +26,8 @@ module V4C = {
     ReactDOM.createElement(
       React.fragment,
       [
-        React.createElementWithKey(V4CA.make, {}, "k"),
-        React.createElementWithKey(V4CB.make, {}, "k"),
+        React.createElementWithKey(~key="k", V4CA.make, {}),
+        React.createElementWithKey(~key="k", V4CB.make, {}),
       ],
     )
   let make = {
