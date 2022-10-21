@@ -172,6 +172,8 @@ let suppressFragileMatchWarningAttr =
 let makeBracesAttr loc = (Location.mkloc "ns.braces" loc, Parsetree.PStr [])
 let templateLiteralAttr = (Location.mknoloc "res.template", Parsetree.PStr [])
 
+let spreadAttr = (Location.mknoloc "res.spread", Parsetree.PStr [])
+
 type typDefOrExt =
   | TypeDef of {
       recFlag: Asttypes.rec_flag;
@@ -3744,7 +3746,7 @@ and parseListExpr ~startPos p =
   | exprs ->
     let listExprs = List.map make_sub_expr exprs in
     Ast_helper.Exp.apply ~loc
-      (Ast_helper.Exp.ident ~loc
+      (Ast_helper.Exp.ident ~loc ~attrs:[spreadAttr]
          (Location.mkloc
             (Longident.Ldot
                (Longident.Ldot (Longident.Lident "Belt", "List"), "concatMany"))

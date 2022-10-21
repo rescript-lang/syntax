@@ -618,6 +618,26 @@ let isTemplateLiteral expr =
   | Pexp_constant _ when hasTemplateLiteralAttr expr.pexp_attributes -> true
   | _ -> false
 
+let hasSpreadAttr attrs =
+  List.exists
+    (fun attr ->
+      match attr with
+      | {Location.txt = "res.spread"}, _ -> true
+      | _ -> false)
+    attrs
+
+let isSpreadBeltListConcat expr =
+  match expr.pexp_desc with
+  | Pexp_ident
+      {
+        txt =
+          Longident.Ldot
+            (Longident.Ldot (Longident.Lident "Belt", "List"), "concatMany");
+      }
+    when hasSpreadAttr expr.pexp_attributes ->
+    true
+  | _ -> false
+
 (* Blue | Red | Green -> [Blue; Red; Green] *)
 let collectOrPatternChain pat =
   let rec loop pattern chain =
