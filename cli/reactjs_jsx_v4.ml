@@ -388,20 +388,15 @@ let transformUppercaseCall3 ~config modulePath mapper jsxExprLoc callExprLoc
     let jsxExpr, key =
       match (!childrenArg, keyProp) with
       | None, key :: _ ->
-        ( Exp.ident
-            {loc = Location.none; txt = Ldot (Lident "React", "jsxWithKey")},
+        ( Exp.ident {loc = Location.none; txt = Ldot (Lident "React", "jsx")},
           [key] )
       | None, [] ->
-        ( Exp.ident
-            {loc = Location.none; txt = Ldot (Lident "React", "jsxWithKey")},
-          [] )
+        (Exp.ident {loc = Location.none; txt = Ldot (Lident "React", "jsx")}, [])
       | Some _, key :: _ ->
-        ( Exp.ident
-            {loc = Location.none; txt = Ldot (Lident "React", "jsxsWithKey")},
+        ( Exp.ident {loc = Location.none; txt = Ldot (Lident "React", "jsxs")},
           [key] )
       | Some _, [] ->
-        ( Exp.ident
-            {loc = Location.none; txt = Ldot (Lident "React", "jsxsWithKey")},
+        ( Exp.ident {loc = Location.none; txt = Ldot (Lident "React", "jsxs")},
           [] )
     in
     Exp.apply ~attrs jsxExpr (key @ [(nolabel, makeID); (nolabel, props)])
