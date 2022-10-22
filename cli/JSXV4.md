@@ -286,11 +286,11 @@ React.createElement(Comp.make, {x, y: 7, ?z})
 
 <Comp x key="7">
 // is transformed to
-React.createElement(Comp.make, Jsx.addKeyProp(~key="7", {x: x}))
+React.createElement(Comp.make, React.addKeyProp(~key="7", {x: x}))
 
 <Comp x key=?Some("7")>
 // is transformed to
-React.createElement(Comp.make, Jsx.addKeyProp(~key=?Some("7"), {x: x}))
+React.createElement(Comp.make, React.addKeyProp(~key=?Some("7"), {x: x}))
 ```
 
 ### New experimental automatic mode
