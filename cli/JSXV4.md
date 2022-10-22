@@ -11,7 +11,7 @@ To build an entire project in V4 mode, including all its dependencies, use the n
 "jsx": { "version": 4 }
 ```
 
-> Note that JSX V4 requires the rescript compiler 10.1 or higher, and `rescript-react` version `0.11` or higher. In addition, `react` version `18.2` is required.
+> Note that JSX V4 requires the rescript compiler 10.1 or higher, and `rescript-react` version `0.11` or higher. In addition, `react` version `18.0` is required.
 
 ## Configuration And Upgrade
 
@@ -286,7 +286,11 @@ React.createElement(Comp.make, {x, y: 7, ?z})
 
 <Comp x key="7">
 // is transformed to
-React.createElement(Comp.make, Jsx.addKeyProp({x: x}, "7"))
+React.createElement(Comp.make, Jsx.addKeyProp(~key="7", {x: x}))
+
+<Comp x key=?Some("7")>
+// is transformed to
+React.createElement(Comp.make, Jsx.addKeyProp(~key=?Some("7"), {x: x}))
 ```
 
 ### New experimental automatic mode
