@@ -19,7 +19,7 @@ let c2 = React.createElement(A.make, {...p, x: "x"})
 // let c0 = <A x="x" {...p0} {...p1} />
 
 // only spread props
-let c1 = React.jsxWithKey(A.make, p)
+let c1 = React.jsx(A.make, p)
 
 // reversed order
-let c2 = React.jsxWithKey(A.make, {...p, x: "x"})
+let c2 = React.jsx(A.make, {...p, x: "x"})

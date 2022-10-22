@@ -36,4 +36,4 @@ module Foo = {
   external component: React.componentLike<props<int, string>, React.element> = "component"
 }
 
-let t = React.jsxWithKey(Foo.component, {a: 1, b: "1"})
+let t = React.jsx(Foo.component, {a: 1, b: "1"})
