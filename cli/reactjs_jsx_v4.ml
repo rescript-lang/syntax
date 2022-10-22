@@ -490,23 +490,21 @@ let transformLowercaseCall3 ~config mapper jsxExprLoc callExprLoc attrs
     in
     let jsxExpr, key =
       match (!childrenArg, keyProp) with
-      | None, (_, keyExpr) :: _ ->
-        ( Exp.ident
-            {loc = Location.none; txt = Ldot (Lident "ReactDOM", "jsxKeyed")},
-          [(nolabel, keyExpr)] )
+      | None, key :: _ ->
+        ( Exp.ident {loc = Location.none; txt = Ldot (Lident "ReactDOM", "jsx")},
+          [key] )
       | None, [] ->
         ( Exp.ident {loc = Location.none; txt = Ldot (Lident "ReactDOM", "jsx")},
           [] )
-      | Some _, (_, keyExpr) :: _ ->
-        ( Exp.ident
-            {loc = Location.none; txt = Ldot (Lident "ReactDOM", "jsxsKeyed")},
-          [(nolabel, keyExpr)] )
+      | Some _, key :: _ ->
+        ( Exp.ident {loc = Location.none; txt = Ldot (Lident "ReactDOM", "jsxs")},
+          [key] )
       | Some _, [] ->
         ( Exp.ident {loc = Location.none; txt = Ldot (Lident "ReactDOM", "jsxs")},
           [] )
     in
     Exp.apply ~attrs jsxExpr
-      ([(nolabel, componentNameExpr); (nolabel, props)] @ key)
+      (key @ [(nolabel, componentNameExpr); (nolabel, props)])
   | _ ->
     let children, nonChildrenProps =
       extractChildren ~loc:jsxExprLoc callArguments
