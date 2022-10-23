@@ -36,10 +36,11 @@ let c2 = React.jsx(A.make, {...p, x: "x"})
 
 let c3 = ReactDOM.jsx("div", p)
 
-let c4 = ReactDOM.jsx(~key="k", "div", {...p, x: "x"})
+let c4 = ReactDOM.jsxKeyed("div", {...p, x: "x"}, ~key="k", ())
 
-let c5 = ReactDOM.jsxs(
-  ~key="k",
+let c5 = ReactDOM.jsxsKeyed(
   "div",
   {...p, children: React.array([ReactDOM.jsx("br", {}), ReactDOM.jsx("br", {})])},
+  ~key="k",
+  (),
 )
