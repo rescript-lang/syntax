@@ -54,24 +54,27 @@ let _ = ReactDOM.createDOMElementVariadic(
 
 @@jsxConfig({version: 4, mode: "automatic"})
 
-let _ = React.jsx(~key="k", C.make, {})
-let _ = React.jsx(~key=?Some("k"), C.make, {})
-let _ = React.jsx(~key?, C.make, {})
-let _ = ReactDOM.jsx(~key="k", "div", {})
-let _ = ReactDOM.jsx(~key=?Some("k"), "div", {})
-let _ = ReactDOM.jsx(~key?, "div", {})
-let _ = ReactDOM.jsxs(
+let _ = React.jsxKeyed(C.make, {}, ~key="k", ())
+let _ = React.jsxKeyed(C.make, {}, ~key=?Some("k"), ())
+let _ = React.jsxKeyed(C.make, {}, ~key?, ())
+let _ = ReactDOM.jsxKeyed("div", {}, ~key="k", ())
+let _ = ReactDOM.jsxKeyed("div", {}, ~key=?Some("k"), ())
+let _ = ReactDOM.jsxKeyed("div", {}, ~key?, ())
+let _ = ReactDOM.jsxsKeyed(
+  "div",
+  {children: React.array([ReactDOM.jsx("br", {}), ReactDOM.jsx("br", {})])},
   ~key="k",
+  (),
+)
+let _ = ReactDOM.jsxsKeyed(
   "div",
   {children: React.array([ReactDOM.jsx("br", {}), ReactDOM.jsx("br", {})])},
-)
-let _ = ReactDOM.jsxs(
   ~key=?Some("k"),
-  "div",
-  {children: React.array([ReactDOM.jsx("br", {}), ReactDOM.jsx("br", {})])},
+  (),
 )
-let _ = ReactDOM.jsxs(
-  ~key?,
+let _ = ReactDOM.jsxsKeyed(
   "div",
   {children: React.array([ReactDOM.jsx("br", {}), ReactDOM.jsx("br", {})])},
+  ~key?,
+  (),
 )

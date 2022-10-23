@@ -64,7 +64,12 @@ module V4C = {
   let make = (_: props) =>
     React.jsxs(
       React.jsxFragment,
-      {children: [React.jsx(~key="k", V4CA.make, {}), React.jsx(~key="k", V4CB.make, {})]},
+      {
+        children: [
+          React.jsxKeyed(V4CA.make, {}, ~key="k", ()),
+          React.jsxKeyed(V4CB.make, {}, ~key="k", ()),
+        ],
+      },
     )
   let make = {
     let \"NoPropsWithKey$V4C" = props => make(props)

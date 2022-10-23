@@ -36,6 +36,8 @@ let constantString ~loc str =
 (* {} empty record *)
 let emptyRecord ~loc = Exp.record ~loc [] None
 
+let unitExpr ~loc = Exp.construct ~loc (Location.mkloc (Lident "()") loc) None
+
 let safeTypeFromValue valueStr =
   let valueStr = getLabel valueStr in
   if valueStr = "" || (valueStr.[0] [@doesNotRaise]) <> '_' then valueStr
@@ -385,21 +387,23 @@ let transformUppercaseCall3 ~config modulePath mapper jsxExprLoc callExprLoc
   match config.mode with
   (* The new jsx transform *)
   | "automatic" ->
-    let jsxExpr, key =
+    let jsxExpr, keyAndUnit =
       match (!childrenArg, keyProp) with
       | None, key :: _ ->
-        ( Exp.ident {loc = Location.none; txt = Ldot (Lident "React", "jsx")},
-          [key] )
+        ( Exp.ident
+            {loc = Location.none; txt = Ldot (Lident "React", "jsxKeyed")},
+          [key; (nolabel, unitExpr ~loc:Location.none)] )
       | None, [] ->
         (Exp.ident {loc = Location.none; txt = Ldot (Lident "React", "jsx")}, [])
       | Some _, key :: _ ->
-        ( Exp.ident {loc = Location.none; txt = Ldot (Lident "React", "jsxs")},
-          [key] )
+        ( Exp.ident
+            {loc = Location.none; txt = Ldot (Lident "React", "jsxsKeyed")},
+          [key; (nolabel, unitExpr ~loc:Location.none)] )
       | Some _, [] ->
         ( Exp.ident {loc = Location.none; txt = Ldot (Lident "React", "jsxs")},
           [] )
     in
-    Exp.apply ~attrs jsxExpr (key @ [(nolabel, makeID); (nolabel, props)])
+    Exp.apply ~attrs jsxExpr ([(nolabel, makeID); (nolabel, props)] @ keyAndUnit)
   | _ -> (
     match (!childrenArg, keyProp) with
     | None, key :: _ ->
@@ -488,23 +492,25 @@ let transformLowercaseCall3 ~config mapper jsxExprLoc callExprLoc attrs
     let keyProp =
       args |> List.filter (fun (arg_label, _) -> "key" = getLabel arg_label)
     in
-    let jsxExpr, key =
+    let jsxExpr, keyAndUnit =
       match (!childrenArg, keyProp) with
       | None, key :: _ ->
-        ( Exp.ident {loc = Location.none; txt = Ldot (Lident "ReactDOM", "jsx")},
-          [key] )
+        ( Exp.ident
+            {loc = Location.none; txt = Ldot (Lident "ReactDOM", "jsxKeyed")},
+          [key; (nolabel, unitExpr ~loc:Location.none)] )
       | None, [] ->
         ( Exp.ident {loc = Location.none; txt = Ldot (Lident "ReactDOM", "jsx")},
           [] )
       | Some _, key :: _ ->
-        ( Exp.ident {loc = Location.none; txt = Ldot (Lident "ReactDOM", "jsxs")},
-          [key] )
+        ( Exp.ident
+            {loc = Location.none; txt = Ldot (Lident "ReactDOM", "jsxsKeyed")},
+          [key; (nolabel, unitExpr ~loc:Location.none)] )
       | Some _, [] ->
         ( Exp.ident {loc = Location.none; txt = Ldot (Lident "ReactDOM", "jsxs")},
           [] )
     in
     Exp.apply ~attrs jsxExpr
-      (key @ [(nolabel, componentNameExpr); (nolabel, props)])
+      ([(nolabel, componentNameExpr); (nolabel, props)] @ keyAndUnit)
   | _ ->
     let children, nonChildrenProps =
       extractChildren ~loc:jsxExprLoc callArguments
