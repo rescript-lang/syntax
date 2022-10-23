@@ -1,0 +1,77 @@
+let key = None
+
+@@jsxConfig({version: 3})
+
+let _ = React.createElement(C.make, C.makeProps(~key="k", ()))
+let _ = React.createElement(C.make, C.makeProps(~key=?Some("k"), ()))
+let _ = React.createElement(C.make, C.makeProps(~key?, ()))
+let _ = ReactDOMRe.createDOMElementVariadic("div", ~props=ReactDOMRe.domProps(~key="k", ()), [])
+let _ = ReactDOMRe.createDOMElementVariadic(
+  "div",
+  ~props=ReactDOMRe.domProps(~key=?Some("k"), ()),
+  [],
+)
+let _ = ReactDOMRe.createDOMElementVariadic("div", ~props=ReactDOMRe.domProps(~key?, ()), [])
+let _ = ReactDOMRe.createDOMElementVariadic(
+  "div",
+  ~props=ReactDOMRe.domProps(~key="k", ()),
+  [ReactDOMRe.createDOMElementVariadic("br", []), ReactDOMRe.createDOMElementVariadic("br", [])],
+)
+let _ = ReactDOMRe.createDOMElementVariadic(
+  "div",
+  ~props=ReactDOMRe.domProps(~key=?Some("k"), ()),
+  [ReactDOMRe.createDOMElementVariadic("br", []), ReactDOMRe.createDOMElementVariadic("br", [])],
+)
+let _ = ReactDOMRe.createDOMElementVariadic(
+  "div",
+  ~props=ReactDOMRe.domProps(~key?, ()),
+  [ReactDOMRe.createDOMElementVariadic("br", []), ReactDOMRe.createDOMElementVariadic("br", [])],
+)
+
+@@jsxConfig({version: 4, mode: "classic"})
+
+let _ = React.createElementWithKey(~key="k", C.make, {})
+let _ = React.createElementWithKey(~key=?Some("k"), C.make, {})
+let _ = React.createElementWithKey(~key?, C.make, {})
+let _ = ReactDOM.createDOMElementVariadic("div", ~props={key: "k"}, [])
+let _ = ReactDOM.createDOMElementVariadic("div", ~props={key: ?Some("k")}, [])
+let _ = ReactDOM.createDOMElementVariadic("div", ~props={key: ?key}, [])
+let _ = ReactDOM.createDOMElementVariadic(
+  "div",
+  ~props={key: "k"},
+  [ReactDOM.createDOMElementVariadic("br", []), ReactDOM.createDOMElementVariadic("br", [])],
+)
+let _ = ReactDOM.createDOMElementVariadic(
+  "div",
+  ~props={key: ?Some("k")},
+  [ReactDOM.createDOMElementVariadic("br", []), ReactDOM.createDOMElementVariadic("br", [])],
+)
+let _ = ReactDOM.createDOMElementVariadic(
+  "div",
+  ~props={key: ?key},
+  [ReactDOM.createDOMElementVariadic("br", []), ReactDOM.createDOMElementVariadic("br", [])],
+)
+
+@@jsxConfig({version: 4, mode: "automatic"})
+
+let _ = React.jsx(~key="k", C.make, {})
+let _ = React.jsx(~key=?Some("k"), C.make, {})
+let _ = React.jsx(~key?, C.make, {})
+let _ = ReactDOM.jsx(~key="k", "div", {})
+let _ = ReactDOM.jsx(~key=?Some("k"), "div", {})
+let _ = ReactDOM.jsx(~key?, "div", {})
+let _ = ReactDOM.jsxs(
+  ~key="k",
+  "div",
+  {children: React.array([ReactDOM.jsx("br", {}), ReactDOM.jsx("br", {})])},
+)
+let _ = ReactDOM.jsxs(
+  ~key=?Some("k"),
+  "div",
+  {children: React.array([ReactDOM.jsx("br", {}), ReactDOM.jsx("br", {})])},
+)
+let _ = ReactDOM.jsxs(
+  ~key?,
+  "div",
+  {children: React.array([ReactDOM.jsx("br", {}), ReactDOM.jsx("br", {})])},
+)

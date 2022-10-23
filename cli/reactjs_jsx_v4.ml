@@ -387,49 +387,42 @@ let transformUppercaseCall3 ~config modulePath mapper jsxExprLoc callExprLoc
   | "automatic" ->
     let jsxExpr, key =
       match (!childrenArg, keyProp) with
-      | None, (_, keyExpr) :: _ ->
-        ( Exp.ident
-            {loc = Location.none; txt = Ldot (Lident "React", "jsxKeyed")},
-          [(nolabel, keyExpr)] )
+      | None, key :: _ ->
+        ( Exp.ident {loc = Location.none; txt = Ldot (Lident "React", "jsx")},
+          [key] )
       | None, [] ->
         (Exp.ident {loc = Location.none; txt = Ldot (Lident "React", "jsx")}, [])
-      | Some _, (_, keyExpr) :: _ ->
-        ( Exp.ident
-            {loc = Location.none; txt = Ldot (Lident "React", "jsxsKeyed")},
-          [(nolabel, keyExpr)] )
+      | Some _, key :: _ ->
+        ( Exp.ident {loc = Location.none; txt = Ldot (Lident "React", "jsxs")},
+          [key] )
       | Some _, [] ->
         ( Exp.ident {loc = Location.none; txt = Ldot (Lident "React", "jsxs")},
           [] )
     in
-    Exp.apply ~attrs jsxExpr ([(nolabel, makeID); (nolabel, props)] @ key)
+    Exp.apply ~attrs jsxExpr (key @ [(nolabel, makeID); (nolabel, props)])
   | _ -> (
     match (!childrenArg, keyProp) with
-    | None, (_, keyExpr) :: _ ->
+    | None, key :: _ ->
       Exp.apply ~attrs
         (Exp.ident
            {
              loc = Location.none;
              txt = Ldot (Lident "React", "createElementWithKey");
            })
-        [(nolabel, makeID); (nolabel, props); (nolabel, keyExpr)]
+        [key; (nolabel, makeID); (nolabel, props)]
     | None, [] ->
       Exp.apply ~attrs
         (Exp.ident
            {loc = Location.none; txt = Ldot (Lident "React", "createElement")})
         [(nolabel, makeID); (nolabel, props)]
-    | Some children, (_, keyExpr) :: _ ->
+    | Some children, key :: _ ->
       Exp.apply ~attrs
         (Exp.ident
            {
              loc = Location.none;
              txt = Ldot (Lident "React", "createElementVariadicWithKey");
            })
-        [
-          (nolabel, makeID);
-          (nolabel, props);
-          (nolabel, children);
-          (nolabel, keyExpr);
-        ]
+        [key; (nolabel, makeID); (nolabel, props); (nolabel, children)]
     | Some children, [] ->
       Exp.apply ~attrs
         (Exp.ident
@@ -497,23 +490,21 @@ let transformLowercaseCall3 ~config mapper jsxExprLoc callExprLoc attrs
     in
     let jsxExpr, key =
       match (!childrenArg, keyProp) with
-      | None, (_, keyExpr) :: _ ->
-        ( Exp.ident
-            {loc = Location.none; txt = Ldot (Lident "ReactDOM", "jsxKeyed")},
-          [(nolabel, keyExpr)] )
+      | None, key :: _ ->
+        ( Exp.ident {loc = Location.none; txt = Ldot (Lident "ReactDOM", "jsx")},
+          [key] )
       | None, [] ->
         ( Exp.ident {loc = Location.none; txt = Ldot (Lident "ReactDOM", "jsx")},
           [] )
-      | Some _, (_, keyExpr) :: _ ->
-        ( Exp.ident
-            {loc = Location.none; txt = Ldot (Lident "ReactDOM", "jsxsKeyed")},
-          [(nolabel, keyExpr)] )
+      | Some _, key :: _ ->
+        ( Exp.ident {loc = Location.none; txt = Ldot (Lident "ReactDOM", "jsxs")},
+          [key] )
       | Some _, [] ->
         ( Exp.ident {loc = Location.none; txt = Ldot (Lident "ReactDOM", "jsxs")},
           [] )
     in
     Exp.apply ~attrs jsxExpr
-      ([(nolabel, componentNameExpr); (nolabel, props)] @ key)
+      (key @ [(nolabel, componentNameExpr); (nolabel, props)])
   | _ ->
     let children, nonChildrenProps =
       extractChildren ~loc:jsxExprLoc callArguments
