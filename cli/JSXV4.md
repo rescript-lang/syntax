@@ -1,7 +1,7 @@
 ## Introduction
 
 JSX V4, supported in the compiler version introduces a new idiomatic record-based representation of components which is incompatible with V3. Because of this, either the entire project or dependencies need to be compiled in V4 mode, or some compatibility features need to be used to mix V3 and V4 in the same project.
-The V4 representation is part of the spec, so `@react.component` is effectively just an abbreviation for code that can be writtend by hand.
+The V4 representation is part of the spec, so `@react.component` is effectively just an abbreviation for code that can be written by hand.
 
 ## Turn On V4
 
