@@ -3720,7 +3720,7 @@ and parseListExpr ~startPos p =
         | ( (false, expr, startPos, _endPos),
             (no_spreads, spread, _accStartPos, accEndPos) :: acc ) ->
           (* find a non-spread expression, and the accumulated is not empty,
-           * prepend to the first sublist, and update the loc first sublist *)
+           * prepend to the first sublist, and update the loc of the first sublist *)
           (expr :: no_spreads, spread, startPos, accEndPos) :: acc
         | (false, expr, startPos, endPos), [] ->
           (* find a non-spread expression, and the accumulated is empty *)
