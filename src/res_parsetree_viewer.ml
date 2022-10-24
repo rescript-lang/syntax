@@ -633,9 +633,8 @@ let isSpreadBeltListConcat expr =
         txt =
           Longident.Ldot
             (Longident.Ldot (Longident.Lident "Belt", "List"), "concatMany");
-      }
-    when hasSpreadAttr expr.pexp_attributes ->
-    true
+      } ->
+    hasSpreadAttr expr.pexp_attributes
   | _ -> false
 
 (* Blue | Red | Green -> [Blue; Red; Green] *)
