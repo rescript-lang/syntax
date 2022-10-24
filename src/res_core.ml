@@ -3752,12 +3752,6 @@ and parseListExpr ~startPos p =
                (Longident.Ldot (Longident.Lident "Belt", "List"), "concatMany"))
             loc))
       [(Asttypes.Nolabel, Ast_helper.Exp.array ~loc listExprs)]
-(* | (true (\* spread expression *\), expr, _) :: exprs ->
- *   let exprs = check_all_non_spread_exp exprs in
- *   makeListExpression loc exprs (Some expr)
- * | exprs ->
- *   let exprs = check_all_non_spread_exp exprs in
- *   makeListExpression loc exprs None *)
 
 (* Overparse ... and give a nice error message *)
 and parseNonSpreadExp ~msg p =
