@@ -6,6 +6,7 @@ let x = list{...xs}
 let x = list{1, ... xs}
 let x = list{xs, ... ys}
 let x = list{...xs, ... ys}
+let x = list{...xs, 1, ...ys}
 let x = list{1, 2, ...xs, 3, ...xs}
 let x = Belt.List.concatMany([list{1, 2, ...x}, [list{3, ...x}]])
 
