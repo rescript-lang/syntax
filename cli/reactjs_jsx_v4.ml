@@ -311,13 +311,30 @@ let makeTypeDecls propsName loc namedTypeList =
       ~kind:(Ptype_record labelDeclList);
   ]
 
-(* type props<'x, 'y, ...> = { x: 'x, y?: 'y, ... } *)
-let makePropsRecordType propsName loc namedTypeList =
-  Str.type_ Nonrecursive (makeTypeDecls propsName loc namedTypeList)
+let makeTypeDeclsWithCoreType propsName loc coreType typVars =
+  [
+    Type.mk ~loc {txt = propsName; loc} ~kind:Ptype_abstract
+      ~params:(typVars |> List.map (fun v -> (v, Invariant)))
+      ~manifest:coreType;
+  ]
 
 (* type props<'x, 'y, ...> = { x: 'x, y?: 'y, ... } *)
-let makePropsRecordTypeSig propsName loc namedTypeList =
-  Sig.type_ Nonrecursive (makeTypeDecls propsName loc namedTypeList)
+let makePropsRecordType ~coreTypeOfAttr ~typVarsOfCoreType propsName loc
+    namedTypeList =
+  Str.type_ Nonrecursive
+    (match coreTypeOfAttr with
+    | None -> makeTypeDecls propsName loc namedTypeList
+    | Some coreType ->
+      makeTypeDeclsWithCoreType propsName loc coreType typVarsOfCoreType)
+
+(* type props<'x, 'y, ...> = { x: 'x, y?: 'y, ... } *)
+let makePropsRecordTypeSig ~coreTypeOfAttr ~typVarsOfCoreType propsName loc
+    namedTypeList =
+  Sig.type_ Nonrecursive
+    (match coreTypeOfAttr with
+    | None -> makeTypeDecls propsName loc namedTypeList
+    | Some coreType ->
+      makeTypeDeclsWithCoreType propsName loc coreType typVarsOfCoreType)
 
 let transformUppercaseCall3 ~config modulePath mapper jsxExprLoc callExprLoc
     attrs callArguments =
@@ -733,6 +750,12 @@ let transformStructureItem ~config mapper item =
         config.hasReactComponent <- true;
         check_string_int_attribute_iter.structure_item
           check_string_int_attribute_iter item;
+        let coreTypeOfAttr = React_jsx_common.coreTypeOfAttrs pval_attributes in
+        let typVarsOfCoreType =
+          coreTypeOfAttr
+          |> Option.map React_jsx_common.typVarsOfCoreType
+          |> Option.value ~default:[]
+        in
         let rec getPropTypes types ({ptyp_loc; ptyp_desc} as fullType) =
           match ptyp_desc with
           | Ptyp_arrow (name, type_, ({ptyp_desc = Ptyp_arrow _} as rest))
@@ -749,11 +772,14 @@ let transformStructureItem ~config mapper item =
         let retPropsType =
           Typ.constr ~loc:pstr_loc
             (Location.mkloc (Lident "props") pstr_loc)
-            (makePropsTypeParams namedTypeList)
+            (match coreTypeOfAttr with
+            | None -> makePropsTypeParams namedTypeList
+            | Some _ -> typVarsOfCoreType)
         in
         (* type props<'x, 'y> = { x: 'x, y?: 'y, ... } *)
         let propsRecordType =
-          makePropsRecordType "props" pstr_loc namedTypeList
+          makePropsRecordType ~coreTypeOfAttr ~typVarsOfCoreType "props"
+            pstr_loc namedTypeList
         in
         (* can't be an arrow because it will defensively uncurry *)
         let newExternalType =
@@ -787,6 +813,14 @@ let transformStructureItem ~config mapper item =
           React_jsx_common.raiseErrorMultipleReactComponent ~loc:pstr_loc
         else (
           config.hasReactComponent <- true;
+          let coreTypeOfAttr =
+            React_jsx_common.coreTypeOfAttrs binding.pvb_attributes
+          in
+          let typVarsOfCoreType =
+            coreTypeOfAttr
+            |> Option.map React_jsx_common.typVarsOfCoreType
+            |> Option.value ~default:[]
+          in
           let bindingLoc = binding.pvb_loc in
           let bindingPatLoc = binding.pvb_pat.ppat_loc in
           let binding =
@@ -977,7 +1011,8 @@ let transformStructureItem ~config mapper item =
           let vbMatchList = List.map vbMatch namedArgWithDefaultValueList in
           (* type props = { ... } *)
           let propsRecordType =
-            makePropsRecordType "props" pstr_loc namedTypeList
+            makePropsRecordType ~coreTypeOfAttr ~typVarsOfCoreType "props"
+              pstr_loc namedTypeList
           in
           let innerExpression =
             Exp.apply
@@ -989,6 +1024,13 @@ let transformStructureItem ~config mapper item =
                 [(Nolabel, Exp.ident (Location.mknoloc @@ Lident "ref"))]
               | false -> [])
           in
+          let makePropsPattern = function
+            | [] -> Pat.var @@ Location.mknoloc "props"
+            | _ ->
+              Pat.constraint_
+                (Pat.var @@ Location.mknoloc "props")
+                (Typ.constr (Location.mknoloc @@ Lident "props") [Typ.any ()])
+          in
           let fullExpression =
             (* React component name should start with uppercase letter *)
             (* let make = { let \"App" = props => make(props); \"App" } *)
@@ -996,12 +1038,9 @@ let transformStructureItem ~config mapper item =
                  let \"App" = (props, ref) => make({...props, ref: @optional (Js.Nullabel.toOption(ref))})
                })*)
             Exp.fun_ nolabel None
-              (match namedTypeList with
-              | [] -> Pat.var @@ Location.mknoloc "props"
-              | _ ->
-                Pat.constraint_
-                  (Pat.var @@ Location.mknoloc "props")
-                  (Typ.constr (Location.mknoloc @@ Lident "props") [Typ.any ()]))
+              (match coreTypeOfAttr with
+              | None -> makePropsPattern namedTypeList
+              | Some _ -> makePropsPattern typVarsOfCoreType)
               (if hasForwardRef then
                Exp.fun_ nolabel None
                  (Pat.var @@ Location.mknoloc "ref")
@@ -1105,8 +1144,12 @@ let transformStructureItem ~config mapper item =
               (Pat.constraint_ recordPattern
                  (Typ.constr ~loc:emptyLoc
                     {txt = Lident "props"; loc = emptyLoc}
-                    (makePropsTypeParams ~stripExplicitOption:true
-                       ~stripExplicitJsNullableOfRef:hasForwardRef namedTypeList)))
+                    (match coreTypeOfAttr with
+                    | None ->
+                      makePropsTypeParams ~stripExplicitOption:true
+                        ~stripExplicitJsNullableOfRef:hasForwardRef
+                        namedTypeList
+                    | Some _ -> typVarsOfCoreType)))
               expression
           in
           (* let make = ({id, name, ...}: props<'id, 'name, ...>) => { ... } *)
@@ -1182,6 +1225,12 @@ let transformSignatureItem ~config _mapper item =
       check_string_int_attribute_iter.signature_item
         check_string_int_attribute_iter item;
       let hasForwardRef = ref false in
+      let coreTypeOfAttr = React_jsx_common.coreTypeOfAttrs pval_attributes in
+      let typVarsOfCoreType =
+        coreTypeOfAttr
+        |> Option.map React_jsx_common.typVarsOfCoreType
+        |> Option.value ~default:[]
+      in
       let rec getPropTypes types ({ptyp_loc; ptyp_desc} as fullType) =
         match ptyp_desc with
         | Ptyp_arrow (name, type_, ({ptyp_desc = Ptyp_arrow _} as rest))
@@ -1204,10 +1253,13 @@ let transformSignatureItem ~config _mapper item =
       let retPropsType =
         Typ.constr
           (Location.mkloc (Lident "props") psig_loc)
-          (makePropsTypeParams namedTypeList)
+          (match coreTypeOfAttr with
+          | None -> makePropsTypeParams namedTypeList
+          | Some _ -> typVarsOfCoreType)
       in
       let propsRecordType =
-        makePropsRecordTypeSig "props" psig_loc
+        makePropsRecordTypeSig ~coreTypeOfAttr ~typVarsOfCoreType "props"
+          psig_loc
           ((* If there is Nolabel arg, regard the type as ref in forwardRef *)
            (if !hasForwardRef then [(true, "ref", [], refType Location.none)]
            else [])
