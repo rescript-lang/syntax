@@ -16,6 +16,25 @@ let hasAttr (loc, _) = loc.txt = "react.component"
 let hasAttrOnBinding {pvb_attributes} =
   List.find_opt hasAttr pvb_attributes <> None
 
+let coreTypeOfAttrs attributes =
+  List.find_map
+    (fun ({txt}, payload) ->
+      match (txt, payload) with
+      | "react.component", PTyp coreType -> Some coreType
+      | _ -> None)
+    attributes
+
+let typVarsOfCoreType {ptyp_desc} =
+  match ptyp_desc with
+  | Ptyp_constr (_, coreTypes) ->
+    List.filter
+      (fun {ptyp_desc} ->
+        match ptyp_desc with
+        | Ptyp_var _ -> true
+        | _ -> false)
+      coreTypes
+  | _ -> []
+
 let raiseError ~loc msg = Location.raise_errorf ~loc msg
 
 let raiseErrorMultipleReactComponent ~loc =
