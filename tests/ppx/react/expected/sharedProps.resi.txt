@@ -12,6 +12,18 @@ module V4C2: {
   let make: React.componentLike<props<'a>, React.element>
 }
 
+module V4C3: {
+  type props<'a> = sharedProps<string, 'a>
+
+  let make: React.componentLike<props<'a>, React.element>
+}
+
+module V4C4: {
+  type props = sharedProps
+
+  let make: React.componentLike<props, React.element>
+}
+
 @@jsxConfig({version: 4, mode: "automatic"})
 
 module V4A1: {
@@ -24,4 +36,16 @@ module V4A2: {
   type props<'a> = sharedProps<'a>
 
   let make: React.componentLike<props<'a>, React.element>
+}
+
+module V4A3: {
+  type props<'a> = sharedProps<string, 'a>
+
+  let make: React.componentLike<props<'a>, React.element>
+}
+
+module V4A4: {
+  type props = sharedProps
+
+  let make: React.componentLike<props, React.element>
 }
