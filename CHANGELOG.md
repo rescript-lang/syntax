@@ -26,6 +26,8 @@
 
 - Support the use of spread anywhere in list creation (e.g. `list{...x, 1, ...y, ...z}). https://github.com/rescript-lang/syntax/pull/692
 
+- Add support for the argument of `@react.component` to set a props type from the outside. https://github.com/rescript-lang/syntax/pull/699
+
 #### :bug: Bug Fix
 
 - Fix issue in formatting JSX spread props https://github.com/rescript-lang/syntax/pull/644
