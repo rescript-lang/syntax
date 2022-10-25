@@ -24,7 +24,7 @@
 
 - Add support for empty record literal `{}` for records with only optional fields, and type definition of empty record (e.g. `type empty = {}`) https://github.com/rescript-lang/syntax/pull/632
 
-- Support use spread at anywhere in list creation (e.g. `list{...x, 1, ...y, ...z}). https://github.com/rescript-lang/syntax/pull/692
+- Support the use of spread anywhere in list creation (e.g. `list{...x, 1, ...y, ...z}). https://github.com/rescript-lang/syntax/pull/692
 
 #### :bug: Bug Fix
 
