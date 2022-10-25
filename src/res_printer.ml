@@ -2980,6 +2980,9 @@ and printExpression ~customLayout (e : Parsetree.expression) cmtTbl =
              ])
       | extension ->
         printExtension ~customLayout ~atModuleLvl:false extension cmtTbl)
+    | Pexp_apply (e, [(Nolabel, {pexp_desc = Pexp_array subLists})])
+      when ParsetreeViewer.isSpreadBeltListConcat e ->
+      printBeltListConcatApply ~customLayout subLists cmtTbl
     | Pexp_apply _ ->
       if ParsetreeViewer.isUnaryExpression e then
         printUnaryExpression ~customLayout e cmtTbl
@@ -3767,6 +3770,63 @@ and printBinaryExpression ~customLayout (expr : Parsetree.expression) cmtTbl =
            | Nothing -> doc);
          ])
   | _ -> Doc.nil
+
+and printBeltListConcatApply ~customLayout subLists cmtTbl =
+  let makeSpreadDoc commaBeforeSpread = function
+    | Some expr ->
+      Doc.concat
+        [
+          commaBeforeSpread;
+          Doc.dotdotdot;
+          (let doc = printExpressionWithComments ~customLayout expr cmtTbl in
+           match Parens.expr expr with
+           | Parens.Parenthesized -> addParens doc
+           | Braced braces -> printBraces doc expr braces
+           | Nothing -> doc);
+        ]
+    | None -> Doc.nil
+  in
+  let makeSubListDoc (expressions, spread) =
+    let commaBeforeSpread =
+      match expressions with
+      | [] -> Doc.nil
+      | _ -> Doc.concat [Doc.text ","; Doc.line]
+    in
+    let spreadDoc = makeSpreadDoc commaBeforeSpread spread in
+    Doc.concat
+      [
+        Doc.join
+          ~sep:(Doc.concat [Doc.text ","; Doc.line])
+          (List.map
+             (fun expr ->
+               let doc =
+                 printExpressionWithComments ~customLayout expr cmtTbl
+               in
+               match Parens.expr expr with
+               | Parens.Parenthesized -> addParens doc
+               | Braced braces -> printBraces doc expr braces
+               | Nothing -> doc)
+             expressions);
+        spreadDoc;
+      ]
+  in
+  Doc.group
+    (Doc.concat
+       [
+         Doc.text "list{";
+         Doc.indent
+           (Doc.concat
+              [
+                Doc.softLine;
+                Doc.join
+                  ~sep:(Doc.concat [Doc.text ","; Doc.line])
+                  (List.map makeSubListDoc
+                     (List.map ParsetreeViewer.collectListExpressions subLists));
+              ]);
+         Doc.trailingComma;
+         Doc.softLine;
+         Doc.rbrace;
+       ])
 
 (* callExpr(arg1, arg2) *)
 and printPexpApply ~customLayout expr cmtTbl =
