@@ -1368,24 +1368,22 @@ let expr ~config mapper expression =
           Exp.ident ~loc {loc; txt = Ldot (Lident "React", "fragment")}
       in
       let childrenExpr = transformChildrenIfList ~mapper listItems in
+      let recordOfChildren children =
+        Exp.record [(Location.mknoloc (Lident "children"), children)] None
+      in
       let args =
         [
           (nolabel, fragment);
           (match config.mode with
-          | "automatic" ->
+          | "automatic" -> (
             ( nolabel,
-              Exp.record
-                [
-                  ( Location.mknoloc @@ Lident "children",
-                    match childrenExpr with
-                    | {pexp_desc = Pexp_array children} -> (
-                      match children with
-                      | [] -> emptyRecord ~loc:Location.none
-                      | [child] -> child
-                      | _ -> childrenExpr)
-                    | _ -> childrenExpr );
-                ]
-                None )
+              match childrenExpr with
+              | {pexp_desc = Pexp_array children} -> (
+                match children with
+                | [] -> emptyRecord ~loc:Location.none
+                | [child] -> recordOfChildren child
+                | _ -> recordOfChildren childrenExpr)
+              | _ -> recordOfChildren childrenExpr ))
           | "classic" | _ -> (nolabel, childrenExpr));
         ]
       in
