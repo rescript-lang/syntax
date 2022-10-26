@@ -48,6 +48,7 @@
 - Fix issue where certain JSX expressions would be formatted differenctly in compiler 10.1.0-rc.1 https://github.com/rescript-lang/syntax/issues/675
 - Fix issue where printing nested pipe discards await https://github.com/rescript-lang/syntax/issues/687
 - Fix issue where the JSX key type is not an optional string https://github.com/rescript-lang/syntax/pull/693
+- Fix issue where the JSX fragment withouth children build error https://github.com/rescript-lang/syntax/pull/704
 
 #### :eyeglasses: Spec Compliance
 
