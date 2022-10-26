@@ -373,3 +373,36 @@ let p: A.props<_> = {x: "x", y: "y"}
 <A x="X" {...p}>
 <A {...p} {...p1}>
 ```
+
+### Shared props type (new feature)
+
+V4 introduces support to set a props type from the outside. It allows sharing of the props type between components.
+
+```rescript
+type sharedProps<'a> = {x: 'a, y: string}
+
+module A = {
+  @react.component(:sharedProps<'a>)
+  let make = (~x, ~y) => React.string(x ++ y)
+}
+
+module B = {
+  @react.component(:sharedProps<'a>)
+  let make = (~x, ~y) => React.string(x ++ y)
+}
+
+// is transformed to
+module A = {
+  type props<'a> = sharedProps<'a>
+
+  let make = ({x, y, _}: props<'a>) => React.string(x ++ y)
+  ...
+}
+
+module B = {
+  type props<'a> = sharedProps<'a>
+
+  let make = ({x, y, _}: props<'a>) => React.string(x ++ y)
+  ...
+}
+```
