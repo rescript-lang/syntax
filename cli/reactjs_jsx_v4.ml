@@ -774,7 +774,10 @@ let transformStructureItem ~config mapper item =
             (Location.mkloc (Lident "props") pstr_loc)
             (match coreTypeOfAttr with
             | None -> makePropsTypeParams namedTypeList
-            | Some _ -> typVarsOfCoreType)
+            | Some _ -> (
+              match typVarsOfCoreType with
+              | [] -> []
+              | _ -> [Typ.any ()]))
         in
         (* type props<'x, 'y> = { x: 'x, y?: 'y, ... } *)
         let propsRecordType =
@@ -1149,7 +1152,10 @@ let transformStructureItem ~config mapper item =
                       makePropsTypeParams ~stripExplicitOption:true
                         ~stripExplicitJsNullableOfRef:hasForwardRef
                         namedTypeList
-                    | Some _ -> typVarsOfCoreType)))
+                    | Some _ -> (
+                      match typVarsOfCoreType with
+                      | [] -> []
+                      | _ -> [Typ.any ()]))))
               expression
           in
           (* let make = ({id, name, ...}: props<'id, 'name, ...>) => { ... } *)
@@ -1255,7 +1261,10 @@ let transformSignatureItem ~config _mapper item =
           (Location.mkloc (Lident "props") psig_loc)
           (match coreTypeOfAttr with
           | None -> makePropsTypeParams namedTypeList
-          | Some _ -> typVarsOfCoreType)
+          | Some _ -> (
+            match typVarsOfCoreType with
+            | [] -> []
+            | _ -> [Typ.any ()]))
       in
       let propsRecordType =
         makePropsRecordTypeSig ~coreTypeOfAttr ~typVarsOfCoreType "props"

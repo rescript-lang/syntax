@@ -14,7 +14,7 @@ module V4C1 = {
 module V4C2 = {
   type props<'a> = sharedProps<'a>
 
-  @react.component(: sharedProps<'a>) let make = ({x, y, _}: props<'a>) => React.string(x ++ y)
+  @react.component(: sharedProps<'a>) let make = ({x, y, _}: props<_>) => React.string(x ++ y)
   let make = {
     let \"SharedProps$V4C2" = (props: props<_>) => make(props)
 
@@ -26,7 +26,7 @@ module V4C3 = {
   type props<'a> = sharedProps<string, 'a>
 
   @react.component(: sharedProps<string, 'a>)
-  let make = ({x, y, _}: props<'a>) => React.string(x ++ y)
+  let make = ({x, y, _}: props<_>) => React.string(x ++ y)
   let make = {
     let \"SharedProps$V4C3" = (props: props<_>) => make(props)
 
@@ -54,13 +54,13 @@ module V4C5 = {
 module V4C6 = {
   type props<'a> = sharedProps<'a>
 
-  external make: React.componentLike<props<'a>, React.element> = "default"
+  external make: React.componentLike<props<_>, React.element> = "default"
 }
 
 module V4C7 = {
   type props<'a> = sharedProps<string, 'a>
 
-  external make: React.componentLike<props<'a>, React.element> = "default"
+  external make: React.componentLike<props<_>, React.element> = "default"
 }
 
 module V4C8 = {
@@ -85,7 +85,7 @@ module V4A1 = {
 module V4A2 = {
   type props<'a> = sharedProps<'a>
 
-  @react.component(: sharedProps<'a>) let make = ({x, y, _}: props<'a>) => React.string(x ++ y)
+  @react.component(: sharedProps<'a>) let make = ({x, y, _}: props<_>) => React.string(x ++ y)
   let make = {
     let \"SharedProps$V4A2" = (props: props<_>) => make(props)
 
@@ -97,7 +97,7 @@ module V4A3 = {
   type props<'a> = sharedProps<string, 'a>
 
   @react.component(: sharedProps<string, 'a>)
-  let make = ({x, y, _}: props<'a>) => React.string(x ++ y)
+  let make = ({x, y, _}: props<_>) => React.string(x ++ y)
   let make = {
     let \"SharedProps$V4A3" = (props: props<_>) => make(props)
 
@@ -125,13 +125,13 @@ module V4A5 = {
 module V4A6 = {
   type props<'a> = sharedProps<'a>
 
-  external make: React.componentLike<props<'a>, React.element> = "default"
+  external make: React.componentLike<props<_>, React.element> = "default"
 }
 
 module V4A7 = {
   type props<'a> = sharedProps<string, 'a>
 
-  external make: React.componentLike<props<'a>, React.element> = "default"
+  external make: React.componentLike<props<_>, React.element> = "default"
 }
 
 module V4A8 = {
