@@ -383,23 +383,23 @@ type sp = {x: string, y: string}
 type sp1<'a> = {x: 'a, y: string}
 type sp2<'a, 'b> = {x: 'a, y: 'b}
 
-module C1 = {
+module C = {
   @react.component(:sp)
   let make = (~x, ~y) => body
 }
 
-module C2 = {
+module C1 = {
   @react.component(:sp1<'a>)
   let make = (~x, ~y) => body
 }
 
-module C3 = {
+module C2 = {
   @react.component(:sp2<'a, 'b>)
   let make = (~x, ~y) => body
 }
 
-module C4 = {
+module C3 = {
   @react.component(:sp)
-  let make = (~x:int, ~y) => body // type annotation is ignored by type sp1
+  let make = (~x:int, ~y) => body // type annotation is ignored by type sp
 }
 ```
