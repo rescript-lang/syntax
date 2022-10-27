@@ -407,12 +407,12 @@ type sharedprops<'x, 'y> = {x: 'x, y: 'y, z: string}
 
 module C1 = {
   type props<'a, 'b> = sharedProps<'a, 'b>
-  let make = ({x, y, _}: props<'a, 'b>) => React.string(x ++ y ++ z)
+  let make = ({x, y, _}: props<_>) => React.string(x ++ y ++ z)
 }
 
 module C2 = {
   type props<'b> = sharedProps<string, 'b>
-  let make = ({x, y, _}: props<'b>) => React.string(x ++ y ++ z)
+  let make = ({x, y, _}: props<_>) => React.string(x ++ y ++ z)
 }
 
 module C3 = {
