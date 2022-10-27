@@ -552,8 +552,7 @@ let printConstant ?(templateLiteral = false) c =
         ]
   | Pconst_float (s, _) -> Doc.text s
   | Pconst_char c ->
-    let str = Res_utf8.encodeCodePoint c
-    in
+    let str = Res_utf8.encodeCodePoint c in
     Doc.text ("'" ^ str ^ "'")
 
 let printOptionalLabel attrs =

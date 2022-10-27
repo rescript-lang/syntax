@@ -847,7 +847,10 @@ let rec scan scanner =
         let offset = scanner.offset + 1 in
         next3 scanner;
         Token.Codepoint
-          {c = Char.code ch; original = (String.sub [@doesNotRaise]) scanner.src offset 1}
+          {
+            c = Char.code ch;
+            original = (String.sub [@doesNotRaise]) scanner.src offset 1;
+          }
       | ch, _ ->
         next scanner;
         let offset = scanner.offset in
