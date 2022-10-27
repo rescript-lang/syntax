@@ -379,30 +379,27 @@ let p: A.props<_> = {x: "x", y: "y"}
 V4 introduces support to set a props type from the outside. It allows sharing of the props type between components.
 
 ```rescript
-type sharedProps<'a> = {x: 'a, y: string}
+type sp = {x: string, y: string}
+type sp1<'a> = {x: 'a, y: string}
+type sp2<'a, 'b> = {x: 'a, y: 'b}
 
-module A = {
-  @react.component(:sharedProps<'a>)
-  let make = (~x, ~y) => React.string(x ++ y)
+module C1 = {
+  @react.component(:sp)
+  let make = (~x, ~y) => body
 }
 
-module B = {
-  @react.component(:sharedProps<'a>)
-  let make = (~x, ~y) => React.string(x ++ y)
+module C2 = {
+  @react.component(:sp1<'a>)
+  let make = (~x, ~y) => body
 }
 
-// is transformed to
-module A = {
-  type props<'a> = sharedProps<'a>
-
-  let make = ({x, y, _}: props<'a>) => React.string(x ++ y)
-  ...
+module C3 = {
+  @react.component(:sp2<'a, 'b>)
+  let make = (~x, ~y) => body
 }
 
-module B = {
-  type props<'a> = sharedProps<'a>
-
-  let make = ({x, y, _}: props<'a>) => React.string(x ++ y)
-  ...
+module C4 = {
+  @react.component(:sp)
+  let make = (~x:int, ~y) => body // type annotation is ignored by type sp1
 }
 ```
