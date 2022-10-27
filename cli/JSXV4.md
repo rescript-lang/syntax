@@ -376,30 +376,48 @@ let p: A.props<_> = {x: "x", y: "y"}
 
 ### Shared props type (new feature)
 
-V4 introduces support to set a props type from the outside. It allows sharing of the props type between components.
+V4 introduces support to control the definition of the `props` type by passing as argument to `@react.component` the body of the type definition of `props`. The main application is sharing a single type definition across several components. Here are a few examples:
+
 
 ```rescript
-type sp = {x: string, y: string}
-type sp1<'a> = {x: 'a, y: string}
-type sp2<'a, 'b> = {x: 'a, y: 'b}
-
-module C = {
-  @react.component(:sp)
-  let make = (~x, ~y) => body
-}
+type sharedprops<'x, 'y> = {x: 'x, y: 'y, z:string}
 
 module C1 = {
-  @react.component(:sp1<'a>)
-  let make = (~x, ~y) => body
+  @react.component(:sharedProps<'a, 'b>)
+  let make = (~x, ~y) => React.string(x ++ y ++ z)
 }
 
 module C2 = {
-  @react.component(:sp2<'a, 'b>)
-  let make = (~x, ~y) => body
+  @react.component(:sharedProps<string, 'b>)
+  let make = (~x, ~y) => React.string(x ++ y ++ z)
 }
 
 module C3 = {
-  @react.component(:sp)
-  let make = (~x:int, ~y) => body // type annotation is ignored by type sp
+  type myProps = sharedProps<int, int>
+  @react.component(:myProps)
+  let make = (~x, ~y) => React.int(x + y)
+}
+```
+
+The generated code (some details removed) looks like this:
+```rescript
+@@jsxConfig({version: 4, mode: "classic"})
+
+type sharedprops<'x, 'y> = {x: 'x, y: 'y, z: string}
+
+module C1 = {
+  type props<'a, 'b> = sharedProps<'a, 'b>
+  let make = ({x, y, _}: props<'a, 'b>) => React.string(x ++ y ++ z)
+}
+
+module C2 = {
+  type props<'b> = sharedProps<string, 'b>
+  let make = ({x, y, _}: props<'b>) => React.string(x ++ y ++ z)
+}
+
+module C3 = {
+  type myProps = sharedProps<int, int>
+  type props = myProps
+  let make = ({x, y, _}: props) => React.int(x + y)
 }
 ```
