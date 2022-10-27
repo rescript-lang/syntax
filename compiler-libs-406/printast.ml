@@ -59,7 +59,7 @@ let fmt_char_option f = function
 let fmt_constant f x =
   match x with
   | Pconst_integer (i,m) -> fprintf f "PConst_int (%s,%a)" i fmt_char_option m;
-  | Pconst_char (c) -> fprintf f "PConst_char %02x" (Char.code c);
+  | Pconst_char (i) -> fprintf f "PConst_char %02x" i;
   | Pconst_string (s, None) -> fprintf f "PConst_string(%S,None)" s;
   | Pconst_string (s, Some delim) ->
       fprintf f "PConst_string (%S,Some %S)" s delim;

@@ -36,7 +36,7 @@ val with_default_loc: loc -> (unit -> 'a) -> 'a
 (** {1 Constants} *)
 
 module Const : sig
-  val char : char -> constant
+  val char : int -> constant
   val string : ?quotation_delimiter:string -> string -> constant
   val integer : ?suffix:char -> string -> constant
   val int : ?suffix:char -> int -> constant

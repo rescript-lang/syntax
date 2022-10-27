@@ -552,19 +552,7 @@ let printConstant ?(templateLiteral = false) c =
         ]
   | Pconst_float (s, _) -> Doc.text s
   | Pconst_char c ->
-    let str =
-      match c with
-      | '\'' -> "\\'"
-      | '\\' -> "\\\\"
-      | '\n' -> "\\n"
-      | '\t' -> "\\t"
-      | '\r' -> "\\r"
-      | '\b' -> "\\b"
-      | ' ' .. '~' as c ->
-        let s = (Bytes.create [@doesNotRaise]) 1 in
-        Bytes.unsafe_set s 0 c;
-        Bytes.unsafe_to_string s
-      | c -> Res_utf8.encodeCodePoint (Obj.magic c)
+    let str = Res_utf8.encodeCodePoint c
     in
     Doc.text ("'" ^ str ^ "'")
 

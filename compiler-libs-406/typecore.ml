@@ -1097,7 +1097,7 @@ and type_pat_aux ~constrs ~labels ~no_existentials ~mode ~explode ~env
         else
           or_ ~loc:gloc
             (constant ~loc:gloc (Pconst_char c1))
-            (loop (Char.chr(Char.code c1 + 1)) c2)
+            (loop (c1 + 1) c2)
       in
       let p = if c1 <= c2 then loop c1 c2 else loop c2 c1 in
       let p = {p with ppat_loc=loc} in
@@ -3804,7 +3804,7 @@ and type_format loc str env =
         | Escaped_percent ->
           mk_constr "Escaped_percent" []
         | Scan_indic c ->
-          mk_constr "Scan_indic" [ mk_char c ]
+          mk_constr "Scan_indic" [ mk_char (Char.code c) ]
       and mk_formatting_gen : type a b c d e f .
           (a, b, c, d, e, f) formatting_gen -> Parsetree.expression =
         fun fmting -> match fmting with
@@ -3954,7 +3954,7 @@ and type_format loc str env =
         | String_literal (s, rest) ->
           mk_constr "String_literal" [ mk_string s; mk_fmt rest ]
         | Char_literal (c, rest) ->
-          mk_constr "Char_literal" [ mk_char c; mk_fmt rest ]
+          mk_constr "Char_literal" [ mk_char (Char.code c); mk_fmt rest ]
         | Format_arg (pad_opt, fmtty, rest) ->
           mk_constr "Format_arg" [
             mk_int_opt pad_opt; mk_fmtty fmtty; mk_fmt rest ]
