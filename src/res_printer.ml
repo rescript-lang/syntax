@@ -553,8 +553,7 @@ let printConstant ?(templateLiteral = false) c =
   | Pconst_float (s, _) -> Doc.text s
   | Pconst_char c ->
     let str =
-      if c <= 127 then
-        match Char.chr c with
+        match Char.unsafe_chr c with
         | '\'' -> "\\'"
         | '\\' -> "\\\\"
         | '\n' -> "\\n"
@@ -566,7 +565,6 @@ let printConstant ?(templateLiteral = false) c =
           Bytes.unsafe_set s 0 c;
           Bytes.unsafe_to_string s
         | _ -> Res_utf8.encodeCodePoint c
-      else Res_utf8.encodeCodePoint c
     in
     Doc.text ("'" ^ str ^ "'")
 
