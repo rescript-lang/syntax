@@ -428,7 +428,7 @@ let transformUppercaseCall3 ~config modulePath mapper jsxExprLoc callExprLoc
         (Exp.ident
            {
              loc = Location.none;
-             txt = Ldot (Lident "ReactPPX4Support", "createElementWithKey");
+             txt = Ldot (Lident "JsxPPXReactSupport", "createElementWithKey");
            })
         [key; (nolabel, makeID); (nolabel, props)]
     | None, [] ->
@@ -442,7 +442,7 @@ let transformUppercaseCall3 ~config modulePath mapper jsxExprLoc callExprLoc
            {
              loc = Location.none;
              txt =
-               Ldot (Lident "ReactPPX4Support", "createElementVariadicWithKey");
+               Ldot (Lident "JsxPPXReactSupport", "createElementVariadicWithKey");
            })
         [key; (nolabel, makeID); (nolabel, props); (nolabel, children)]
     | Some children, [] ->
