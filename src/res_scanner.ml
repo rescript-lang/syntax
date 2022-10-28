@@ -507,7 +507,7 @@ let scanEscape scanner =
         | '}' -> next scanner
         | _ -> ());
         let c = !x in
-        c
+        if Res_utf8.isValidCodePoint c then c else Res_utf8.repl
       | _ ->
         (* unicode escape sequence: '\u007A', exactly 4 hex digits *)
         convertNumber scanner ~n:4 ~base:16)
