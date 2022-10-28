@@ -30,9 +30,9 @@ let _ = ReactDOMRe.createDOMElementVariadic(
 
 @@jsxConfig({version: 4, mode: "classic"})
 
-let _ = ReactPPX4Support.createElementWithKey(~key="k", React.createElement, C.make, {})
-let _ = ReactPPX4Support.createElementWithKey(~key=?Some("k"), React.createElement, C.make, {})
-let _ = ReactPPX4Support.createElementWithKey(~key?, React.createElement, C.make, {})
+let _ = ReactPPX4Support.createElementWithKey(~key="k", C.make, {})
+let _ = ReactPPX4Support.createElementWithKey(~key=?Some("k"), C.make, {})
+let _ = ReactPPX4Support.createElementWithKey(~key?, C.make, {})
 let _ = ReactDOM.createDOMElementVariadic("div", ~props={key: "k"}, [])
 let _ = ReactDOM.createDOMElementVariadic("div", ~props={key: ?Some("k")}, [])
 let _ = ReactDOM.createDOMElementVariadic("div", ~props={key: ?key}, [])
