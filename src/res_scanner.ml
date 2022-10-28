@@ -866,7 +866,7 @@ let rec scan scanner =
             (String.sub [@doesNotRaise]) scanner.src offset length
           in
           next scanner;
-          Token.Codepoint {c = Obj.magic codepoint; original = contents})
+          Token.Codepoint {c = codepoint; original = contents})
         else (
           scanner.ch <- ch;
           scanner.offset <- offset;
