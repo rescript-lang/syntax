@@ -26,3 +26,5 @@ let f =
     then ((fun a -> fun b -> (a + b : int))[@res.async ])
     else (((fun c -> fun d -> (c - d : int)))[@res.async ]))
   [@ns.ternary ])
+let foo = async ~a:((34)[@ns.namedArgLoc ])
+let bar = ((fun ~a:((a)[@ns.namedArgLoc ]) -> a + 1)[@res.async ])
