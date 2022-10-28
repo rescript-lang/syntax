@@ -401,9 +401,6 @@ let transformUppercaseCall3 ~config modulePath mapper jsxExprLoc callExprLoc
   let makeID =
     Exp.ident ~loc:callExprLoc {txt = ident ~suffix:"make"; loc = callExprLoc}
   in
-  let makeReactCreateElement name =
-    Exp.ident {txt = Ldot (Lident "React", name); loc = Location.none}
-  in
   match config.mode with
   (* The new jsx transform *)
   | "automatic" ->
@@ -433,12 +430,7 @@ let transformUppercaseCall3 ~config modulePath mapper jsxExprLoc callExprLoc
              loc = Location.none;
              txt = Ldot (Lident "ReactPPX4Support", "createElementWithKey");
            })
-        [
-          key;
-          (nolabel, makeReactCreateElement "createElement");
-          (nolabel, makeID);
-          (nolabel, props);
-        ]
+        [key; (nolabel, makeID); (nolabel, props)]
     | None, [] ->
       Exp.apply ~attrs
         (Exp.ident
@@ -452,13 +444,7 @@ let transformUppercaseCall3 ~config modulePath mapper jsxExprLoc callExprLoc
              txt =
                Ldot (Lident "ReactPPX4Support", "createElementVariadicWithKey");
            })
-        [
-          key;
-          (nolabel, makeReactCreateElement "createElementVariadic");
-          (nolabel, makeID);
-          (nolabel, props);
-          (nolabel, children);
-        ]
+        [key; (nolabel, makeID); (nolabel, props); (nolabel, children)]
     | Some children, [] ->
       Exp.apply ~attrs
         (Exp.ident
