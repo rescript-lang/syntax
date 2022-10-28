@@ -26,8 +26,8 @@ module V4C = {
     ReactDOM.createElement(
       React.fragment,
       [
-        ReactPPX4Support.createElementWithKey(~key="k", V4CA.make, {}),
-        ReactPPX4Support.createElementWithKey(~key="k", V4CB.make, {}),
+        JsxPPXReactSupport.createElementWithKey(~key="k", V4CA.make, {}),
+        JsxPPXReactSupport.createElementWithKey(~key="k", V4CB.make, {}),
       ],
     )
   let make = {
