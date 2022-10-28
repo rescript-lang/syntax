@@ -464,7 +464,7 @@ let scanEscape scanner =
       next scanner
     done;
     let c = !x in
-    c
+    if Res_utf8.isValidCodePoint c then c else Res_utf8.repl
   in
   let codepoint =
     match scanner.ch with
