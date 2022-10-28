@@ -27,3 +27,6 @@ let async = {
 }
 
 let f = isPositive ? (async (a, b) : int => a + b) : async (c, d) : int => c - d
+
+let foo = async(~a=34)
+let bar = async(~a)=>a+1

@@ -49,6 +49,8 @@
 - Fix issue where printing nested pipe discards await https://github.com/rescript-lang/syntax/issues/687
 - Fix issue where the JSX key type is not an optional string https://github.com/rescript-lang/syntax/pull/693
 - Fix issue where the JSX fragment withouth children build error https://github.com/rescript-lang/syntax/pull/704
+- Fix issue where async as an id cannot be used with application and labelled arguments https://github.com/rescript-lang/syntax/issues/707
+
 
 #### :eyeglasses: Spec Compliance
 
