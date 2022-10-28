@@ -454,7 +454,7 @@ let transformUppercaseCall3 ~config modulePath mapper jsxExprLoc callExprLoc
            })
         [
           key;
-          (nolabel, makeReactCreateElement "createElementVariadicWithKey");
+          (nolabel, makeReactCreateElement "createElementVariadic");
           (nolabel, makeID);
           (nolabel, props);
           (nolabel, children);
