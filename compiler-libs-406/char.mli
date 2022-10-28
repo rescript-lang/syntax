@@ -70,3 +70,6 @@ val equal: t -> t -> bool
 (* The following is for system use only. Do not call directly. *)
 
 external unsafe_chr : int -> char = "%identity"
+
+val safe_string_of_int_as_char : int -> string
+

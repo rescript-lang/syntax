@@ -192,7 +192,7 @@ let rec longident f = function
 let longident_loc f x = pp f "%a" longident x.txt
 
 let constant f = function
-  | Pconst_char i -> pp f "%C" (Char.unsafe_chr i) (* todo: consider safety *)
+  | Pconst_char i -> pp f "%s" (Char.safe_string_of_int_as_char i)
   | Pconst_string (i, None) -> pp f "%S" i
   | Pconst_string (i, Some delim) -> pp f "{%s|%s|%s}" delim i delim
   | Pconst_integer (i, None) -> paren (i.[0]='-') (fun f -> pp f "%s") f i
