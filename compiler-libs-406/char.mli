@@ -71,5 +71,3 @@ val equal: t -> t -> bool
 
 external unsafe_chr : int -> char = "%identity"
 
-val safe_string_of_int_as_char : int -> string
-
