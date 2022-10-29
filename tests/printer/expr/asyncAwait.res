@@ -102,3 +102,13 @@ let aw = (@foo (server->start))->foo
 
 let foo = async(~a=34)
 let bar = async(~a)=>a+1
+
+let a1 = await 3 + await 4
+let a2 = await 3 ** await 4
+let a3 = await foo->bar(~arg)
+let a4 = await foo.bar.baz
+
+let b1  = await (3+4)
+let b2 = await (3**4)
+let b3 = await (foo->bar(~arg))
+let b4 = await (foo.bar.baz)

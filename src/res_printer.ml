@@ -3330,13 +3330,13 @@ and printExpression ~customLayout (e : Parsetree.expression) cmtTbl =
     if ParsetreeViewer.hasAwaitAttribute e.pexp_attributes then
       let rhs =
         match
-          Parens.lazyOrAssertOrAwaitExprRhs
+          Parens.lazyOrAssertOrAwaitExprRhs ~inAwait:true
             {
               e with
               pexp_attributes =
                 List.filter
                   (function
-                    | {Location.txt = "res.await" | "ns.braces"}, _ -> false
+                    | {Location.txt = "ns.braces"}, _ -> false
                     | _ -> true)
                   e.pexp_attributes;
             }
@@ -3614,11 +3614,13 @@ and printBinaryExpression ~customLayout (expr : Parsetree.expression) cmtTbl =
               if isAwait then
                 Doc.concat
                   [
+                    Doc.lparen;
                     Doc.text "await ";
                     Doc.lparen;
                     leftPrinted;
                     printBinaryOperator ~inlineRhs:false operator;
                     rightPrinted;
+                    Doc.rparen;
                     Doc.rparen;
                   ]
               else

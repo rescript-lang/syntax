@@ -175,7 +175,7 @@ let flattenOperandRhs parentOperator rhs =
   | _ when ParsetreeViewer.isTernaryExpr rhs -> true
   | _ -> false
 
-let lazyOrAssertOrAwaitExprRhs expr =
+let lazyOrAssertOrAwaitExprRhs ?(inAwait = false) expr =
   let optBraces, _ = ParsetreeViewer.processBracesAttr expr in
   match optBraces with
   | Some ({Location.loc = bracesLoc}, _) -> Braced bracesLoc
@@ -186,6 +186,16 @@ let lazyOrAssertOrAwaitExprRhs expr =
            | _ :: _ -> true
            | [] -> false ->
       Parenthesized
+    | {
+     pexp_desc =
+       Pexp_apply ({pexp_desc = Pexp_ident {txt = Longident.Lident operator}}, _);
+    }
+      when inAwait
+           && ParsetreeViewer.isBinaryExpression expr
+           && ParsetreeViewer.hasAwaitAttribute expr.pexp_attributes
+           && ParsetreeViewer.operatorPrecedence operator
+              >= ParsetreeViewer.operatorPrecedence "|." ->
+      Nothing
     | expr when ParsetreeViewer.isBinaryExpression expr -> Parenthesized
     | {
      pexp_desc =
@@ -202,7 +212,9 @@ let lazyOrAssertOrAwaitExprRhs expr =
        | Pexp_try _ | Pexp_while _ | Pexp_for _ | Pexp_ifthenelse _ );
     } ->
       Parenthesized
-    | _ when ParsetreeViewer.hasAwaitAttribute expr.pexp_attributes ->
+    | _
+      when (not inAwait)
+           && ParsetreeViewer.hasAwaitAttribute expr.pexp_attributes ->
       Parenthesized
     | _ -> Nothing)
 

@@ -28,3 +28,7 @@ let f =
   [@ns.ternary ])
 let foo = async ~a:((34)[@ns.namedArgLoc ])
 let bar = ((fun ~a:((a)[@ns.namedArgLoc ]) -> a + 1)[@res.async ])
+let ex1 = ((3)[@res.await ]) + ((4)[@res.await ])
+let ex2 = ((3)[@res.await ]) ** ((4)[@res.await ])
+let ex3 = ((foo |. (bar ~arg:((arg)[@ns.namedArgLoc ])))[@res.await ])
+let ex4 = (((foo.bar).baz)[@res.await ])
