@@ -192,11 +192,20 @@ let rec longident f = function
 let longident_loc f x = pp f "%a" longident x.txt
 
 let string_of_int_as_char i =
-  if i >= 0 && i <= 255
-  then
-    Printf.sprintf "\'%s\'" (Char.escaped (Char.unsafe_chr i))
-  else
-    Printf.sprintf "\'\\%d\'" i
+  let str = match Char.unsafe_chr i with
+    | '\'' -> "\\'"
+    | '\\' -> "\\\\"
+    | '\n' -> "\\n"
+    | '\t' -> "\\t"
+    | '\r' -> "\\r"
+    | '\b' -> "\\b"
+    | ' ' .. '~' as c ->
+       let s = (Bytes.create [@doesNotRaise]) 1 in
+       Bytes.unsafe_set s 0 c;
+       Bytes.unsafe_to_string s
+    | _ ->  Printf.sprintf "\\%d" i
+  in
+  Printf.sprintf "\'%s\'" str
 
 let constant f = function
   | Pconst_char i -> pp f "%s" (string_of_int_as_char i)

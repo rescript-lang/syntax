@@ -74,12 +74,3 @@ type t = char
 
 let compare c1 c2 = code c1 - code c2
 let equal (c1: t) (c2: t) = compare c1 c2 = 0
-
-let safe_string_of_int_as_char i =
-  if i >= 0 && i <= 255
-  then
-    Printf.sprintf "\'%s\'" (escaped (unsafe_chr i))
-  else
-    Printf.sprintf "\'\\%d\'" i
-
-
