@@ -464,24 +464,23 @@ let scanEscape scanner =
       next scanner
     done;
     let c = !x in
-    if Res_utf8.isValidCodePoint c then Char.unsafe_chr c
-    else Char.unsafe_chr Res_utf8.repl
+    if Res_utf8.isValidCodePoint c then c else Res_utf8.repl
   in
   let codepoint =
     match scanner.ch with
     | '0' .. '9' -> convertNumber scanner ~n:3 ~base:10
     | 'b' ->
       next scanner;
-      '\008'
+      8
     | 'n' ->
       next scanner;
-      '\010'
+      10
     | 'r' ->
       next scanner;
-      '\013'
+      13
     | 't' ->
       next scanner;
-      '\009'
+      009
     | 'x' ->
       next scanner;
       convertNumber scanner ~n:2 ~base:16
@@ -508,14 +507,13 @@ let scanEscape scanner =
         | '}' -> next scanner
         | _ -> ());
         let c = !x in
-        if Res_utf8.isValidCodePoint c then Char.unsafe_chr c
-        else Char.unsafe_chr Res_utf8.repl
+        if Res_utf8.isValidCodePoint c then c else Res_utf8.repl
       | _ ->
         (* unicode escape sequence: '\u007A', exactly 4 hex digits *)
         convertNumber scanner ~n:4 ~base:16)
     | ch ->
       next scanner;
-      ch
+      Char.code ch
   in
   let contents =
     (String.sub [@doesNotRaise]) scanner.src offset (scanner.offset - offset)
@@ -849,7 +847,10 @@ let rec scan scanner =
         let offset = scanner.offset + 1 in
         next3 scanner;
         Token.Codepoint
-          {c = ch; original = (String.sub [@doesNotRaise]) scanner.src offset 1}
+          {
+            c = Char.code ch;
+            original = (String.sub [@doesNotRaise]) scanner.src offset 1;
+          }
       | ch, _ ->
         next scanner;
         let offset = scanner.offset in
@@ -865,7 +866,7 @@ let rec scan scanner =
             (String.sub [@doesNotRaise]) scanner.src offset length
           in
           next scanner;
-          Token.Codepoint {c = Obj.magic codepoint; original = contents})
+          Token.Codepoint {c = codepoint; original = contents})
         else (
           scanner.ch <- ch;
           scanner.offset <- offset;

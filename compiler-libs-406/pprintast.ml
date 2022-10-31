@@ -191,8 +191,24 @@ let rec longident f = function
 
 let longident_loc f x = pp f "%a" longident x.txt
 
+let string_of_int_as_char i =
+  let str = match Char.unsafe_chr i with
+    | '\'' -> "\\'"
+    | '\\' -> "\\\\"
+    | '\n' -> "\\n"
+    | '\t' -> "\\t"
+    | '\r' -> "\\r"
+    | '\b' -> "\\b"
+    | ' ' .. '~' as c ->
+       let s = (Bytes.create [@doesNotRaise]) 1 in
+       Bytes.unsafe_set s 0 c;
+       Bytes.unsafe_to_string s
+    | _ ->  Printf.sprintf "\\%d" i
+  in
+  Printf.sprintf "\'%s\'" str
+
 let constant f = function
-  | Pconst_char i -> pp f "%C"  i
+  | Pconst_char i -> pp f "%s" (string_of_int_as_char i)
   | Pconst_string (i, None) -> pp f "%S" i
   | Pconst_string (i, Some delim) -> pp f "{%s|%s|%s}" delim i delim
   | Pconst_integer (i, None) -> paren (i.[0]='-') (fun f -> pp f "%s") f i

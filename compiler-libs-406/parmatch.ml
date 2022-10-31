@@ -376,7 +376,7 @@ let is_cons = function
 
 let pretty_const c = match c with
 | Const_int i -> Printf.sprintf "%d" i
-| Const_char c -> Printf.sprintf "%C" c
+| Const_char i -> Printf.sprintf "%s" (Pprintast.string_of_int_as_char i)
 | Const_string (s, _) -> Printf.sprintf "%S" s
 | Const_float f -> Printf.sprintf "%s" f
 | Const_int32 i -> Printf.sprintf "%ldl" i
@@ -1093,7 +1093,7 @@ let build_other ext env = match env with
     let rec find_other i imax =
       if i > imax then raise Not_found
       else
-        let ci = Char.chr i in
+        let ci = i in
         if List.mem ci all_chars then
           find_other (i+1) imax
         else
