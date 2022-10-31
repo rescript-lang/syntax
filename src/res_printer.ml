@@ -3612,15 +3612,18 @@ and printBinaryExpression ~customLayout (expr : Parsetree.expression) cmtTbl =
             in
             let doc =
               if isAwait then
+                let parens =
+                  Res_parens.binaryOperatorInsideAwaitNeedsParens operator
+                in
                 Doc.concat
                   [
                     Doc.lparen;
                     Doc.text "await ";
-                    Doc.lparen;
+                    (if parens then Doc.lparen else Doc.nil);
                     leftPrinted;
                     printBinaryOperator ~inlineRhs:false operator;
                     rightPrinted;
-                    Doc.rparen;
+                    (if parens then Doc.rparen else Doc.nil);
                     Doc.rparen;
                   ]
               else
