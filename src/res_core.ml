@@ -3134,7 +3134,8 @@ and parseAwaitExpression p =
   let awaitLoc = mkLoc p.Parser.startPos p.endPos in
   let awaitAttr = makeAwaitAttr awaitLoc in
   Parser.expect Await p;
-  let expr = parseUnaryExpr p in
+  let tokenPrec = Token.precedence MinusGreater in
+  let expr = parseBinaryExpr ~context:OrdinaryExpr p tokenPrec in
   {
     expr with
     pexp_attributes = awaitAttr :: expr.pexp_attributes;
