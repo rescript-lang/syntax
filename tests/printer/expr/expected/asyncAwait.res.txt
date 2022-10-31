@@ -121,6 +121,7 @@ let f13 = (@a @b ~x) => 3
 
 let aw = (await server->start)->foo
 let aw = @foo (server->start)->foo
+let aw = (await (3 ** 4))->foo
 
 let foo = async(~a=34)
 let bar = async (~a) => a + 1
