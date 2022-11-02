@@ -1580,13 +1580,10 @@ and printTypExpr ~customLayout (typExpr : Parsetree.core_type) cmtTbl =
       if returnTypeNeedsParens then Doc.concat [Doc.lparen; doc; Doc.rparen]
       else doc
     in
-    let _uncurried, attrs =
-      ParsetreeViewer.processUncurriedAttribute attrsBefore
-    in
     match args with
     | [] -> Doc.nil
     | [([], Nolabel, n)] when not uncurried ->
-      let hasAttrsBefore = not (attrs = []) in
+      let hasAttrsBefore = not (attrsBefore = []) in
       let attrs =
         if hasAttrsBefore then
           printAttributes ~customLayout ~inline:true attrsBefore cmtTbl
@@ -1616,7 +1613,9 @@ and printTypExpr ~customLayout (typExpr : Parsetree.core_type) cmtTbl =
                else Doc.concat [typDoc; Doc.text " => "; returnDoc]);
            ])
     | args ->
-      let attrs = printAttributes ~customLayout ~inline:true attrs cmtTbl in
+      let attrs =
+        printAttributes ~customLayout ~inline:true attrsBefore cmtTbl
+      in
       let renderedArgs =
         Doc.concat
           [
@@ -1918,10 +1917,6 @@ and printObjectField ~customLayout (field : Parsetree.object_field) cmtTbl =
  * type t = (~foo: string, ~bar: float=?, unit) => unit
  * i.e. ~foo: string, ~bar: float *)
 and printTypeParameter ~customLayout (attrs, lbl, typ) cmtTbl =
-  let isUncurried, attrs = ParsetreeViewer.processUncurriedAttribute attrs in
-  let uncurried =
-    if isUncurried then Doc.concat [Doc.dot; Doc.space] else Doc.nil
-  in
   let attrs = printAttributes ~customLayout attrs cmtTbl in
   let label =
     match lbl with
@@ -1947,11 +1942,7 @@ and printTypeParameter ~customLayout (attrs, lbl, typ) cmtTbl =
     Doc.group
       (Doc.concat
          [
-           uncurried;
-           attrs;
-           label;
-           printTypExpr ~customLayout typ cmtTbl;
-           optionalIndicator;
+           attrs; label; printTypExpr ~customLayout typ cmtTbl; optionalIndicator;
          ])
   in
   printComments doc cmtTbl loc
