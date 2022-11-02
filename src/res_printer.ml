@@ -1669,7 +1669,8 @@ and printTypExpr ~customLayout (typExpr : Parsetree.core_type) cmtTbl =
       printObject ~customLayout ~inline:false fields openFlag cmtTbl
     | Ptyp_arrow _ -> printArrow ~uncurried:false typExpr
     | Ptyp_constr ({txt = Ldot (Ldot (Lident "Js", "Fn"), arity)}, [tArg])
-      when String.length arity >= 5 && String.sub arity 0 5 = "arity" ->
+      when String.length arity >= 5
+           && (String.sub [@doesNotRaise]) arity 0 5 = "arity" ->
       printArrow ~uncurried:true tArg
     | Ptyp_constr (longidentLoc, [{ptyp_desc = Ptyp_object (fields, openFlag)}])
       ->

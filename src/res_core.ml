@@ -4141,17 +4141,13 @@ and parseEs6ArrowType ~attrs p =
       List.fold_right
         (fun (uncurried, attrs, argLbl, (typ : Parsetree.core_type), startPos) t ->
           if uncurried then
-            let rec typeArity (t : Parsetree.core_type) =
-              match t.ptyp_desc with
-              | Ptyp_arrow (_, _, tRet) -> 1 + typeArity tRet
-              | _ -> 0
-            in
             let isUnit =
               match typ.ptyp_desc with
               | Ptyp_constr ({txt = Lident "unit"}, []) -> true
               | _ -> false
             in
-            let arity = 1 + typeArity t in
+            let _, args, _ = Res_parsetree_viewer.arrowType t in
+            let arity = 1 + List.length args in
             let arity = if isUnit && arity = 1 then 0 else arity in
             let loc = mkLoc startPos endPos in
             let tArg = Ast_helper.Typ.arrow ~loc ~attrs argLbl typ t in
