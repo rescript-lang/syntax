@@ -1568,6 +1568,79 @@ and printLabelDeclaration ~customLayout (ld : Parsetree.label_declaration)
        ])
 
 and printTypExpr ~customLayout (typExpr : Parsetree.core_type) cmtTbl =
+  let printArrow ~uncurried typExpr =
+    let attrsBefore, args, returnType = ParsetreeViewer.arrowType typExpr in
+    let returnTypeNeedsParens =
+      match returnType.ptyp_desc with
+      | Ptyp_alias _ -> true
+      | _ -> false
+    in
+    let returnDoc =
+      let doc = printTypExpr ~customLayout returnType cmtTbl in
+      if returnTypeNeedsParens then Doc.concat [Doc.lparen; doc; Doc.rparen]
+      else doc
+    in
+    let _uncurried, attrs =
+      ParsetreeViewer.processUncurriedAttribute attrsBefore
+    in
+    match args with
+    | [] -> Doc.nil
+    | [([], Nolabel, n)] when not uncurried ->
+      let hasAttrsBefore = not (attrs = []) in
+      let attrs =
+        if hasAttrsBefore then
+          printAttributes ~customLayout ~inline:true attrsBefore cmtTbl
+        else Doc.nil
+      in
+      let typDoc =
+        let doc = printTypExpr ~customLayout n cmtTbl in
+        match n.ptyp_desc with
+        | Ptyp_arrow _ | Ptyp_tuple _ | Ptyp_alias _ -> addParens doc
+        | _ -> doc
+      in
+      Doc.group
+        (Doc.concat
+           [
+             Doc.group attrs;
+             Doc.group
+               (if hasAttrsBefore then
+                Doc.concat
+                  [
+                    Doc.lparen;
+                    Doc.indent
+                      (Doc.concat
+                         [Doc.softLine; typDoc; Doc.text " => "; returnDoc]);
+                    Doc.softLine;
+                    Doc.rparen;
+                  ]
+               else Doc.concat [typDoc; Doc.text " => "; returnDoc]);
+           ])
+    | args ->
+      let attrs = printAttributes ~customLayout ~inline:true attrs cmtTbl in
+      let renderedArgs =
+        Doc.concat
+          [
+            attrs;
+            Doc.text "(";
+            Doc.indent
+              (Doc.concat
+                 [
+                   Doc.softLine;
+                   (if uncurried then Doc.concat [Doc.dot; Doc.space]
+                   else Doc.nil);
+                   Doc.join
+                     ~sep:(Doc.concat [Doc.comma; Doc.line])
+                     (List.map
+                        (fun tp -> printTypeParameter ~customLayout tp cmtTbl)
+                        args);
+                 ]);
+            Doc.trailingComma;
+            Doc.softLine;
+            Doc.text ")";
+          ]
+      in
+      Doc.group (Doc.concat [renderedArgs; Doc.text " => "; returnDoc])
+  in
   let renderedType =
     match typExpr.ptyp_desc with
     | Ptyp_any -> Doc.text "_"
@@ -1594,6 +1667,10 @@ and printTypExpr ~customLayout (typExpr : Parsetree.core_type) cmtTbl =
     (* object printings *)
     | Ptyp_object (fields, openFlag) ->
       printObject ~customLayout ~inline:false fields openFlag cmtTbl
+    | Ptyp_arrow _ -> printArrow ~uncurried:false typExpr
+    | Ptyp_constr ({txt = Ldot (Ldot (Lident "Js", "Fn"), arity)}, [tArg])
+      when String.length arity >= 5 && String.sub arity 0 5 = "arity" ->
+      printArrow ~uncurried:true tArg
     | Ptyp_constr (longidentLoc, [{ptyp_desc = Ptyp_object (fields, openFlag)}])
       ->
       (* for foo<{"a": b}>, when the object is long and needs a line break, we
@@ -1641,78 +1718,6 @@ and printTypExpr ~customLayout (typExpr : Parsetree.core_type) cmtTbl =
                Doc.softLine;
                Doc.greaterThan;
              ]))
-    | Ptyp_arrow _ -> (
-      let attrsBefore, args, returnType = ParsetreeViewer.arrowType typExpr in
-      let returnTypeNeedsParens =
-        match returnType.ptyp_desc with
-        | Ptyp_alias _ -> true
-        | _ -> false
-      in
-      let returnDoc =
-        let doc = printTypExpr ~customLayout returnType cmtTbl in
-        if returnTypeNeedsParens then Doc.concat [Doc.lparen; doc; Doc.rparen]
-        else doc
-      in
-      let isUncurried, attrs =
-        ParsetreeViewer.processUncurriedAttribute attrsBefore
-      in
-      match args with
-      | [] -> Doc.nil
-      | [([], Nolabel, n)] when not isUncurried ->
-        let hasAttrsBefore = not (attrs = []) in
-        let attrs =
-          if hasAttrsBefore then
-            printAttributes ~customLayout ~inline:true attrsBefore cmtTbl
-          else Doc.nil
-        in
-        let typDoc =
-          let doc = printTypExpr ~customLayout n cmtTbl in
-          match n.ptyp_desc with
-          | Ptyp_arrow _ | Ptyp_tuple _ | Ptyp_alias _ -> addParens doc
-          | _ -> doc
-        in
-        Doc.group
-          (Doc.concat
-             [
-               Doc.group attrs;
-               Doc.group
-                 (if hasAttrsBefore then
-                  Doc.concat
-                    [
-                      Doc.lparen;
-                      Doc.indent
-                        (Doc.concat
-                           [Doc.softLine; typDoc; Doc.text " => "; returnDoc]);
-                      Doc.softLine;
-                      Doc.rparen;
-                    ]
-                 else Doc.concat [typDoc; Doc.text " => "; returnDoc]);
-             ])
-      | args ->
-        let attrs = printAttributes ~customLayout ~inline:true attrs cmtTbl in
-        let renderedArgs =
-          Doc.concat
-            [
-              attrs;
-              Doc.text "(";
-              Doc.indent
-                (Doc.concat
-                   [
-                     Doc.softLine;
-                     (if isUncurried then Doc.concat [Doc.dot; Doc.space]
-                     else Doc.nil);
-                     Doc.join
-                       ~sep:(Doc.concat [Doc.comma; Doc.line])
-                       (List.map
-                          (fun tp -> printTypeParameter ~customLayout tp cmtTbl)
-                          args);
-                   ]);
-              Doc.trailingComma;
-              Doc.softLine;
-              Doc.text ")";
-            ]
-        in
-        Doc.group (Doc.concat [renderedArgs; Doc.text " => "; returnDoc]))
     | Ptyp_tuple types ->
       printTupleType ~customLayout ~inline:false types cmtTbl
     | Ptyp_poly ([], typ) -> printTypExpr ~customLayout typ cmtTbl
