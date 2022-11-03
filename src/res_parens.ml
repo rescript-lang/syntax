@@ -15,6 +15,16 @@ let expr expr =
     | {pexp_desc = Pexp_constraint _} -> Parenthesized
     | _ -> Nothing)
 
+let exprRecordRowRhs e =
+  let kind = expr e in
+  match kind with
+  | Nothing when Res_parsetree_viewer.hasOptionalAttribute e.pexp_attributes
+    -> (
+    match e.pexp_desc with
+    | Pexp_ifthenelse _ -> Parenthesized
+    | _ -> kind)
+  | _ -> kind
+
 let callExpr expr =
   let optBraces, _ = ParsetreeViewer.processBracesAttr expr in
   match optBraces with
