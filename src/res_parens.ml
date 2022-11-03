@@ -21,7 +21,7 @@ let exprRecordRowRhs e =
   | Nothing when Res_parsetree_viewer.hasOptionalAttribute e.pexp_attributes
     -> (
     match e.pexp_desc with
-    | Pexp_ifthenelse _ -> Parenthesized
+    | Pexp_ifthenelse _ | Pexp_fun _ -> Parenthesized
     | _ -> kind)
   | _ -> kind
 

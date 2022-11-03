@@ -91,3 +91,4 @@ let optParen = { x:3, y: ? (someBool ? Some("") : None) }
 let optParen = { x:3, y: ? (3+4) }
 let optParen = { x:3, y: ? (foo(bar)) }
 let optParen = { x:3, y: ? (foo->bar) }
+let optParen = { x:3, y: ? (()=>3) }
