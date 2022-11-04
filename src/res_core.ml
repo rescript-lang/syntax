@@ -1556,7 +1556,7 @@ and parseParameter p =
             let loc = mkLoc startPos p.prevEndPos in
             ( [],
               Asttypes.Labelled lblName,
-              Ast_helper.Pat.var ~attrs:([propLocAttr] @ attrs) ~loc
+              Ast_helper.Pat.var ~attrs:(propLocAttr :: attrs) ~loc
                 (Location.mkloc lblName loc) )
           | Colon ->
             let lblEnd = p.prevEndPos in
@@ -1566,7 +1566,7 @@ and parseParameter p =
             let pat =
               let pat = Ast_helper.Pat.var ~loc (Location.mkloc lblName loc) in
               let loc = mkLoc startPos p.prevEndPos in
-              Ast_helper.Pat.constraint_ ~attrs:([propLocAttr] @ attrs) ~loc pat
+              Ast_helper.Pat.constraint_ ~attrs:(propLocAttr :: attrs) ~loc pat
                 typ
             in
             ([], Asttypes.Labelled lblName, pat)
