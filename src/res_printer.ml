@@ -5188,7 +5188,7 @@ and printExpressionRecordRow ~customLayout (lbl, expr) cmtTbl punningAllowed =
             Doc.text ": ";
             printOptionalLabel expr.pexp_attributes;
             (let doc = printExpressionWithComments ~customLayout expr cmtTbl in
-             match Parens.expr expr with
+             match Parens.exprRecordRowRhs expr with
              | Parens.Parenthesized -> addParens doc
              | Braced braces -> printBraces doc expr braces
              | Nothing -> doc);
