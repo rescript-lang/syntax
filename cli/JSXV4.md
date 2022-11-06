@@ -22,9 +22,10 @@ To build certain dependencies in V3 compatibility mode, whatever the version use
 
 ```json
 "jsx": {
- "version": 4,
- "v3-dependencies": ["rescript-react-native", "rescript-react-navigation"]
-}
+  "version": 3,
+  "v3-dependencies": ["rescript-react-native", "rescript-react-navigation"]
+},
+"bsc-flags": ["-open ReactV3"]
 ```
 
 In V3 compatibility mode, the listed dependencies are built in V3 mode, and in addition `-open ReatcV3` is added to the compiler options, so that the `ReactV3` compatibility module in rescript-react is used.
@@ -378,7 +379,6 @@ let p: A.props<_> = {x: "x", y: "y"}
 
 V4 introduces support to control the definition of the `props` type by passing as argument to `@react.component` the body of the type definition of `props`. The main application is sharing a single type definition across several components. Here are a few examples:
 
-
 ```rescript
 type sharedprops<'x, 'y> = {x: 'x, y: 'y, z:string}
 
@@ -400,6 +400,7 @@ module C3 = {
 ```
 
 The generated code (some details removed) looks like this:
+
 ```rescript
 @@jsxConfig({version: 4, mode: "classic"})
 
