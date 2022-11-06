@@ -18,7 +18,9 @@ To build an entire project in V4 mode, including all its dependencies, use the n
 ### Dependency-level config
 
 Dependencies inherit the `jsx` configuration of the root project. So if the root project uses V4 then the dependencies are built using V4, and the same for V3.
-To build certain dependencies in V3 compatibility mode, whatever the version used in the root project, use `"v3-dependencies"` as in the example:
+To build certain dependencies in V3 compatibility mode, whatever the version used in the root project, use `"v3-dependencies"`: the listed dependencies will be built in V3 mode, and in addition `-open ReatcV3` is added to the compiler options.
+
+For example, suppose a V3 project uses rescript-react 0.11, which requires compatibility mode if compiled with V3, and that 2 dependencies `"rescript-react-native", "rescript-react-navigation"` only build with compatibility more. Then the setting will be:
 
 ```json
 "jsx": {
@@ -28,7 +30,14 @@ To build certain dependencies in V3 compatibility mode, whatever the version use
 "bsc-flags": ["-open ReactV3"]
 ```
 
-In V3 compatibility mode, the listed dependencies are built in V3 mode, and in addition `-open ReatcV3` is added to the compiler options, so that the `ReactV3` compatibility module in rescript-react is used.
+Another example is a V4 project that also uses `"rescript-react-native", "rescript-react-navigation"`. Then the setting will be:
+
+```json
+"jsx": {
+  "version": 4,
+  "v3-dependencies": ["rescript-react-native", "rescript-react-navigation"]
+}
+```
 
 > Note: do not add @rescript/react to the v3-dependencies, or it will cause a cyclic dependencies error.
 
