@@ -1,10 +1,8 @@
-# ReScript Syntax ![Tests](https://github.com/rescript-lang/syntax/workflows/CI/badge.svg)
+# ⛔️ DEPRECATED ReScript Syntax
 
-Documentation: https://rescript-lang.org/docs/manual/latest/overview
+**The ReScript syntax sources are now a part of the compiler repo (see https://github.com/rescript-lang/rescript-compiler/tree/master/res_syntax).**
 
-This repo is the source of truth for the ReScript parser & printer. Issues go here.
-
-**You don't need this repo to use the ReScript syntax**. This comes with ReScript >=8.1. This repo is for syntax developers.
+**Please create any new issues or PRs directly in the compiler repo.**
 
 ## Contribute
 
