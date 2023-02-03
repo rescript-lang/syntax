@@ -723,7 +723,7 @@ let argToType ~newtypes ~(typeConstraints : core_type option) types
       getLabel name,
       attrs,
       loc,
-      {type_ with ptyp_attributes = optionalAttrs} )
+      {type_ with ptyp_attributes = optionalAttr :: type_.ptyp_attributes} )
     :: types
   | Some type_, name, _ -> (false, getLabel name, attrs, loc, type_) :: types
   | None, name, _ when isOptional name ->
