@@ -26,7 +26,7 @@ module Rec = {
       make(({}: props))
     }
     and make = {
-      let \"V4$Rec" = props => make(props)
+      let \"V4$Rec" = props => \"make$Internal"(props)
 
       \"V4$Rec"
     }
