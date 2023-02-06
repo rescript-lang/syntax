@@ -16,3 +16,20 @@ module AnotherName = {
     \"V4$AnotherName$anotherName"
   }
 }
+
+module Rec = {
+  type props = {}
+
+  let rec make = {
+    @merlin.focus
+    let rec \"make$Internal" = (_: props) => {
+      make(({}: props))
+    }
+    and make = {
+      let \"V4$Rec" = props => make(props)
+
+      \"V4$Rec"
+    }
+    make
+  }
+}

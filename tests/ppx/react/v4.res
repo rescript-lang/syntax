@@ -7,3 +7,10 @@ module AnotherName = {
   @react.component
   let anotherName = (~x) => React.string(x)
 }
+
+module Rec = {
+  @react.component
+  let rec make = () => {
+    make({}:props)
+  }
+}
