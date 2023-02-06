@@ -163,10 +163,8 @@ let funExpr expr =
     | expr -> (attrsBefore, List.rev acc, expr)
   in
   match expr with
-  | {
-      pexp_desc = Pexp_fun (_, _defaultExpr, _pattern, _returnExpr);
-      pexp_attributes = attrs;
-    } as expr ->
+  | {pexp_desc = Pexp_fun _ | Pexp_newtype _; pexp_attributes = attrs} as expr
+    ->
     collect attrs [] {expr with pexp_attributes = []}
   | expr -> collect [] [] expr
 
