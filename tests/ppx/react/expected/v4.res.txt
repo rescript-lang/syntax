@@ -22,10 +22,10 @@ module Rec = {
 
   let rec make = {
     @merlin.focus
-    let rec \"make$Internal" = (_: props) => {
+    let \"make$Internal" = (_: props) => {
       make(({}: props))
     }
-    and make = {
+    let make = {
       let \"V4$Rec" = props => \"make$Internal"(props)
 
       \"V4$Rec"
@@ -39,10 +39,10 @@ module Rec1 = {
 
   let rec make = {
     @merlin.focus
-    let rec \"make$Internal" = (_: props) => {
+    let \"make$Internal" = (_: props) => {
       React.null
     }
-    and make = {
+    let make = {
       let \"V4$Rec1" = props => \"make$Internal"(props)
 
       \"V4$Rec1"
@@ -56,10 +56,10 @@ module Rec2 = {
 
   let rec make = {
     @merlin.focus
-    let rec \"make$Internal" = (_: props) => {
+    let \"make$Internal" = (_: props) => {
       mm(({}: props))
     }
-    and make = {
+    let make = {
       let \"V4$Rec2" = props => \"make$Internal"(props)
 
       \"V4$Rec2"
