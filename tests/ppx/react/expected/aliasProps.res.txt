@@ -4,11 +4,12 @@ module C0 = {
   type props<'priority, 'text> = {priority: 'priority, text?: 'text}
 
   @react.component
-  let make = ({priority: _, ?text, _}: props<'priority, 'text>) => {
-    let text = switch text {
+  let make = (props: props<'priority, 'text>) => {
+    let text = switch props.text {
     | Some(text) => text
     | None => "Test"
     }
+    and priority = props.priority
 
     React.string(text)
   }
@@ -23,11 +24,12 @@ module C1 = {
   type props<'priority, 'text> = {priority: 'priority, text?: 'text}
 
   @react.component
-  let make = ({priority: p, ?text, _}: props<'priority, 'text>) => {
-    let text = switch text {
+  let make = (props: props<'priority, 'text>) => {
+    let text = switch props.text {
     | Some(text) => text
     | None => "Test"
     }
+    and priority = props.priority
 
     React.string(p ++ text)
   }
