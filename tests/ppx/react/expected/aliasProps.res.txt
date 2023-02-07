@@ -9,7 +9,7 @@ module C0 = {
     | Some(text) => text
     | None => "Test"
     }
-    and priority = props.priority
+    and _ = props.priority
 
     React.string(text)
   }
@@ -29,7 +29,7 @@ module C1 = {
     | Some(text) => text
     | None => "Test"
     }
-    and priority = props.priority
+    and p = props.priority
 
     React.string(p ++ text)
   }
@@ -37,5 +37,24 @@ module C1 = {
     let \"AliasProps$C1" = (props: props<_>) => make(props)
 
     \"AliasProps$C1"
+  }
+}
+
+module C2 = {
+  type props<'foo> = {foo?: 'foo}
+
+  @react.component
+  let make = (props: props<'foo>) => {
+    let bar = switch props.foo {
+    | Some(foo) => foo
+    | None => ""
+    }
+
+    ReactDOM.jsx("div", {})
+  }
+  let make = {
+    let \"AliasProps$C2" = (props: props<_>) => make(props)
+
+    \"AliasProps$C2"
   }
 }

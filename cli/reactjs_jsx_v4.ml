@@ -1016,12 +1016,12 @@ let transformStructureItem ~config mapper item =
               (argToType ~newtypes ~typeConstraints)
               [] namedArgList
           in
-          let vbMatch (name, default, {ppat_loc}, _, _, _) =
+          let vbMatch (name, default, _, alias, loc, _) =
             let label = getLabel name in
             match default with
             | Some default ->
               Vb.mk
-                (Pat.var (Location.mkloc label ppat_loc))
+                (Pat.var (Location.mkloc alias loc))
                 (Exp.match_
                    (Exp.ident
                       {txt = Ldot (Lident "props", label); loc = Location.none})
@@ -1037,7 +1037,7 @@ let transformStructureItem ~config mapper item =
                    ])
             | None ->
               Vb.mk
-                (Pat.var (Location.mkloc label ppat_loc))
+                (Pat.var (Location.mkloc alias loc))
                 (Exp.ident @@ Location.mknoloc @@ Ldot (Lident "props", label))
           in
           let vbMatchList =
