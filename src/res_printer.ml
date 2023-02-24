@@ -4743,7 +4743,10 @@ and printCases ~customLayout (cases : Parsetree.case list) cmtTbl =
                ~getLoc:(fun n ->
                  {
                    n.Parsetree.pc_lhs.ppat_loc with
-                   loc_end = n.pc_rhs.pexp_loc.loc_end;
+                   loc_end =
+                     (match ParsetreeViewer.processBracesAttr n.pc_rhs with
+                     | None, _ -> n.pc_rhs.pexp_loc.loc_end
+                     | Some ({loc}, _), _ -> loc.Location.loc_end);
                  })
                ~print:(printCase ~customLayout) ~nodes:cases cmtTbl;
            ];
