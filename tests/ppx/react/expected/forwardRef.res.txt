@@ -75,7 +75,6 @@ module V4C = {
       ref?: 'ref,
     }
 
-    @react.component
     let make = (
       {?className, children, _}: props<_, _, ReactRef.currentDomRef>,
       ref: Js.Nullable.t<ReactRef.currentDomRef>,
@@ -103,7 +102,6 @@ module V4C = {
   }
   type props = {}
 
-  @react.component
   let make = (_: props) => {
     let input = React.useRef(Js.Nullable.null)
 
@@ -134,7 +132,6 @@ module V4A = {
       ref?: 'ref,
     }
 
-    @react.component
     let make = ({?className, children, _}: props<_, _, ReactDOM.Ref.currentDomRef>, ref) =>
       ReactDOM.jsxs(
         "div",
@@ -160,7 +157,6 @@ module V4A = {
   }
   type props = {}
 
-  @react.component
   let make = (_: props) => {
     let input = React.useRef(Js.Nullable.null)
 
