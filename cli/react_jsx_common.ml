@@ -41,3 +41,7 @@ let raiseErrorMultipleReactComponent ~loc =
   raiseError ~loc
     "Only one component definition is allowed for each module. Move to a \
      submodule or other file if necessary."
+
+let optionalAttr = ({txt = "ns.optional"; loc = Location.none}, PStr [])
+let extractUncurried typ = typ
+let removeArity binding = binding

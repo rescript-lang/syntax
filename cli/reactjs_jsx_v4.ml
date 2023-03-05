@@ -27,8 +27,7 @@ let getLabel str =
   | Optional str | Labelled str -> str
   | Nolabel -> ""
 
-let optionalAttr = ({txt = "ns.optional"; loc = Location.none}, PStr [])
-let optionalAttrs = [optionalAttr]
+let optionalAttrs = [React_jsx_common.optionalAttr]
 
 let constantString ~loc str =
   Ast_helper.Exp.constant ~loc (Pconst_string (str, None))
@@ -740,6 +739,7 @@ let transformStructureItem ~config item =
         config.hasReactComponent <- true;
         check_string_int_attribute_iter.structure_item
           check_string_int_attribute_iter item;
+        let pval_type = React_jsx_common.extractUncurried pval_type in
         let coreTypeOfAttr = React_jsx_common.coreTypeOfAttrs pval_attributes in
         let typVarsOfCoreType =
           coreTypeOfAttr
@@ -810,6 +810,7 @@ let transformStructureItem ~config item =
           React_jsx_common.raiseErrorMultipleReactComponent ~loc:pstr_loc
         else (
           config.hasReactComponent <- true;
+          let binding = React_jsx_common.removeArity binding in
           let coreTypeOfAttr =
             React_jsx_common.coreTypeOfAttrs binding.pvb_attributes
           in
