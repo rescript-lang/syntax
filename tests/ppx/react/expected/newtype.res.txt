@@ -67,7 +67,7 @@ module type T = {
 module V4A2 = {
   type props<'foo> = {foo: 'foo}
 
-  let make = (type a, {foo, _}: props<module(T with type t = a)>) => {
+  let make = (type a, {foo: (foo: module(T with type t = a)), _}: props<_>) => {
     module T = unpack(foo)
     ReactDOM.jsx("div", {})
   }
