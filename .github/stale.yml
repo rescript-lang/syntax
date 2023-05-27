@@ -1,0 +1,17 @@
+# Number of days of inactivity before an issue becomes stale
+daysUntilStale: 30
+# Number of days of inactivity before a stale issue is closed
+daysUntilClose: 7
+# Issues with these labels will never be considered stale
+# exemptLabels:
+#   - test
+# Label to use when marking an issue as stale
+staleLabel: stale
+# Comment to post when marking an issue as stale. Set to `false` to disable
+markComment: >
+  The rescript-lang/syntax repo is obsolete and will be archived soon.
+  If this issue is still relevant, please reopen in the compiler repo (https://github.com/rescript-lang/rescript-compiler)
+  or comment here to ask for it to be moved.
+  Thank you for your contributions.
+# Comment to post when closing a stale issue. Set to `false` to disable
+closeComment: false
